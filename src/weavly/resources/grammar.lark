@@ -1,0 +1,167 @@
+// =====================
+// Entry / Nodes
+// =====================
+
+start: node+
+
+node: node_start body node_end
+node_start: _NEWLINE* _NODESTART ID _NEWLINE
+node_end: _NODEEND _NEWLINE*
+
+body: statement*
+
+?statement: character_line
+    | if_block
+    | narration_line
+    | option_block
+    | command
+    | set
+    | increase
+    | decrease
+    | setflag
+    | clearflag
+    | goto
+    | finish
+    | continue_
+    | blank_line
+
+// =====================
+// Lines / Statements
+// =====================
+
+narration_line: TEXT _NEWLINE
+character_line: variable _COLON TEXT _NEWLINE
+blank_line: _NEWLINE
+
+set: _SET variable "=" expression _NEWLINE
+increase: _INC variable [NUMBER] _NEWLINE
+decrease: _DEC variable [NUMBER] _NEWLINE
+setflag: _SETFLAG variable _NEWLINE
+clearflag: _CLEARFLAG variable _NEWLINE
+
+goto: _GOTO ID _NEWLINE
+
+finish: _FINISH _NEWLINE
+
+command: _COMMAND ID _COLON TEXT _NEWLINE
+
+continue_: _CONTINUE TEXT _NEWLINE
+
+// =====================
+// If Block
+// =====================
+
+if_block: if_ [elif_list] [else_] _ENDIF _NEWLINE
+if_: _IF condition [_COLON] _NEWLINE body
+elif_: _ELIF condition [_COLON] _NEWLINE body
+else_: _ELSE [_COLON] _NEWLINE body
+elif_list: elif_+
+
+// =====================
+// Option Block
+// =====================
+
+option_block: option [or_option_list] _ENDOPTION _NEWLINE
+option: _OPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
+or_option: _OROPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
+or_option_list: or_option+
+
+// =====================
+// Expressions
+// =====================
+
+condition: expression
+
+?expression: or_expr
+
+?or_expr: and_expr 
+    | or_expr _OR and_expr -> or_
+
+?and_expr: not_expr 
+    | and_expr _AND not_expr -> and_
+
+?not_expr: _NOT not_expr -> not_
+    | comparison
+    
+?comparison: term
+    | term COMP_OP term -> compare
+
+?term: sum
+
+?sum: product
+    | sum "+" product -> add
+    | sum "-" product -> sub
+
+?product: atom
+    | product "*" atom -> mul
+    | product "/" atom -> div
+
+?atom: literal
+    | variable
+    | "(" expression ")"
+
+variable: _VARIABLEMARKER ID
+
+?literal: NUMBER
+    | STRING
+    | TRUE
+    | FALSE
+
+// =====================
+// Tokens
+// =====================
+
+TEXT: /(?![ \t]*[@#$])[ \t]*\S[^\n]*/
+OPTIONTEXT: /[^\n\[\]]+/
+COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
+TRUE: "true"
+FALSE: "false"
+
+_NODESTART: "@node"
+_NODEEND: "@endnode"
+
+_SET: "@set"
+_INC: "@increase"
+_DEC: "@decrease"
+_SETFLAG: "@setflag"
+_CLEARFLAG: "@clearflag"
+_GOTO: "@goto"
+_FINISH: "@finish"
+_COMMAND: /@(?!(node|endnode|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|option|or|endoption|continue)\b)/
+_CONTINUE: "@continue"
+
+_IF: "@if"
+_ELIF: "@elif"
+_ELSE: "@else"
+_ENDIF: "@endif"
+
+_OPTION: "@option"
+_OROPTION: "@or"
+_ENDOPTION: "@endoption"
+
+_NOT: "not"
+_AND: "and"
+_OR: "or"
+_VARIABLEMARKER: "$"
+
+_COLON: ":"
+_LBRACKET: "["
+_RBRACKET: "]"
+
+// =====================
+// Imports
+// =====================
+
+%import common.CNAME -> ID
+%import common.SIGNED_NUMBER -> NUMBER
+%import common.ESCAPED_STRING -> STRING
+%import common.SH_COMMENT
+%import common.WS_INLINE
+%import common.NEWLINE -> _NEWLINE
+
+// =====================
+// Ignored
+// =====================
+
+%ignore SH_COMMENT
+%ignore WS_INLINE

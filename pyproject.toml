@@ -1,0 +1,37 @@
+[project]
+name = "Weavly"
+version = "0.1.0"
+description = "Compiler for the Weavly dialog scripting language"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "lark>=1.3.1",
+    "readchar>=4.2.1",
+    "typer>=0.21.0",
+    "watchdog>=6.0.0",
+]
+
+[project.scripts]
+weavly = "weavly.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "isort>=7.0.0",
+    "ruff>=0.14.11",
+]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["weavly"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
