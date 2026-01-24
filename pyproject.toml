@@ -24,6 +24,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+weavly = ["resources/*.lark"]
+
 [dependency-groups]
 dev = [
     "isort>=7.0.0",
