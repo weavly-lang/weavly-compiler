@@ -65,7 +65,9 @@ class JsonTransformer(Transformer):
     def finish(self) -> dict[str, str]:
         return {"type": "finish"}
 
-    def command(self, id: str, text: str) -> dict[str, str]:
+    def command(self, id: str, text: str | None) -> dict[str, str]:
+        if text is None:
+            text = ""
         return {"type": "command", "id": id, "text": text}
 
     def continue_(self, text: str) -> dict[str, Any]:
