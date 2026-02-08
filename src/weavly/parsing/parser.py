@@ -4,36 +4,70 @@ from importlib import resources
 from pathlib import Path
 
 import typer
-from lark import Lark
+from lark import Lark, Transformer
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 
+from .env_transformer import EnvTransformer
 from .json_transformer import JsonTransformer
 
 PARSER_TYPE = "lalr"
 ENCODING = "utf-8"
+
 SOURCE_FILE_EXTENSION = ".wvl"
-BUILD_FILE_EXTENSION = ".json"
+BUILD_FILE_EXTENSION = ".wvl.json"
+ENV_SOURCE_FILE_EXTENSION = ".wenvl"
+ENV_BUILD_FILE_EXTENSION = ".wenvl.json"
 
 
-def build_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
+def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     if build_dir.exists():
         shutil.rmtree(build_dir)
+    
+    _build_files_with_extension(
+        src_dir, 
+        build_dir, 
+        pretty, 
+        SOURCE_FILE_EXTENSION, 
+        BUILD_FILE_EXTENSION,
+        "grammar.lark", 
+        JsonTransformer()
+    )
 
-    grammar = _load_grammar()
+    _build_files_with_extension(
+        src_dir, 
+        build_dir, 
+        pretty, 
+        ENV_SOURCE_FILE_EXTENSION, 
+        ENV_BUILD_FILE_EXTENSION,
+        "env-grammar.lark", 
+        EnvTransformer()
+    )
+
+
+def _build_files_with_extension(
+    src_dir: Path, 
+    build_dir: Path, 
+    pretty: bool, 
+    source_extension: str,
+    build_extension: str,
+    grammar_file: str, 
+    transformer: Transformer
+) -> None:
+    grammar = _load_grammar(grammar_file)
     parser = _build_parser(grammar, PARSER_TYPE)
 
-    for file in src_dir.rglob(f"*{SOURCE_FILE_EXTENSION}"):
+    for file in src_dir.rglob(f"*{source_extension}"):
         if not file.is_file():
             continue
 
         relative_path = file.relative_to(src_dir)
-        out_file = (build_dir / relative_path).with_suffix(f"{BUILD_FILE_EXTENSION}")
+        out_file = (build_dir / relative_path).with_suffix(f"{build_extension}")
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
         text = file.read_text(encoding=ENCODING)
 
         try:
-            data = _parse(parser, text)
+            data = _parse(parser, text, transformer)
         except UnexpectedInput as e:
             _format_parse_error(e, file)
             raise typer.Exit(code=1)
@@ -46,10 +80,10 @@ def build_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             )
 
 
-def _load_grammar() -> str:
+def _load_grammar(grammar_file: str) -> str:
     grammar = (
         resources.files("weavly.resources")
-        .joinpath("grammar.lark")
+        .joinpath(grammar_file)
         .read_text(encoding=ENCODING)
     )
     return grammar
@@ -59,9 +93,9 @@ def _build_parser(grammar: str, parser_type: str) -> Lark:
     return Lark(grammar, parser=parser_type)
 
 
-def _parse(parser: Lark, text: str) -> dict:
+def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
     tree = parser.parse(text)
-    data = JsonTransformer().transform(tree)
+    data = transformer.transform(tree)
     return data
 
 

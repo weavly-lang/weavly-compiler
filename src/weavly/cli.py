@@ -9,7 +9,7 @@ from .parsing import (
     BUILD_FILE_EXTENSION,
     SOURCE_FILE_EXTENSION,
     FileHandler,
-    build_files,
+    build_all_files,
 )
 from .runtime import Context, Node, compile_nodes
 
@@ -23,7 +23,7 @@ app = typer.Typer()
 
 @app.command()
 def build(pretty: bool = False):
-    build_files(SOURCE_DIR, BUILD_DIR, pretty)
+    build_all_files(SOURCE_DIR, BUILD_DIR, pretty)
 
 
 @app.command()
@@ -54,7 +54,7 @@ def run(name: str = typer.Argument(None), debug: bool = False):
         )
         raise typer.Exit(code=1)
 
-    build_files(SOURCE_DIR, BUILD_DIR, False)
+    build_all_files(SOURCE_DIR, BUILD_DIR, False)
 
     if not BUILD_DIR.exists():
         typer.secho(
@@ -139,7 +139,7 @@ def watch(pretty: bool = False):
     # Initial build
     typer.echo("Initial build...")
     try:
-        build_files(SOURCE_DIR, BUILD_DIR, pretty)
+        build_all_files(SOURCE_DIR, BUILD_DIR, pretty)
         typer.secho("Build successful\n", fg=typer.colors.GREEN)
     except typer.Exit:
         # build_files already formatted the error

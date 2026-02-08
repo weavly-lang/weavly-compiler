@@ -1,0 +1,31 @@
+start: declaration*
+
+?declaration: number_declaration
+    | string_declaration
+    | flag_declaration
+    | _NEWLINE
+
+number_declaration: ID _COLON _NUMBER_TYPE ["(" [NUMBER] "," [NUMBER] ")"] ["=" NUMBER] _NEWLINE*
+string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE*
+flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE*
+?bool_literal: TRUE
+    | FALSE
+
+
+_NUMBER_TYPE: "number"
+_STRING_TYPE: "string"
+_FLAG_TYPE: "flag"
+
+TRUE: "true"
+FALSE: "false"
+_COLON: ":"
+
+%import common.CNAME -> ID
+%import common.SIGNED_NUMBER -> NUMBER
+%import common.ESCAPED_STRING -> STRING
+%import common.SH_COMMENT
+%import common.WS_INLINE
+%import common.NEWLINE -> _NEWLINE
+
+%ignore SH_COMMENT
+%ignore WS_INLINE

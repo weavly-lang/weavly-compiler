@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
-from .parser import SOURCE_FILE_EXTENSION, build_files
+from .parser import SOURCE_FILE_EXTENSION, build_all_files
 
 
 class FileHandler(FileSystemEventHandler):
@@ -34,7 +34,7 @@ class FileHandler(FileSystemEventHandler):
 
         typer.echo(f"\nChange detected in file: {Path(event.src_path).name}")
         try:
-            build_files(self.src_dir, self.build_dir, self.pretty)
+            build_all_files(self.src_dir, self.build_dir, self.pretty)
             typer.secho("Rebuild successful", fg=typer.colors.GREEN)
         except typer.Exit:
             # build_files will print its error
