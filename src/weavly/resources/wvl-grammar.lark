@@ -31,6 +31,7 @@ body: statement*
 
 narration_line: TEXT _NEWLINE
 character_line: variable _COLON TEXT _NEWLINE
+    | _CHARACTER_MARKER CHARACTER_NAME _COLON TEXT _NEWLINE -> named_character_line
 blank_line: _NEWLINE
 
 set: _SET variable "=" expression _NEWLINE
@@ -112,7 +113,8 @@ variable: _VARIABLEMARKER ID
 // Tokens
 // =====================
 
-TEXT: /(?![ \t]*[@#$])[ \t]*\S[^\n]*/
+TEXT: /(?![ \t]*[@#$>])[ \t]*\S[^\n]*/
+CHARACTER_NAME: /[A-Za-z0-9][A-Za-z0-9 ]*/
 OPTIONTEXT: /[^\n\[\]]+/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
 TRUE: "true"
@@ -145,6 +147,7 @@ _NOT: "not"
 _AND: "and"
 _OR: "or"
 _VARIABLEMARKER: "$"
+_CHARACTER_MARKER: ">"
 
 _COLON: ":"
 _LBRACKET: "["
