@@ -61,10 +61,11 @@ elif_list: elif_+
 // Option Block
 // =====================
 
-option_block: option [or_option_list] _ENDOPTION _NEWLINE
+option_block: option [option_list] _ENDOPTION _NEWLINE
 option: _OPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
 or_option: _OROPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
-or_option_list: or_option+
+hint_option: _HINTOPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE
+option_list: (or_option | hint_option) +
 
 // =====================
 // Expressions
@@ -137,6 +138,7 @@ _ENDIF: "@endif"
 
 _OPTION: "@option"
 _OROPTION: "@or"
+_HINTOPTION: "@hint"
 _ENDOPTION: "@endoption"
 
 _NOT: "not"

@@ -103,21 +103,24 @@ class JsonTransformer(Transformer):
     # Option Block
     # =====================
 
-    def option_block(self, option: dict, or_option_list: list | None) -> dict[str, Any]:
-        option_list = [option]
-        if or_option_list is not None:
-            option_list.extend(or_option_list)
-        return {"type": "option", "options": option_list}
+    def option_block(self, option: dict, option_list: list | None) -> dict[str, Any]:
+        options = [option]
+        if option_list is not None:
+            options.extend(option_list)
+        return {"type": "option", "options": options}
 
-    def option(self, condition: Any | None, text: str, body: list) -> dict[str, Any]:
+    def option(self, condition: Any | None, text: str, body: list, hint: bool = False) -> dict[str, Any]:
         if condition is None:
             condition = True
-        return {"condition": condition, "text": text, "body": body}
+        return {"condition": condition, "text": text, "body": body, "hint": hint}
 
     def or_option(self, condition: Any | None, text: str, body: list) -> dict[str, Any]:
         return self.option(condition, text, body)
+    
+    def hint_option(self, condition: Any | None, text: str) -> dict[str, Any]:
+        return self.option(condition, text, [], hint=True)
 
-    def or_option_list(self, *or_options) -> list:
+    def option_list(self, *or_options) -> list:
         return list(or_options)
 
     # =====================
