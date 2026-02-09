@@ -6,8 +6,8 @@ import typer
 from watchdog.observers import Observer
 
 from .parsing import (
-    BUILD_FILE_EXTENSION,
-    SOURCE_FILE_EXTENSION,
+    WVL_BUILD_EXTENSION,
+    WVL_SOURCE_EXTENSION,
     FileHandler,
     build_all_files,
 )
@@ -39,7 +39,7 @@ def init(name: str = typer.Argument(None)):
 
     src: Path = base / "src"
     src.mkdir()
-    (src / f"nodes{SOURCE_FILE_EXTENSION}").write_text(
+    (src / f"nodes{WVL_SOURCE_EXTENSION}").write_text(
         NODE_INIT_STRING, encoding="utf-8"
     )
 
@@ -68,7 +68,7 @@ def run(name: str = typer.Argument(None), debug: bool = False):
     context: Context = Context(debug)
 
     build_files_found = False
-    for file in BUILD_DIR.rglob(f"*{BUILD_FILE_EXTENSION}"):
+    for file in BUILD_DIR.rglob(f"*{WVL_BUILD_EXTENSION}"):
         build_files_found = True
         try:
             with open(file, "r", encoding="utf-8") as f:

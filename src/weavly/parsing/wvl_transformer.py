@@ -5,7 +5,7 @@ from lark.visitors import Discard
 
 
 @v_args(inline=True)
-class JsonTransformer(Transformer):
+class WvlTransformer(Transformer):
     # =====================
     # Entry / Nodes
     # =====================

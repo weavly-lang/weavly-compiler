@@ -4,7 +4,7 @@ from lark import Transformer, v_args
 
 
 @v_args(inline=True)
-class EnvTransformer(Transformer):
+class WenvlTransformer(Transformer):
     def start(self, *children) -> dict[str, list]:
         return {"declarations": list(children)}
 

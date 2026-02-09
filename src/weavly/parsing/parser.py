@@ -7,16 +7,18 @@ import typer
 from lark import Lark, Transformer
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 
-from .env_transformer import EnvTransformer
-from .json_transformer import JsonTransformer
+from .wenvl_transformer import WenvlTransformer
+from .wvl_transformer import WvlTransformer
 
 PARSER_TYPE = "lalr"
 ENCODING = "utf-8"
 
-SOURCE_FILE_EXTENSION = ".wvl"
-BUILD_FILE_EXTENSION = ".wvl.json"
-ENV_SOURCE_FILE_EXTENSION = ".wenvl"
-ENV_BUILD_FILE_EXTENSION = ".wenvl.json"
+WVL_SOURCE_EXTENSION = ".wvl"
+WVL_BUILD_EXTENSION = ".wvl.json"
+WVL_GRAMMAR_FILE = "wvl-grammar.lark"
+WENVL_SOURCE_EXTENSION = ".wenvl"
+WENVL_BUILD_EXTENSION = ".wenvl.json"
+WENVL_GRAMMAR_FILE = "wenvl-grammar.lark"
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
@@ -27,20 +29,20 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         src_dir, 
         build_dir, 
         pretty, 
-        SOURCE_FILE_EXTENSION, 
-        BUILD_FILE_EXTENSION,
-        "grammar.lark", 
-        JsonTransformer()
+        WVL_SOURCE_EXTENSION, 
+        WVL_BUILD_EXTENSION,
+        WVL_GRAMMAR_FILE, 
+        WvlTransformer()
     )
 
     _build_files_with_extension(
         src_dir, 
         build_dir, 
         pretty, 
-        ENV_SOURCE_FILE_EXTENSION, 
-        ENV_BUILD_FILE_EXTENSION,
-        "env-grammar.lark", 
-        EnvTransformer()
+        WENVL_SOURCE_EXTENSION, 
+        WENVL_BUILD_EXTENSION,
+        WENVL_GRAMMAR_FILE, 
+        WenvlTransformer()
     )
 
 

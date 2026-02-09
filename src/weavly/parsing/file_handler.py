@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
-from .parser import SOURCE_FILE_EXTENSION, build_all_files
+from .parser import WVL_SOURCE_EXTENSION, build_all_files
 
 
 class FileHandler(FileSystemEventHandler):
@@ -23,7 +23,7 @@ class FileHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        if not event.src_path.endswith(SOURCE_FILE_EXTENSION):
+        if not event.src_path.endswith(WVL_SOURCE_EXTENSION):
             return
 
         current_time = time.time()
