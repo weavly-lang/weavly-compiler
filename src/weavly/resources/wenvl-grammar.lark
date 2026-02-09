@@ -3,14 +3,14 @@ start: declaration*
 ?declaration: number_declaration
     | string_declaration
     | flag_declaration
-    | _NEWLINE
+    | blank_line
 
 number_declaration: ID _COLON _NUMBER_TYPE ["(" [NUMBER] "," [NUMBER] ")"] ["=" NUMBER] _NEWLINE*
 string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE*
 flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE*
 ?bool_literal: TRUE
     | FALSE
-
+blank_line: _NEWLINE
 
 _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
