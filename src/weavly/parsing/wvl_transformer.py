@@ -33,10 +33,10 @@ class WvlTransformer(Transformer):
         return {"type": "narration", "text": text}
 
     def character_line(self, var: dict, text: str) -> dict[str, str]:
-        return {"type": "character", "id": var["variable"], "name": None, "text": text}
+        return {"type": "character", "name": var["variable"], "id": True, "text": text}
     
     def named_character_line(self, name: str, text: str) -> dict[str, str]:
-        return {"type": "character", "id": None, "name" : name, "text": text}
+        return {"type": "character", "name": name, "id": False, "text": text}
 
     def blank_line(self) -> Any:
         return Discard
