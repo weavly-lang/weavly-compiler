@@ -23,7 +23,7 @@ body: statement*
     | clearflag
     | goto
     | finish
-    | continue_
+    | continue
     | blank_line
 
 // =====================
@@ -47,7 +47,8 @@ finish: _FINISH _NEWLINE
 
 command: _COMMAND ID [_COLON TEXT] _NEWLINE
 
-continue_: _CONTINUE TEXT _NEWLINE
+continue: _CONTINUE OPTION_TEXT _NEWLINE -> continue_
+    | _CONTINUE STRING _ARROW ID _NEWLINE -> goto_continue
 
 // =====================
 // If Block
@@ -64,9 +65,10 @@ elif_list: elif_+
 // =====================
 
 option_block: _OPTIONS _NEWLINE option_item+ _END_OPTIONS _NEWLINE
-?option_item: option | hint_option
-option: _OPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
-hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE
+?option_item: option | hint_option | goto_option
+option: _OPTION [_LBRACKET condition _RBRACKET] OPTION_TEXT _NEWLINE body
+hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] OPTION_TEXT _NEWLINE
+goto_option: _OPTION [_LBRACKET condition _RBRACKET] STRING _ARROW ID _NEWLINE
 
 // =====================
 // Random Block
@@ -122,7 +124,7 @@ variable: _VARIABLEMARKER ID
 
 TEXT: /(?![ \t]*[@#$>])[ \t]*\S[^\n]*/
 CHARACTER_NAME: /[A-Za-z0-9][A-Za-z0-9 ]*/
-OPTIONTEXT: /[^\n\[\]]+/
+OPTION_TEXT: /[^\n\[\]]+/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
 TRUE: "true"
 FALSE: "false"
@@ -163,6 +165,7 @@ _CHARACTER_MARKER: ">"
 _COLON: ":"
 _LBRACKET: "["
 _RBRACKET: "]"
+_ARROW: "->"
 
 // =====================
 // Imports

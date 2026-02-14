@@ -76,6 +76,9 @@ class WvlTransformer(Transformer):
     def continue_(self, text: str) -> dict[str, Any]:
         return self.option_block(self.option(None, text, []))
 
+    def goto_continue(self, text: str, id: str) -> dict[str, Any]:
+        return self.option_block(self.goto_option(True, text, id))
+
     # =====================
     # If Block
     # =====================
@@ -116,6 +119,9 @@ class WvlTransformer(Transformer):
 
     def hint_option(self, condition: Any | None, text: str) -> dict[str, Any]:
         return self.option(condition, text, [], hint=True)
+    
+    def goto_option(self, condition: Any | None, text: str, id: str) -> dict[str, Any]:
+        return self.option(condition, text, [self.goto(id)], hint=False)
     
     # =====================
     # Random Block
@@ -192,7 +198,7 @@ class WvlTransformer(Transformer):
         return float(token)
 
     def STRING(self, token: Any) -> str:
-        return str(token)
+        return str(token).strip('"')
 
     # =====================
     # Default for debugging
