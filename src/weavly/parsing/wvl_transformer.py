@@ -74,7 +74,7 @@ class WvlTransformer(Transformer):
         return {"type": "command", "id": id, "text": text}
 
     def continue_(self, text: str) -> dict[str, Any]:
-        return self.option_block(self.option(None, text, []), None)
+        return self.option_block(self.option(None, text, []))
 
     # =====================
     # If Block
@@ -106,32 +106,22 @@ class WvlTransformer(Transformer):
     # Option Block
     # =====================
 
-    def option_block(self, option: dict, option_list: list | None) -> dict[str, Any]:
-        options = [option]
-        if option_list is not None:
-            options.extend(option_list)
-        return {"type": "option", "options": options}
+    def option_block(self, *items) -> dict[str, Any]:
+        return {"type": "option", "items": list(items)}
 
     def option(self, condition: Any | None, text: str, body: list, hint: bool = False) -> dict[str, Any]:
         if condition is None:
             condition = True
         return {"condition": condition, "text": text, "body": body, "hint": hint}
 
-    def or_option(self, condition: Any | None, text: str, body: list) -> dict[str, Any]:
-        return self.option(condition, text, body)
-    
     def hint_option(self, condition: Any | None, text: str) -> dict[str, Any]:
         return self.option(condition, text, [], hint=True)
-
-    def option_list(self, *or_options) -> list:
-        return list(or_options)
     
     # =====================
     # Random Block
     # =====================
 
     def random_block(self, *cases) -> dict[str, Any]:
-        print("called")
         return {"type": "random", "cases": list(cases)}
 
     def case(self, condition: Any | None, weight: Any, body: list) -> dict[str, Any]:
