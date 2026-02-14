@@ -14,6 +14,7 @@ body: statement*
     | if_block
     | narration_line
     | option_block
+    | random_block
     | command
     | set
     | increase
@@ -67,6 +68,13 @@ option: _OPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
 or_option: _OROPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE body
 hint_option: _HINTOPTION [_LBRACKET condition _RBRACKET] OPTIONTEXT _NEWLINE
 option_list: (or_option | hint_option) +
+
+// =====================
+// Random Block
+// =====================
+
+random_block: _RANDOM _NEWLINE case+ _END_RANDOM _NEWLINE
+case: _CASE [_LBRACKET condition _RBRACKET] term _NEWLINE body
 
 // =====================
 // Expressions
@@ -130,7 +138,7 @@ _SETFLAG: "@setflag"
 _CLEARFLAG: "@clearflag"
 _GOTO: "@goto"
 _FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|option|or|endoption|continue)\b)/
+_COMMAND: /@(?!(node|endnode|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|option|or|endoption|continue|random|case|endrandom)\b)/
 _CONTINUE: "@continue"
 
 _IF: "@if"
@@ -142,6 +150,10 @@ _OPTION: "@option"
 _OROPTION: "@or"
 _HINTOPTION: "@hint"
 _ENDOPTION: "@endoption"
+
+_RANDOM: "@random"
+_CASE: "@case"
+_END_RANDOM: "@endrandom"
 
 _NOT: "not"
 _AND: "and"

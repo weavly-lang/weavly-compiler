@@ -125,6 +125,19 @@ class WvlTransformer(Transformer):
 
     def option_list(self, *or_options) -> list:
         return list(or_options)
+    
+    # =====================
+    # Random Block
+    # =====================
+
+    def random_block(self, *cases) -> dict[str, Any]:
+        print("called")
+        return {"type": "random", "cases": list(cases)}
+
+    def case(self, condition: Any | None, weight: Any, body: list) -> dict[str, Any]:
+        if condition is None:
+            condition = True
+        return {"condition": condition, "weight": weight, "body": body}
 
     # =====================
     # Expressions
