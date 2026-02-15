@@ -10,21 +10,33 @@ node_end: _NODEEND _NEWLINE*
 
 body: statement*
 
-?statement: character_line
-    | if_block
-    | narration_line
-    | option_block
-    | random_block
-    | command
+?statement: line_statement
+    | block_statement
+    | blank_line
+
+?line_statement: narration_line
+    | character_line
     | set
     | increase
     | decrease
     | setflag
     | clearflag
+    | command
     | goto
     | finish
     | continue
-    | blank_line
+
+?block_statement: if_block
+    | option_block
+    | random_block
+
+?inline_statement: _COLON line_statement
+
+inline_goto: _ARROW ID _NEWLINE
+
+?action: (inline_statement | inline_goto | _NEWLINE body)
+
+?inline_action: (inline_statement | inline_goto)
 
 // =====================
 // Lines / Statements
@@ -47,17 +59,16 @@ finish: _FINISH _NEWLINE
 
 command: _COMMAND ID [_COLON TEXT] _NEWLINE
 
-continue: _CONTINUE OPTION_TEXT _NEWLINE -> continue_
-    | _CONTINUE STRING _ARROW ID _NEWLINE -> goto_continue
+continue: _CONTINUE STRING (inline_action | _NEWLINE) -> continue_
 
 // =====================
 // If Block
 // =====================
 
 if_block: if_ [elif_list] [else_] _ENDIF _NEWLINE
-if_: _IF condition [_COLON] _NEWLINE body
-elif_: _ELIF condition [_COLON] _NEWLINE body
-else_: _ELSE [_COLON] _NEWLINE body
+if_: _IF condition action
+elif_: _ELIF condition action
+else_: _ELSE action
 elif_list: elif_+
 
 // =====================
@@ -65,17 +76,16 @@ elif_list: elif_+
 // =====================
 
 option_block: _OPTIONS _NEWLINE option_item+ _END_OPTIONS _NEWLINE
-?option_item: option | hint_option | goto_option
-option: _OPTION [_LBRACKET condition _RBRACKET] OPTION_TEXT _NEWLINE body
-hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] OPTION_TEXT _NEWLINE
-goto_option: _OPTION [_LBRACKET condition _RBRACKET] STRING _ARROW ID _NEWLINE
+?option_item: option | hint_option
+option: _OPTION [_LBRACKET condition _RBRACKET] STRING action
+hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] STRING _NEWLINE
 
 // =====================
 // Random Block
 // =====================
 
 random_block: _RANDOM _NEWLINE case+ _END_RANDOM _NEWLINE
-case: _CASE [_LBRACKET condition _RBRACKET] term _NEWLINE body
+case: _CASE [_LBRACKET condition _RBRACKET] term action
 
 // =====================
 // Expressions

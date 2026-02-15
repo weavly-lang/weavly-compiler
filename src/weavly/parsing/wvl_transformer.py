@@ -24,6 +24,9 @@ class WvlTransformer(Transformer):
 
     def body(self, *statements) -> list:
         return list(statements)
+    
+    def inline_goto(self, id) -> dict[str, str]:
+        return self.goto(id)
 
     # =====================
     # Lines / Statements
@@ -73,11 +76,12 @@ class WvlTransformer(Transformer):
             text = ""
         return {"type": "command", "id": id, "text": text}
 
-    def continue_(self, text: str) -> dict[str, Any]:
-        return self.option_block(self.option(None, text, []))
-
-    def goto_continue(self, text: str, id: str) -> dict[str, Any]:
-        return self.option_block(self.goto_option(True, text, id))
+    def continue_(self, text: str, statement: dict[str, Any] = None) -> dict[str, Any]:
+        if statement is None:
+            body = []
+        else:
+            body = [statement]
+        return self.option_block(self.option(True, text, body))
 
     # =====================
     # If Block
@@ -112,16 +116,15 @@ class WvlTransformer(Transformer):
     def option_block(self, *items) -> dict[str, Any]:
         return {"type": "option", "items": list(items)}
 
-    def option(self, condition: Any | None, text: str, body: list, hint: bool = False) -> dict[str, Any]:
+    def option(self, condition: Any | None, text: str, body: list | dict, hint: bool = False) -> dict[str, Any]:
         if condition is None:
             condition = True
+        if not isinstance(body, list):
+            body = [body]
         return {"condition": condition, "text": text, "body": body, "hint": hint}
 
     def hint_option(self, condition: Any | None, text: str) -> dict[str, Any]:
         return self.option(condition, text, [], hint=True)
-    
-    def goto_option(self, condition: Any | None, text: str, id: str) -> dict[str, Any]:
-        return self.option(condition, text, [self.goto(id)], hint=False)
     
     # =====================
     # Random Block
@@ -133,6 +136,8 @@ class WvlTransformer(Transformer):
     def case(self, condition: Any | None, weight: Any, body: list) -> dict[str, Any]:
         if condition is None:
             condition = True
+        if not isinstance(body, list):
+            body = [body]
         return {"condition": condition, "weight": weight, "body": body}
 
     # =====================
