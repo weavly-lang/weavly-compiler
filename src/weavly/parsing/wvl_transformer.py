@@ -98,6 +98,8 @@ class WvlTransformer(Transformer):
         return {"type": "if", "cases": cases}
 
     def if_(self, condition: Any, body: list) -> dict[str, Any]:
+        if not isinstance(body, list):
+            body = [body]
         return {"condition": condition, "body": body}
 
     def elif_(self, condition: Any, body: list) -> dict[str, Any]:
