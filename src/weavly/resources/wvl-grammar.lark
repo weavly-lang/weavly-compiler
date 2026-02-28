@@ -184,7 +184,6 @@ _ARROW: "->"
 %import common.CNAME -> ID
 %import common.SIGNED_NUMBER -> NUMBER
 %import common.ESCAPED_STRING -> STRING
-%import common.SH_COMMENT
 %import common.WS_INLINE
 %import common.NEWLINE -> _NEWLINE
 
@@ -192,5 +191,8 @@ _ARROW: "->"
 // Ignored
 // =====================
 
-%ignore SH_COMMENT
+COMMENT: /#[^\n]*\n/
+WS_LINE.2: /[ \t]+\n/
+%ignore COMMENT
+%ignore WS_LINE
 %ignore WS_INLINE
