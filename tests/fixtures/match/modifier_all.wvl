@@ -1,0 +1,14 @@
+@node start
+    @match all
+        @when $flag_a -> node_a
+        @when $flag_b -> node_b
+    @endmatch
+@endnode
+
+@node node_a
+    @finish
+@endnode
+
+@node node_b
+    @finish
+@endnode

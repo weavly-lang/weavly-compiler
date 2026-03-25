@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "match", "modifier": "first", "cases": [{"condition": {"variable": "flag"}, "body": [{"type": "narration", "text": "You made it."}, {"type": "goto", "id": "end"}]}]}]}, {"id": "end", "body": [{"type": "finish"}]}]}

@@ -1,0 +1,4 @@
+@node start
+    @match
+    @endmatch
+@endnode

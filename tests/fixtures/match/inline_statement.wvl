@@ -1,0 +1,9 @@
+@node start
+    @match
+        @when $done: @goto end
+    @endmatch
+@endnode
+
+@node end
+    @finish
+@endnode

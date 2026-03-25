@@ -5,7 +5,8 @@
       "Bash(pytest tests/ -v -k options)",
       "Bash(pytest tests/ -v -k \"inline_comment\")",
       "Bash(pytest tests/test_wvl.py -k random -v)",
-      "Bash(pytest tests/test_wvl.py -k \"if\" -v)"
+      "Bash(pytest tests/test_wvl.py -k \"if\" -v)",
+      "Bash(python -c \":*)"
     ]
   }
 }

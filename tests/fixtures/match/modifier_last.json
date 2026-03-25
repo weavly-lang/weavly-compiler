@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "match", "modifier": "last", "cases": [{"condition": {"variable": "flag_a"}, "body": [{"type": "goto", "id": "node_a"}]}, {"condition": {"variable": "flag_b"}, "body": [{"type": "goto", "id": "node_b"}]}]}]}, {"id": "node_a", "body": [{"type": "finish"}]}, {"id": "node_b", "body": [{"type": "finish"}]}]}

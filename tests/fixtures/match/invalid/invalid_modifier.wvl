@@ -1,0 +1,5 @@
+@node start
+    @match random
+        @when $flag -> end
+    @endmatch
+@endnode

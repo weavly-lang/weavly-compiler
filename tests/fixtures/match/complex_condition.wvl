@@ -1,0 +1,9 @@
+@node start
+    @match
+        @when $x and not $y -> end
+    @endmatch
+@endnode
+
+@node end
+    @finish
+@endnode

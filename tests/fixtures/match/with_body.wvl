@@ -1,0 +1,11 @@
+@node start
+    @match
+        @when $flag
+            You made it.
+            @goto end
+    @endmatch
+@endnode
+
+@node end
+    @finish
+@endnode
