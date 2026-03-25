@@ -1,0 +1,5 @@
+@node start
+    @if $flag
+        It is set.
+    @endif
+@endnode

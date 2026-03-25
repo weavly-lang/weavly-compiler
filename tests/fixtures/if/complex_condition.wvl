@@ -1,0 +1,5 @@
+@node start
+    @if $x and not $y
+        Triggered.
+    @endif
+@endnode

@@ -1,0 +1,8 @@
+@node start
+    @if $flag -> end
+    @endif
+@endnode
+
+@node end
+    @finish
+@endnode

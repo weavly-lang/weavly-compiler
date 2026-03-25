@@ -1,0 +1,7 @@
+@node start
+    @if $flag
+        Yes.
+    @else
+        No.
+    @endif
+@endnode

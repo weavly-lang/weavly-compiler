@@ -1,0 +1,5 @@
+@node start
+    @elif $flag
+        Hello.
+    @endif
+@endnode

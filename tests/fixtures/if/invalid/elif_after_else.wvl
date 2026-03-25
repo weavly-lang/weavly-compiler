@@ -1,0 +1,9 @@
+@node start
+    @if $flag
+        Yes.
+    @else
+        No.
+    @elif $other
+        Maybe.
+    @endif
+@endnode

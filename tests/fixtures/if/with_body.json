@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "if", "cases": [{"condition": {"variable": "flag"}, "body": [{"type": "narration", "text": "It is set."}]}]}]}]}

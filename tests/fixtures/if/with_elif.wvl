@@ -1,0 +1,9 @@
+@node start
+    @if $score == 10
+        Perfect.
+    @elif $score >= 5
+        Good.
+    @else
+        Try again.
+    @endif
+@endnode

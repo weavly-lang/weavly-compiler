@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "if", "cases": [{"condition": {"op": "and", "left": {"variable": "x"}, "right": {"op": "not", "expression": {"variable": "y"}}}, "body": [{"type": "narration", "text": "Triggered."}]}]}]}]}
