@@ -1,0 +1,7 @@
+@node start
+    @goto end
+@endnode
+
+@node end
+    @finish
+@endnode

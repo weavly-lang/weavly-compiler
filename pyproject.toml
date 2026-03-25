@@ -30,6 +30,7 @@ weavly = ["resources/*.lark"]
 [dependency-groups]
 dev = [
     "isort>=7.0.0",
+    "pytest>=8.0.0",
     "ruff>=0.14.11",
 ]
 
