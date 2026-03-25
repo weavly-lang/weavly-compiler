@@ -1,0 +1,12 @@
+@node start
+    @random
+    @case 3
+        You find treasure.
+        @goto end
+    @case 1: @goto end
+    @endrandom
+@endnode
+
+@node end
+    @finish
+@endnode

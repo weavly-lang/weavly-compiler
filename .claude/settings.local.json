@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pytest tests/ -v)",
       "Bash(pytest tests/ -v -k options)",
-      "Bash(pytest tests/ -v -k \"inline_comment\")"
+      "Bash(pytest tests/ -v -k \"inline_comment\")",
+      "Bash(pytest tests/test_wvl.py -k random -v)"
     ]
   }
 }

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "random", "cases": [{"condition": true, "weight": 3.0, "body": [{"type": "narration", "text": "You find treasure."}, {"type": "goto", "id": "end"}]}, {"condition": true, "weight": 1.0, "body": [{"type": "goto", "id": "end"}]}]}]}, {"id": "end", "body": [{"type": "finish"}]}]}

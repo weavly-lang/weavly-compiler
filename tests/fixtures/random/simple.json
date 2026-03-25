@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "random", "cases": [{"condition": true, "weight": 1.0, "body": [{"type": "narration", "text": "Hello."}]}, {"condition": true, "weight": 2.0, "body": [{"type": "narration", "text": "World."}]}]}]}]}

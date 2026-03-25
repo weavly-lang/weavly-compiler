@@ -1,0 +1,5 @@
+@node start
+    @random
+    @case 1: Hello.
+    @case 2: World.
+@endnode

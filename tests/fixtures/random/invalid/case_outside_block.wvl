@@ -1,0 +1,3 @@
+@node start
+    @case 1: Hello.
+@endnode

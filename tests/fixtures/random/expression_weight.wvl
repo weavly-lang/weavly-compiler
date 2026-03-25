@@ -1,0 +1,6 @@
+@node start
+    @random
+    @case $luck + 5: Lucky!
+    @case 2: Unlucky.
+    @endrandom
+@endnode

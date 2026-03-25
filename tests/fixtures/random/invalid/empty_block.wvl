@@ -1,0 +1,4 @@
+@node start
+    @random
+    @endrandom
+@endnode
