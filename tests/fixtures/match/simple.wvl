@@ -1,0 +1,5 @@
+@node start
+    @match
+        @when $flag -> end
+    @endmatch
+@endnode

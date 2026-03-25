@@ -143,6 +143,23 @@ class WvlTransformer(Transformer):
         return {"condition": condition, "weight": weight, "body": body}
 
     # =====================
+    # Match Block
+    # =====================
+
+    def match_block(self, modifier, *cases) -> dict[str, Any]:
+        if modifier is None:
+            modifier = "first"
+        return {"type": "match", "modifier": modifier, "cases": list(cases)}
+    
+    def MATCH_MODIFIER(self, token: Any) -> str:
+        return str(token).lstrip()
+
+    def when(self, condition: Any, body: list) -> dict[str, Any]:
+        if not isinstance(body, list):
+            body = [body]
+        return {"condition": condition, "body": body}
+
+    # =====================
     # Expressions
     # =====================
 
