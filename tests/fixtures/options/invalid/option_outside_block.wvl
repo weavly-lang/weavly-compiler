@@ -1,0 +1,3 @@
+@node start
+    @option "Go" -> end
+@endnode

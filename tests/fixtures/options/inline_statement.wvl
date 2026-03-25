@@ -1,0 +1,6 @@
+@node start
+    @options
+        @option "Look around": You see nothing of interest.
+        @option "Leave" -> exit
+    @endoptions
+@endnode

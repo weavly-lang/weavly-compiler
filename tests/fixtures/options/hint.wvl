@@ -1,0 +1,10 @@
+@node start
+    @options
+        @hint "You cannot go there yet"
+        @option "Continue" -> end
+    @endoptions
+@endnode
+
+@node end
+    @finish
+@endnode

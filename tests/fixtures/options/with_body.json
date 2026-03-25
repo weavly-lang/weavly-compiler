@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "option", "items": [{"condition": true, "text": "Search", "body": [{"type": "narration", "text": "You find nothing."}, {"type": "goto", "id": "end"}], "hint": false}, {"condition": true, "text": "Leave", "body": [{"type": "goto", "id": "end"}], "hint": false}]}]}, {"id": "end", "body": [{"type": "finish"}]}]}

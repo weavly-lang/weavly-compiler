@@ -1,0 +1,9 @@
+# pick a direction
+@node start
+    @options
+        # go somewhere
+        @option "Go left" -> left
+        # second option
+        @option "Go right" -> right
+    @endoptions
+@endnode

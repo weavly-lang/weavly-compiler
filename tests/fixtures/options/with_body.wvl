@@ -1,0 +1,13 @@
+@node start
+    @options
+        @option "Search"
+            You find nothing.
+            @goto end
+        @option "Leave"
+            @goto end
+    @endoptions
+@endnode
+
+@node end
+    @finish
+@endnode

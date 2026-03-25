@@ -1,0 +1,6 @@
+@node start
+    @options
+        @option [$has_key] "Use key" -> door
+        @option "Leave" -> exit
+    @endoptions
+@endnode

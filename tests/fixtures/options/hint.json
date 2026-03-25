@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "option", "items": [{"condition": true, "text": "You cannot go there yet", "body": [], "hint": true}, {"condition": true, "text": "Continue", "body": [{"type": "goto", "id": "end"}], "hint": false}]}]}, {"id": "end", "body": [{"type": "finish"}]}]}

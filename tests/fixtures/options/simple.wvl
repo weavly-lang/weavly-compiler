@@ -1,0 +1,6 @@
+@node start
+    @options
+        @option "Go left" -> left
+        @option "Go right" -> right
+    @endoptions
+@endnode

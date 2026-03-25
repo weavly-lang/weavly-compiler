@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest tests/ -v)",
+      "Bash(pytest tests/ -v -k options)",
+      "Bash(pytest tests/ -v -k \"inline_comment\")"
+    ]
+  }
+}
