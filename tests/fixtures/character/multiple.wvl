@@ -1,0 +1,4 @@
+@node start
+    > Alice: Hello.
+    $hero: Hi there.
+@endnode
