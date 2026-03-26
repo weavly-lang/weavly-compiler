@@ -1,0 +1,5 @@
+@node start
+    @if ($a or $b) and $c
+        Yes.
+    @endif
+@endnode

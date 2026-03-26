@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "if", "cases": [{"condition": {"op": "<", "left": {"variable": "hp"}, "right": 10.0}, "body": [{"type": "narration", "text": "Low health."}]}]}]}]}

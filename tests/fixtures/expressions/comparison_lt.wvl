@@ -1,0 +1,5 @@
+@node start
+    @if $hp < 10
+        Low health.
+    @endif
+@endnode

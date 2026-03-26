@@ -1,0 +1,5 @@
+@node start
+    @if ($x + 1
+        Yes.
+    @endif
+@endnode

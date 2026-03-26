@@ -1,0 +1,5 @@
+@node start
+    @if $gold >= 5
+        Rich.
+    @endif
+@endnode
