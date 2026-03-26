@@ -1,0 +1,6 @@
+@node start
+    @options
+        @option "End it": @finish
+        @option "Continue": Keep going.
+    @endoptions
+@endnode

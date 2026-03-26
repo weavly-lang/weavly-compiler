@@ -1,0 +1,6 @@
+@node start
+    @if $done
+        @finish
+    @endif
+    Keep going.
+@endnode

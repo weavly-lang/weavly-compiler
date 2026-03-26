@@ -1,0 +1,4 @@
+@node start
+    The journey ends here.
+    @finish
+@endnode
