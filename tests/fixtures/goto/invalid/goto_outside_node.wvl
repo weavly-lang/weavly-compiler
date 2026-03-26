@@ -1,0 +1,5 @@
+@goto somewhere
+
+@node start
+    @finish
+@endnode

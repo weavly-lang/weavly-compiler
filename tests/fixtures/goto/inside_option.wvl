@@ -1,0 +1,10 @@
+@node start
+    @options
+    @option "Go to end": @goto end
+    @option "Stay": @finish
+    @endoptions
+@endnode
+
+@node end
+    @finish
+@endnode

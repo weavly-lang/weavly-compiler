@@ -1,0 +1,3 @@
+@node start
+    @goto
+@endnode
