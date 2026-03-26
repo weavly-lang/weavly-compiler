@@ -1,0 +1,3 @@
+@node start
+    @decrease $x 3
+@endnode
