@@ -1,0 +1,3 @@
+@node start
+    @setflag $found
+@endnode
