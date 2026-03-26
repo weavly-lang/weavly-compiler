@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "if", "cases": [{"condition": {"op": "or", "left": {"variable": "a"}, "right": {"variable": "b"}}, "body": [{"type": "narration", "text": "Either."}]}]}]}]}
+{"nodes": [{"id": "start", "body": [{"type": "match", "modifier": "first", "cases": [{"condition": {"op": "or", "left": {"variable": "a"}, "right": {"variable": "b"}}, "body": [{"type": "narration", "text": "Either."}]}]}]}]}

@@ -95,7 +95,7 @@ class WvlTransformer(Transformer):
             cases.extend(elif_list)
         if else_ is not None:
             cases.append(else_)
-        return {"type": "if", "cases": cases}
+        return {"type": "match", "modifier": "first", "cases": cases}
 
     def if_(self, condition: Any, body: list) -> dict[str, Any]:
         if not isinstance(body, list):
