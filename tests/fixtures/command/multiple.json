@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "command", "id": "fade_in", "text": ""}, {"type": "command", "id": "play_music", "text": "theme.ogg"}, {"type": "command", "id": "fade_out", "text": ""}]}]}

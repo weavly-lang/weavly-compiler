@@ -1,0 +1,5 @@
+@node start
+    @fade_in
+    @play_music: theme.ogg
+    @fade_out
+@endnode
