@@ -15,8 +15,17 @@ jobs:
       - run: uv run ruff check src/ tests/
       - run: uv run isort --check src/ tests/
 
-  test:
+  grammar-smoke:
     needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --group dev
+      - run: uv run pytest tests/test_grammar_smoke.py -v
+
+  test:
+    needs: grammar-smoke
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,7 +38,7 @@ jobs:
       - run: uv sync --group dev
       - run: uv run pytest
 
-  smoke:
+  cli-smoke:
     needs: test
     runs-on: ubuntu-latest
     steps:
