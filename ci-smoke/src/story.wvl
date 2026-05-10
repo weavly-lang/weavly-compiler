@@ -1,0 +1,48 @@
+@node start
+Welcome to the smoke test.
+>Guide: Let the test begin.
+@set $score = 10
+@increase $score 5
+@decrease $score 2
+@setflag $has_key
+@clearflag $has_key
+
+@if $score > 10
+    @goto choices
+@elif $score == 10
+    @goto choices
+@else
+    @goto choices
+@endif
+@endnode
+
+@node choices
+$player_name: Which path?
+
+@options
+@option "Roll the dice" -> random_node
+@option [ $has_key ] "Use key" -> end
+@endoptions
+@endnode
+
+@node random_node
+@random
+@case 1: @goto match_node
+@case 1: @goto match_node
+@endrandom
+@endnode
+
+@node match_node
+@match
+    @when $has_key
+        You have the key.
+        @goto end
+    @when not $has_key
+        No key needed.
+        @goto end
+@endmatch
+@endnode
+
+@node end
+@finish
+@endnode

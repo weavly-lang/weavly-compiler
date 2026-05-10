@@ -1,7 +1,7 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
-build/
+/build/
 dist/
 wheels/
 *.egg-info
@@ -9,8 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-# Example projects for testing
-/examples
+# Local example projects (not CI-owned)
+/examples/
 
 # Claude
 .claude/settings.local.json
