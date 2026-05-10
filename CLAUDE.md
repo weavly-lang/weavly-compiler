@@ -27,3 +27,14 @@ Fixture-based snapshots in `tests/fixtures/<feature>/<case>.wvl` + sibling `<cas
 1. Add the rule to [wvl-grammar.lark](src/weavly/resources/wvl-grammar.lark), wire into `?line_statement` or `?block_statement`
 2. Add the transformer method to `WvlTransformer` — `__default__` raises immediately if you miss one
 3. The returned dict is the JSON output shape; the GDScript runtime is the consumer
+
+## Workflow
+
+Issue-driven, squash-merged PRs. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full version. When asked to work on issue N:
+
+1. `gh issue develop N --checkout` — creates and checks out `N-<slug>` branch, links it to the issue
+2. Commit freely — intermediate commits get squashed on merge
+3. PR title = human sentence (usually the issue title); body must include `Closes #N`
+4. Squash merge produces one clean commit on `main`: `<title> (#<pr-number>)`
+
+Never commit directly to `main`. Never use the branch slug as a commit message.

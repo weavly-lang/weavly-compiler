@@ -11,3 +11,6 @@ wheels/
 
 # Example projects for testing
 /examples
+
+# Claude
+.claude/settings.local.json
