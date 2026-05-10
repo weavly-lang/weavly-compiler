@@ -38,7 +38,7 @@ jobs:
       - run: uv sync --group dev
       - run: uv run pytest
 
-  smoke:
+  cli-smoke:
     needs: test
     runs-on: ubuntu-latest
     steps:
