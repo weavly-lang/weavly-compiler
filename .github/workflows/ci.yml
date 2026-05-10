@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-      - run: uv pip install -e . --system
-      - run: weavly build
+      - run: uv sync
+      - run: uv run weavly build
         working-directory: ci-smoke
       - run: git diff --exit-code ci-smoke/build/
