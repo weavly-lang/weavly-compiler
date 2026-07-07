@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "set", "id": "hp", "expression": 10.0}, {"type": "goto", "id": "next"}]}, {"id": "next", "body": [{"type": "narration", "text": "Go to room #5."}, {"type": "finish"}]}]}

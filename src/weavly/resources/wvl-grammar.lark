@@ -198,14 +198,16 @@ _ARROW: "->"
 %import common.SIGNED_NUMBER -> NUMBER
 %import common.ESCAPED_STRING -> STRING
 %import common.WS_INLINE
-%import common.NEWLINE -> _NEWLINE
 
 // =====================
 // Ignored
 // =====================
 
-COMMENT: /#[^\n]*\n/
-WS_LINE.2: /[ \t]+\n/
+// A statement terminator is one or more physical newlines, and it absorbs any
+// trailing comments and blank lines. This lets `# ...` sit at the end of a line
+// (inline comment) or on its own line inside a block without leaving a stray
+// _NEWLINE that block rules like @options/@random/@match can't consume.
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
 %ignore COMMENT
-%ignore WS_LINE
 %ignore WS_INLINE
