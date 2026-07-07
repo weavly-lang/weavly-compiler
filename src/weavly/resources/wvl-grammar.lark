@@ -86,7 +86,7 @@ hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] STRING _NEWLINE
 // =====================
 
 random_block: _RANDOM _NEWLINE case+ _END_RANDOM _NEWLINE
-case: _CASE [_LBRACKET condition _RBRACKET] term action
+case: _CASE [_LBRACKET condition _RBRACKET] [term] action
 
 // =====================
 // Match Block

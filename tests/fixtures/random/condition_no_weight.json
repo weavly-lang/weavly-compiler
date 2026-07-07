@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "random", "cases": [{"condition": {"variable": "has_potion"}, "weight": 1.0, "body": [{"type": "narration", "text": "Drink the potion."}]}, {"condition": true, "weight": 1.0, "body": [{"type": "narration", "text": "Do nothing."}]}]}]}]}

@@ -138,6 +138,8 @@ class WvlTransformer(Transformer):
     def case(self, condition: Any | None, weight: Any, body: list) -> dict[str, Any]:
         if condition is None:
             condition = True
+        if weight is None:
+            weight = 1.0
         if not isinstance(body, list):
             body = [body]
         return {"condition": condition, "weight": weight, "body": body}
