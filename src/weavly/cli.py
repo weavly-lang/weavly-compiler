@@ -10,7 +10,15 @@ from .parsing import (
 SOURCE_DIR = Path("src")
 BUILD_DIR = Path("build")
 
-NODE_INIT_STRING = "@node first_node\nHello World!\n@endnode"
+NODE_INIT_STRING = (
+    "@env\n"
+    "name: string = \"World\"\n"
+    "@endenv\n"
+    "\n"
+    "@node first_node\n"
+    "Hello $name!\n"
+    "@endnode\n"
+)
 
 app = typer.Typer()
 

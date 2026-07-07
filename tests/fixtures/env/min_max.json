@@ -1,0 +1,1 @@
+{"nodes": [], "declarations": [{"type": "number", "name": "bounded", "value": 5.0, "min": 0.0, "max": 10.0}, {"type": "number", "name": "capped", "value": 0.0, "min": null, "max": 100.0}, {"type": "number", "name": "floored", "value": 0.0, "min": -5.0, "max": null}]}

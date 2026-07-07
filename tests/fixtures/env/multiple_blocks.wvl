@@ -1,0 +1,11 @@
+@env
+hp: number = 50
+@endenv
+
+@node start
+Fighting.
+@endnode
+
+@env
+gold: number = 0
+@endenv

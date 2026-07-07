@@ -1,0 +1,5 @@
+hp: number = 50
+
+@node start
+Hello
+@endnode

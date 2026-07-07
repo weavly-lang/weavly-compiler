@@ -1,0 +1,7 @@
+@env
+gold: number = 0
+@endenv
+
+@node start
+You have $gold gold.
+@endnode

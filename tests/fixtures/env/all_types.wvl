@@ -1,0 +1,5 @@
+@env
+hp: number(0, 100) = 50
+name: string = "Hero"
+brave: flag = true
+@endenv

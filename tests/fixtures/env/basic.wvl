@@ -1,0 +1,3 @@
+@env
+hp: number = 50
+@endenv

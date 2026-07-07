@@ -1,3 +1,5 @@
+@env
 score: number = 0
 player_name: string = "Hero"
 has_key: flag = false
+@endenv

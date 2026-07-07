@@ -4,7 +4,7 @@
 
 ```bash
 uv pip install -e .        # install in editable mode
-weavly build               # compile all src/ files to build/*.json
+weavly build               # compile src/*.wvl → per-file build/*.wvl.json (nodes) + merged build/env.json (declarations)
 weavly build --pretty      # human-readable JSON output
 weavly init [my-project]   # create a new project
 ruff check src/            # lint
@@ -26,6 +26,12 @@ Fixture-based snapshots in `tests/fixtures/<feature>/<case>.wvl` + sibling `<cas
 1. Add the rule to [wvl-grammar.lark](src/weavly/resources/wvl-grammar.lark), wire into `?line_statement` or `?block_statement`
 2. Add the transformer method to `WvlTransformer` — `__default__` raises immediately if you miss one
 3. The returned dict is the JSON output shape; the GDScript runtime is the consumer
+
+## Variable declarations (`@env`)
+
+Variables are declared in `@env ... @endenv` blocks inside `.wvl` files (sibling of `@node`). Multiple blocks are allowed per file and across the project. The build **merges every declaration project-wide into a single `build/env.json`** (`{"declarations": [...]}`); per-file `build/*.wvl.json` keeps only `{"nodes": [...]}`. Duplicate declaration names anywhere in the project are a compile error naming both source locations.
+
+Note: the `tests/fixtures/env/` snapshots capture the raw transformer output, which *includes* a `declarations` key — that key is split out into `env.json` (and stripped from per-file output) by the build pipeline. The cross-file merge and duplicate detection are covered by `tests/test_env_merge.py`, not the single-file fixture harness.
 
 ## Workflow
 
