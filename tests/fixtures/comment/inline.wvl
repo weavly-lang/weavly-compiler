@@ -1,0 +1,9 @@
+@node start
+@set $hp = 10   # reset health
+@goto next      # jump ahead
+@endnode
+
+@node next
+Go to room #5.
+@finish
+@endnode
