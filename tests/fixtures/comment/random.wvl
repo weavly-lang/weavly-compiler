@@ -1,0 +1,12 @@
+@node start
+    @random              # pick one outcome
+        # first outcome
+        @case 3 -> end   # heavy weight
+        @case 1: @goto end
+        # trailing comment before endrandom
+    @endrandom
+@endnode
+
+@node end
+    @finish
+@endnode

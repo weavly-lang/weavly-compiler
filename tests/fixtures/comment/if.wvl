@@ -1,0 +1,14 @@
+@node start
+    # decide which branch
+    @if $a: @goto end    # then branch
+    @elif $b: @goto end  # elif branch
+    @else                # else branch
+        # nested comment
+        @goto end
+    # trailing comment before endif
+    @endif
+@endnode
+
+@node end
+    @finish
+@endnode

@@ -1,0 +1,19 @@
+# file header comment
+@node start
+    # comment after node header, before body
+
+    @setflag $found      # inline after setflag
+    > Alice: Prices start at #5.
+    @continue "Next"     # inline after continue
+
+    # comment-only line, blank line above
+    @options
+        @hint "locked"   # inline after hint
+        # comment before option
+        @option "Go" -> end
+    @endoptions
+@endnode
+
+@node end
+    @finish
+@endnode

@@ -1,0 +1,3 @@
+@node start
+    @goto  # a comment is not a jump target
+@endnode

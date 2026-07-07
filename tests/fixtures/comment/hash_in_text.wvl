@@ -1,0 +1,7 @@
+@node start
+    Room #5 is locked.
+    Yes. # this looks like a comment but is narration
+    > Alice: My favorite is #1.
+    > Bob: Wait # is this a comment? No, it is dialogue.
+    $narrator: Meet at gate #3 # trailing text stays too
+@endnode

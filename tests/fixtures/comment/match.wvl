@@ -1,0 +1,12 @@
+@node start
+    @match all           # evaluate every branch
+        # first branch
+        @when $done: @goto end
+        @when $other -> end  # inline branch
+        # trailing comment before endmatch
+    @endmatch
+@endnode
+
+@node end
+    @finish
+@endnode
