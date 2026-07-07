@@ -11,10 +11,41 @@ class WvlTransformer(Transformer):
     # =====================
 
     def start(self, *children) -> dict[str, list]:
-        return {"nodes": list(children)}
+        nodes = [child for child in children if isinstance(child, dict)]
+        declarations = [
+            decl for child in children if isinstance(child, list) for decl in child
+        ]
+        result: dict[str, list] = {"nodes": nodes}
+        if declarations:
+            result["declarations"] = declarations
+        return result
 
     def node(self, node_start: str, body: list, _node_end: None) -> dict[str, Any]:
         return {"id": node_start, "body": body}
+
+    # =====================
+    # Env Block
+    # =====================
+
+    def env_block(self, *declarations) -> list:
+        return list(declarations)
+
+    def string_declaration(self, name: str, value: str | None = None) -> dict[str, str]:
+        if value is None:
+            value = ""
+        return {"type": "string", "name": name, "value": str(value)}
+
+    def number_declaration(
+        self, name: str, min=None, max=None, value: float | None = None
+    ) -> dict[str, Any]:
+        if value is None:
+            value = 0.0
+        return {"type": "number", "name": name, "value": float(value), "min": min, "max": max}
+
+    def flag_declaration(self, name: str, value: bool | None = None) -> dict[str, Any]:
+        if value is None:
+            value = False
+        return {"type": "flag", "name": name, "value": bool(value)}
 
     def node_start(self, id: str) -> str:
         return id

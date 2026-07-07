@@ -1,0 +1,5 @@
+@env
+# player health
+hp: number = 50
+name: string = "Hero"  # display name
+@endenv

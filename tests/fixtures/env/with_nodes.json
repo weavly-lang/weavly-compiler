@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "body": [{"type": "narration", "text": "You have $gold gold."}]}], "declarations": [{"type": "number", "name": "gold", "value": 0.0, "min": null, "max": null}]}

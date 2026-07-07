@@ -4,10 +4,9 @@ from importlib import resources
 from pathlib import Path
 
 import typer
-from lark import Lark, Transformer
+from lark import Lark, Transformer, Tree
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 
-from .wenvl_transformer import WenvlTransformer
 from .wvl_transformer import WvlTransformer
 
 PARSER_TYPE = "lalr"
@@ -16,70 +15,86 @@ ENCODING = "utf-8"
 WVL_SOURCE_EXTENSION = ".wvl"
 WVL_BUILD_EXTENSION = ".wvl.json"
 WVL_GRAMMAR_FILE = "wvl-grammar.lark"
-WENVL_SOURCE_EXTENSION = ".wenvl"
-WENVL_BUILD_EXTENSION = ".wenvl.json"
-WENVL_GRAMMAR_FILE = "wenvl-grammar.lark"
+ENV_BUILD_FILE = "env.json"
+
+_DECLARATION_RULES = frozenset(
+    {"number_declaration", "string_declaration", "flag_declaration"}
+)
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     if build_dir.exists():
         shutil.rmtree(build_dir)
-    
-    _build_files_with_extension(
-        src_dir, 
-        build_dir, 
-        pretty, 
-        WVL_SOURCE_EXTENSION, 
-        WVL_BUILD_EXTENSION,
-        WVL_GRAMMAR_FILE, 
-        WvlTransformer()
-    )
 
-    _build_files_with_extension(
-        src_dir, 
-        build_dir, 
-        pretty, 
-        WENVL_SOURCE_EXTENSION, 
-        WENVL_BUILD_EXTENSION,
-        WENVL_GRAMMAR_FILE, 
-        WenvlTransformer()
-    )
-
-
-def _build_files_with_extension(
-    src_dir: Path, 
-    build_dir: Path, 
-    pretty: bool, 
-    source_extension: str,
-    build_extension: str,
-    grammar_file: str, 
-    transformer: Transformer
-) -> None:
-    grammar = _load_grammar(grammar_file)
+    grammar = _load_grammar(WVL_GRAMMAR_FILE)
     parser = _build_parser(grammar, PARSER_TYPE)
+    transformer = WvlTransformer()
 
-    for file in src_dir.rglob(f"*{source_extension}"):
+    declarations: list[dict] = []
+    # name -> (file, line) of the first declaration seen with that name.
+    seen: dict[str, tuple[Path, int]] = {}
+    duplicates: list[str] = []
+
+    for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
         if not file.is_file():
             continue
 
         relative_path = file.relative_to(src_dir)
-        out_file = (build_dir / relative_path).with_suffix(f"{build_extension}")
+        out_file = (build_dir / relative_path).with_suffix(WVL_BUILD_EXTENSION)
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
         text = file.read_text(encoding=ENCODING)
 
         try:
-            data = _parse(parser, text, transformer)
+            tree = parser.parse(text)
         except UnexpectedInput as e:
             _format_parse_error(e, file)
             raise typer.Exit(code=1)
 
-        if pretty:
-            out_file.write_text(json.dumps(data, indent=2), encoding=ENCODING)
-        else:
-            out_file.write_text(
-                json.dumps(data, separators=(",", ":")), encoding=ENCODING
-            )
+        # Collect declaration source locations from the raw tree (tokens carry
+        # line numbers) before the transform discards them.
+        for name, line in _declaration_locations(tree):
+            if name in seen:
+                prev_file, prev_line = seen[name]
+                duplicates.append(
+                    f"  '{name}' declared at {prev_file}:{prev_line} "
+                    f"and again at {file}:{line}"
+                )
+            else:
+                seen[name] = (file, line)
+
+        data = transformer.transform(tree)
+        declarations.extend(data.get("declarations", []))
+
+        _write_json({"nodes": data["nodes"]}, out_file, pretty)
+
+    if duplicates:
+        typer.secho(
+            "Duplicate variable declarations:", fg=typer.colors.RED, bold=True, err=True
+        )
+        for line in duplicates:
+            typer.secho(line, fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+
+    _write_json({"declarations": declarations}, build_dir / ENV_BUILD_FILE, pretty)
+
+
+def _declaration_locations(tree: Tree) -> list[tuple[str, int]]:
+    """Yield (name, line) for every declaration in the parse tree, in source order."""
+    locations = []
+    for subtree in tree.iter_subtrees_topdown():
+        if subtree.data in _DECLARATION_RULES:
+            name_token = subtree.children[0]
+            locations.append((str(name_token), name_token.line))
+    return locations
+
+
+def _write_json(data: dict, out_file: Path, pretty: bool) -> None:
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    if pretty:
+        out_file.write_text(json.dumps(data, indent=2), encoding=ENCODING)
+    else:
+        out_file.write_text(json.dumps(data, separators=(",", ":")), encoding=ENCODING)
 
 
 def _load_grammar(grammar_file: str) -> str:

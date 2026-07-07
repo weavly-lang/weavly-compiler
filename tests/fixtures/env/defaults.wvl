@@ -1,0 +1,5 @@
+@env
+hp: number
+name: string
+brave: flag
+@endenv
