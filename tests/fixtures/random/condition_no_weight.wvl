@@ -1,0 +1,6 @@
+@node start
+    @random
+    @case [$has_potion]: Drink the potion.
+    @case: Do nothing.
+    @endrandom
+@endnode
