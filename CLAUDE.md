@@ -6,7 +6,6 @@
 uv pip install -e .        # install in editable mode
 weavly build               # compile all src/ files to build/*.json
 weavly build --pretty      # human-readable JSON output
-weavly watch               # watch src/ and rebuild on save
 weavly init [my-project]   # create a new project
 ruff check src/            # lint
 isort --check src/         # import order check
