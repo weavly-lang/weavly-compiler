@@ -7,8 +7,8 @@ uv pip install -e .        # install in editable mode
 weavly build               # compile src/*.wvl → per-file build/*.wvl.json (nodes) + merged build/env.json (declarations)
 weavly build --pretty      # human-readable JSON output
 weavly init [my-project]   # create a new project
-ruff check src/            # lint
-isort --check src/         # import order check
+ruff check src/ tests/     # lint
+isort --check src/ tests/  # import order check
 pytest                     # run tests
 ```
 
