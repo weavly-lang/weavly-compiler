@@ -38,14 +38,12 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         )
         raise typer.Exit(code=1)
 
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
-
     grammar = _load_grammar(WVL_GRAMMAR_FILE)
     parser = _build_parser(grammar, PARSER_TYPE)
     transformer = WvlTransformer()
 
     declarations: list[dict] = []
+    outputs: list[tuple[Path, dict]] = []
     # name -> (file, line) of the first declaration seen with that name.
     seen: dict[str, tuple[Path, int]] = {}
     duplicates: list[str] = []
@@ -56,7 +54,6 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
 
         relative_path = file.relative_to(src_dir)
         out_file = (build_dir / relative_path).with_suffix(WVL_BUILD_EXTENSION)
-        out_file.parent.mkdir(parents=True, exist_ok=True)
 
         text = file.read_text(encoding=ENCODING)
 
@@ -87,7 +84,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             raise typer.Exit(code=1)
         declarations.extend(data.get("declarations", []))
 
-        _write_json({"nodes": data["nodes"]}, out_file, pretty)
+        outputs.append((out_file, {"nodes": data["nodes"]}))
 
     if duplicates:
         typer.secho(
@@ -97,6 +94,11 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             typer.secho(line, fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
 
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
+
+    for out_file, data in outputs:
+        _write_json(data, out_file, pretty)
     _write_json({"declarations": declarations}, build_dir / ENV_BUILD_FILE, pretty)
 
 

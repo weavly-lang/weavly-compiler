@@ -78,3 +78,25 @@ def test_missing_src_dir_does_not_create_build(tmp_path):
         build_all_files(tmp_path / "src", tmp_path / "build", pretty=False)
 
     assert not (tmp_path / "build").exists()
+
+
+@pytest.mark.parametrize(
+    "bad_source",
+    [
+        "@node b\n@endif\n@endnode\n",
+        '@env\npath: string = "C:\\games"\n@endenv\n',
+        "@env\nhp: number = 10\n@endenv\n",
+    ],
+    ids=["parse_error", "invalid_string", "duplicate_declaration"],
+)
+def test_failed_build_keeps_previous_build(tmp_path, bad_source):
+    src = tmp_path / "src"
+    build = tmp_path / "build"
+    _write(src / "a.wvl", "@env\nhp: number = 50\n@endenv\n\n@node a\nHi.\n@endnode\n")
+    _write(build / "old.wvl.json", '{"nodes": []}')
+    _write(src / "b.wvl", bad_source)
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, build, pretty=False)
+
+    assert sorted(p.name for p in build.iterdir()) == ["old.wvl.json"]
