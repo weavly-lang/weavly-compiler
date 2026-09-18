@@ -25,6 +25,8 @@ ENV_BUILD_FILE = "env.json"
 _DECLARATION_RULES = frozenset(
     {"number_declaration", "string_declaration", "flag_declaration"}
 )
+_NODE_RULES = frozenset({"node_start"})
+_GOTO_RULES = frozenset({"goto", "inline_goto"})
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
@@ -45,8 +47,11 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     declarations: list[dict] = []
     outputs: list[tuple[Path, dict]] = []
     # name -> (file, line) of the first declaration seen with that name.
-    seen: dict[str, tuple[Path, int]] = {}
-    duplicates: list[str] = []
+    declared: dict[str, tuple[Path, int]] = {}
+    duplicate_declarations: list[str] = []
+    node_ids: dict[str, tuple[Path, int]] = {}
+    duplicate_nodes: list[str] = []
+    gotos: list[tuple[str, Path, int]] = []
 
     for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
         if not file.is_file():
@@ -65,15 +70,13 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
 
         # Collect declaration source locations from the raw tree (tokens carry
         # line numbers) before the transform discards them.
-        for name, line in _declaration_locations(tree):
-            if name in seen:
-                prev_file, prev_line = seen[name]
-                duplicates.append(
-                    f"  '{name}' declared at {prev_file}:{prev_line} "
-                    f"and again at {file}:{line}"
-                )
-            else:
-                seen[name] = (file, line)
+        _record_unique(
+            _id_locations(tree, _DECLARATION_RULES), file, declared, duplicate_declarations
+        )
+        _record_unique(_id_locations(tree, _NODE_RULES), file, node_ids, duplicate_nodes)
+        gotos.extend(
+            (target, file, line) for target, line in _id_locations(tree, _GOTO_RULES)
+        )
 
         try:
             data = transformer.transform(tree)
@@ -86,12 +89,24 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
 
         outputs.append((out_file, {"nodes": data["nodes"]}))
 
-    if duplicates:
-        typer.secho(
-            "Duplicate variable declarations:", fg=typer.colors.RED, bold=True, err=True
-        )
-        for line in duplicates:
-            typer.secho(line, fg=typer.colors.RED, err=True)
+    unresolved_gotos = [
+        f"  '{target}' at {file}:{line}"
+        for target, file, line in gotos
+        if target not in node_ids
+    ]
+
+    errors = {
+        "Duplicate variable declarations:": duplicate_declarations,
+        "Duplicate node ids:": duplicate_nodes,
+        "Goto targets with no matching node:": unresolved_gotos,
+    }
+    if any(errors.values()):
+        for header, lines in errors.items():
+            if not lines:
+                continue
+            typer.secho(header, fg=typer.colors.RED, bold=True, err=True)
+            for line in lines:
+                typer.secho(line, fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
 
     if build_dir.exists():
@@ -102,14 +117,31 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     _write_json({"declarations": declarations}, build_dir / ENV_BUILD_FILE, pretty)
 
 
-def _declaration_locations(tree: Tree) -> list[tuple[str, int]]:
-    """Yield (name, line) for every declaration in the parse tree, in source order."""
+def _id_locations(tree: Tree, rules: frozenset[str]) -> list[tuple[str, int]]:
+    """Return (id, line) for the leading ID of every matching rule, in source order."""
     locations = []
     for subtree in tree.iter_subtrees_topdown():
-        if subtree.data in _DECLARATION_RULES:
-            name_token = subtree.children[0]
-            locations.append((str(name_token), name_token.line))
+        if subtree.data in rules:
+            id_token = subtree.children[0]
+            locations.append((str(id_token), id_token.line))
     return locations
+
+
+def _record_unique(
+    locations: list[tuple[str, int]],
+    file: Path,
+    seen: dict[str, tuple[Path, int]],
+    duplicates: list[str],
+) -> None:
+    for name, line in locations:
+        if name in seen:
+            prev_file, prev_line = seen[name]
+            duplicates.append(
+                f"  '{name}' declared at {prev_file}:{prev_line} "
+                f"and again at {file}:{line}"
+            )
+        else:
+            seen[name] = (file, line)
 
 
 def _write_json(data: dict, out_file: Path, pretty: bool) -> None:

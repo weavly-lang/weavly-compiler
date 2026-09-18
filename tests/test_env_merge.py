@@ -100,3 +100,50 @@ def test_failed_build_keeps_previous_build(tmp_path, bad_source):
         build_all_files(src, build, pretty=False)
 
     assert sorted(p.name for p in build.iterdir()) == ["old.wvl.json"]
+
+
+def test_duplicate_node_id_across_files_is_an_error(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@node intro\nHi.\n@endnode\n")
+    _write(src / "b.wvl", "\n@node intro\nHello.\n@endnode\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    err = capsys.readouterr().err
+    assert "Duplicate node ids" in err
+    assert "a.wvl:1" in err
+    assert "b.wvl:2" in err
+
+
+def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@node start\n@goto missing\n@continue \"Go\" -> nowhere\n@goto finale\n@endnode\n",
+    )
+    _write(src / "b.wvl", "@node finale\nThe end.\n@endnode\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    err = capsys.readouterr().err
+    assert "'missing' at" in err and "a.wvl:2" in err
+    assert "'nowhere' at" in err and "a.wvl:3" in err
+    assert "finale" not in err
+
+
+def test_all_validation_errors_are_reported_together(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@env\nhp: number\n@endenv\n\n@node a\n@goto gone\n@endnode\n")
+    _write(src / "b.wvl", "@env\nhp: number\n@endenv\n\n@node a\nHi.\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    err = capsys.readouterr().err
+    assert "Duplicate variable declarations" in err
+    assert "Duplicate node ids" in err
+    assert "Goto targets with no matching node" in err
