@@ -59,3 +59,22 @@ def test_duplicate_declaration_across_files_is_an_error(tmp_path, capsys):
     # Both locations are named.
     assert "a.wvl" in err
     assert "b.wvl" in err
+
+
+def test_missing_src_dir_is_an_error_and_keeps_build(tmp_path, capsys):
+    build = tmp_path / "build"
+    _write(build / "old.wvl.json", '{"nodes": []}')
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(tmp_path / "src", build, pretty=False)
+
+    assert exc.value.exit_code == 1
+    assert "weavly init" in capsys.readouterr().err
+    assert (build / "old.wvl.json").exists()
+
+
+def test_missing_src_dir_does_not_create_build(tmp_path):
+    with pytest.raises(typer.Exit):
+        build_all_files(tmp_path / "src", tmp_path / "build", pretty=False)
+
+    assert not (tmp_path / "build").exists()
