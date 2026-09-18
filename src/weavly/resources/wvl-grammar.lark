@@ -165,7 +165,6 @@ variable: _VARIABLEMARKER ID
 
 TEXT: /(?![ \t]*[@#$>])[ \t]*\S[^\n]*/
 CHARACTER_NAME: /[A-Za-z0-9][A-Za-z0-9 ]*/
-OPTION_TEXT: /[^\n\[\]]+/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
 TRUE: "true"
 FALSE: "false"
