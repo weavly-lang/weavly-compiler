@@ -35,7 +35,7 @@ gh pr create --title "<human-readable sentence>" --body "Closes #<number>"
 - **Title** is a real sentence — usually identical to the issue title. It becomes the squash commit message on `main`.
 - **Body** must include `Closes #<number>` so the issue auto-closes when the PR merges.
 
-### 4. Squash merge
+### 5. Squash merge
 
 Use **Squash and merge** in the GitHub UI. The result on `main` looks like:
 
