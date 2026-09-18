@@ -6,8 +6,6 @@ from lark.visitors import Discard
 
 
 class InvalidStringError(ValueError):
-    """A string literal that lexes as a STRING but is not valid JSON string syntax."""
-
     def __init__(self, token: Any, reason: str) -> None:
         super().__init__(reason)
         self.token = token
@@ -227,6 +225,14 @@ class WvlTransformer(Transformer):
     def sub(self, left: Any, right: Any) -> dict[str, Any]:
         return {"op": "-", "left": left, "right": right}
 
+    def negative_number(self, number: float) -> float:
+        return -number
+
+    def neg(self, operand: Any) -> Any:
+        if isinstance(operand, float):
+            return -operand
+        return {"op": "-", "left": 0.0, "right": operand}
+
     def mul(self, left: Any, right: Any) -> dict[str, Any]:
         return {"op": "*", "left": left, "right": right}
 
@@ -265,8 +271,6 @@ class WvlTransformer(Transformer):
         return float(token)
 
     def STRING(self, token: Any) -> str:
-        # ESCAPED_STRING is JSON string syntax: json.loads removes exactly the
-        # delimiting quotes and decodes escapes. strict=False keeps raw tabs legal.
         try:
             return json.loads(str(token), strict=False)
         except json.JSONDecodeError as e:

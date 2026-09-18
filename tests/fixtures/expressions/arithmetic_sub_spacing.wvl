@@ -1,0 +1,6 @@
+@node start
+    @set $x = $a-1
+    @set $x = $a -1
+    @set $x = $a - 1
+    @set $x = 1-2
+@endnode

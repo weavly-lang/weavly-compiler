@@ -14,7 +14,7 @@ env_block: _NEWLINE* _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | string_declaration
     | flag_declaration
 
-number_declaration: ID _COLON _NUMBER_TYPE ["(" [NUMBER] "," [NUMBER] ")"] ["=" NUMBER] _NEWLINE
+number_declaration: ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
 string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
 flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
 ?bool_literal: TRUE
@@ -65,8 +65,8 @@ character_line: variable _COLON TEXT _NEWLINE
 blank_line: _NEWLINE
 
 set: _SET variable "=" expression _NEWLINE
-increase: _INC variable [NUMBER] _NEWLINE
-decrease: _DEC variable [NUMBER] _NEWLINE
+increase: _INC variable [signed_number] _NEWLINE
+decrease: _DEC variable [signed_number] _NEWLINE
 setflag: _SETFLAG variable _NEWLINE
 clearflag: _CLEARFLAG variable _NEWLINE
 
@@ -137,15 +137,22 @@ condition: expression
     | sum "+" product -> add
     | sum "-" product -> sub
 
-?product: atom
-    | product "*" atom -> mul
-    | product "/" atom -> div
+?product: unary
+    | product "*" unary -> mul
+    | product "/" unary -> div
+
+?unary: atom
+    | "-" unary -> neg
 
 ?atom: literal
     | variable
     | "(" expression ")"
 
 variable: _VARIABLEMARKER ID
+
+?signed_number: NUMBER
+    | "-" NUMBER -> negative_number
+    | "+" NUMBER
 
 ?literal: NUMBER
     | STRING
@@ -217,7 +224,7 @@ _ARROW: "->"
 // =====================
 
 %import common.CNAME -> ID
-%import common.SIGNED_NUMBER -> NUMBER
+%import common.NUMBER
 %import common.ESCAPED_STRING -> STRING
 %import common.WS_INLINE
 
