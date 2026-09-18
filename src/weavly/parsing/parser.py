@@ -5,9 +5,14 @@ from pathlib import Path
 
 import typer
 from lark import Lark, Transformer, Tree
-from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
+from lark.exceptions import (
+    UnexpectedCharacters,
+    UnexpectedInput,
+    UnexpectedToken,
+    VisitError,
+)
 
-from .wvl_transformer import WvlTransformer
+from .wvl_transformer import InvalidStringError, WvlTransformer
 
 PARSER_TYPE = "lalr"
 ENCODING = "utf-8"
@@ -63,7 +68,13 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             else:
                 seen[name] = (file, line)
 
-        data = transformer.transform(tree)
+        try:
+            data = transformer.transform(tree)
+        except VisitError as e:
+            if not isinstance(e.orig_exc, InvalidStringError):
+                raise
+            _format_string_error(e.orig_exc, file)
+            raise typer.Exit(code=1)
         declarations.extend(data.get("declarations", []))
 
         _write_json({"nodes": data["nodes"]}, out_file, pretty)
@@ -114,6 +125,19 @@ def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
     tree = parser.parse(text)
     data = transformer.transform(tree)
     return data
+
+
+def _format_string_error(error: InvalidStringError, file: Path) -> None:
+    """Report a string literal whose escapes cannot be decoded."""
+    token = error.token
+    typer.secho(
+        f"Invalid string in file: {file}, Line {token.line}, Column {token.column}",
+        fg=typer.colors.RED,
+        bold=True,
+        err=True,
+    )
+    typer.secho(f"  {token.value}", fg=typer.colors.MAGENTA, err=True)
+    typer.secho(f"  {error.reason}", fg=typer.colors.RED, err=True)
 
 
 def _format_parse_error(error: UnexpectedInput, file: Path) -> None:

@@ -1,7 +1,17 @@
+import json
 from typing import Any
 
 from lark import Transformer, v_args
 from lark.visitors import Discard
+
+
+class InvalidStringError(ValueError):
+    """A string literal that lexes as a STRING but is not valid JSON string syntax."""
+
+    def __init__(self, token: Any, reason: str) -> None:
+        super().__init__(reason)
+        self.token = token
+        self.reason = reason
 
 
 @v_args(inline=True)
@@ -255,7 +265,12 @@ class WvlTransformer(Transformer):
         return float(token)
 
     def STRING(self, token: Any) -> str:
-        return str(token).strip('"')
+        # ESCAPED_STRING is JSON string syntax: json.loads removes exactly the
+        # delimiting quotes and decodes escapes. strict=False keeps raw tabs legal.
+        try:
+            return json.loads(str(token), strict=False)
+        except json.JSONDecodeError as e:
+            raise InvalidStringError(token, e.msg) from e
 
     # =====================
     # Default for debugging
