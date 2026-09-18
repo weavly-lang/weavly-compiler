@@ -1,0 +1,4 @@
+@node start
+    @increase $x -5
+    @decrease $y -2
+@endnode
