@@ -9,8 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Local example projects (not CI-owned)
-/examples/
-
 # Claude
 .claude/settings.local.json

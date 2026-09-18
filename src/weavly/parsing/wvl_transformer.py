@@ -252,9 +252,6 @@ class WvlTransformer(Transformer):
     def CHARACTER_NAME(self, token: Any) -> str:
         return str(token).lstrip()
 
-    def OPTIONTEXT(self, token: Any) -> str:
-        return str(token).lstrip()
-
     def COMP_OP(self, token: Any) -> str:
         return str(token)
 

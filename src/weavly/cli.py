@@ -40,6 +40,9 @@ def init(name: str = typer.Argument(None)):
         base = Path.cwd()
 
     src: Path = base / "src"
+    if src.exists():
+        typer.echo(f"Directory '{src}' already exists")
+        raise typer.Exit(code=1)
     src.mkdir()
     (src / f"nodes{WVL_SOURCE_EXTENSION}").write_text(
         NODE_INIT_STRING, encoding="utf-8"
