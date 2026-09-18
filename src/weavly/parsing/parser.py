@@ -142,7 +142,7 @@ def _format_string_error(error: InvalidStringError, file: Path) -> None:
 
 def _format_parse_error(error: UnexpectedInput, file: Path) -> None:
     """Format and display a concise parse error message."""
-    typer.echo()
+    typer.echo(err=True)
     typer.secho(
         f"Syntax Error in file: {file}, Line {error.line}, Column {error.column}",
         fg=typer.colors.RED,
@@ -171,9 +171,12 @@ def _format_parse_error(error: UnexpectedInput, file: Path) -> None:
     typer.echo("", err=True)
 
     # Show what was expected
-    if error.expected:
+    expected_terminals = getattr(error, "expected", None) or getattr(
+        error, "allowed", None
+    )
+    if expected_terminals:
         typer.secho("  Expected one of:", fg=typer.colors.CYAN, err=True)
-        for expected in sorted(error.expected):
+        for expected in sorted(expected_terminals):
             typer.secho(f"    * {expected}", fg=typer.colors.GREEN, err=True)
         typer.echo("", err=True)
 
