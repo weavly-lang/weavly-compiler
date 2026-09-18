@@ -1,0 +1,1 @@
+{"nodes": [], "declarations": [{"type": "string", "name": "newline", "value": "a\nb"}, {"type": "string", "name": "backslash", "value": "C:\\games"}, {"type": "string", "name": "tab", "value": "a\tb"}, {"type": "string", "name": "unicode", "value": "caf\u00e9"}]}

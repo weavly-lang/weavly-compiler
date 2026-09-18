@@ -1,0 +1,11 @@
+@env
+greeting: string = "say \"hi\""
+trailing: string = "say \""
+@endenv
+
+@node start
+    @options
+        @option "Ask \"why?\"" -> start
+    @endoptions
+    @continue "\"Onward\""
+@endnode

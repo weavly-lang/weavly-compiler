@@ -1,0 +1,5 @@
+@node start
+    @if $name == "Bob \"the\" Brave"
+        Hello.
+    @endif
+@endnode

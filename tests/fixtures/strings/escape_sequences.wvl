@@ -1,0 +1,6 @@
+@env
+newline: string = "a\nb"
+backslash: string = "C:\\games"
+tab: string = "a\tb"
+unicode: string = "caf\u00e9"
+@endenv
