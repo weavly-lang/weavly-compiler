@@ -28,6 +28,16 @@ _DECLARATION_RULES = frozenset(
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
+    if not src_dir.is_dir():
+        typer.secho(
+            f"No '{src_dir}' directory found. Run 'weavly init' to create a project "
+            "or run the build from the project root.",
+            fg=typer.colors.RED,
+            bold=True,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
