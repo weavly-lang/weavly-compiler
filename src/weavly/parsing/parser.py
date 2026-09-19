@@ -4,7 +4,7 @@ from importlib import resources
 from pathlib import Path
 
 import typer
-from lark import Lark, Transformer, Tree
+from lark import Lark, Token, Transformer, Tree
 from lark.exceptions import UnexpectedInput, VisitError
 
 from ..reporting import report_error
@@ -93,6 +93,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             _id_locations(tree, _NODE_RULES, file), node_ids, "node id", validation_errors
         )
         gotos.extend(_id_locations(tree, _GOTO_RULES, file))
+        validation_errors.extend(_number_range_errors(tree, file))
         declarations.extend(data.get("declarations", []))
 
         outputs.append((out_file, {"nodes": data["nodes"]}))
@@ -168,6 +169,41 @@ def _record_unique(
             )
         else:
             seen[name] = location
+
+
+def _number_range_errors(tree: Tree, file: Path) -> list[tuple[Location, str]]:
+    errors = []
+    for declaration in tree.find_data("number_declaration"):
+        name_token, *numbers = declaration.children
+        minimum, maximum, value = (_number(child) for child in numbers)
+        location = (file, name_token.line, name_token.column)
+        name = str(name_token)
+
+        if minimum is not None and maximum is not None and minimum > maximum:
+            errors.append(
+                (location, f"number '{name}' has min {minimum:g} greater than max {maximum:g}")
+            )
+            continue
+
+        default = f"default {value:g}" if value is not None else "implicit default 0"
+        value = value or 0.0
+        if minimum is not None and value < minimum:
+            errors.append(
+                (location, f"number '{name}' has {default} below its min {minimum:g}")
+            )
+        elif maximum is not None and value > maximum:
+            errors.append(
+                (location, f"number '{name}' has {default} above its max {maximum:g}")
+            )
+    return errors
+
+
+def _number(child: Tree | Token | None) -> float | None:
+    if child is None:
+        return None
+    if isinstance(child, Tree):
+        return -float(child.children[0])
+    return float(child)
 
 
 def _write_json(data: dict, out_file: Path, pretty: bool) -> None:

@@ -146,3 +146,44 @@ def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     assert "duplicate variable 'hp'" in err
     assert "duplicate node id 'a'" in err
     assert "goto target 'gone'" in err
+
+
+@pytest.mark.parametrize(
+    "declaration, message",
+    [
+        ("a: number(10, 0) = 5", "number 'a' has min 10 greater than max 0"),
+        ("a: number(0, 10) = 50", "number 'a' has default 50 above its max 10"),
+        ("a: number(5, ) = 0", "number 'a' has default 0 below its min 5"),
+        ("a: number(5, )", "number 'a' has implicit default 0 below its min 5"),
+        ("a: number(-3, -1) = -4", "number 'a' has default -4 below its min -3"),
+    ],
+    ids=["min_above_max", "above_max", "below_min", "implicit_below_min", "negative"],
+)
+def test_invalid_number_range_is_an_error(tmp_path, capsys, declaration, message):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", f"@env\n{declaration}\n@endenv\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    assert f"a.wvl:2:1: error: {message}" in capsys.readouterr().err
+
+
+def test_valid_number_ranges_build(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "a: number\n"
+        "b: number(0, 1) = 1\n"
+        "c: number(-5, 5) = -2.5\n"
+        "d: number(, 100)\n"
+        "e: number(-10, )\n"
+        "f: number(3, 3) = 3\n"
+        "@endenv\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert (tmp_path / "build" / "env.json").exists()
