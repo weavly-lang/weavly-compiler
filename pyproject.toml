@@ -26,9 +26,9 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/weavly-lang/compiler"
+Repository = "https://github.com/weavly-lang/weavly-compiler"
 Documentation = "https://weavly-lang.github.io/weavly-docs/"
-Issues = "https://github.com/weavly-lang/compiler/issues"
+Issues = "https://github.com/weavly-lang/weavly-compiler/issues"
 
 [project.scripts]
 weavly = "weavly.cli:app"

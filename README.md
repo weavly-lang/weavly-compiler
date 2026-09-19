@@ -9,8 +9,8 @@ Language documentation: https://weavly-lang.github.io/weavly-docs/
 Requires Python 3.11+.
 
 ```bash
-git clone https://github.com/weavly-lang/compiler.git
-cd compiler
+git clone https://github.com/weavly-lang/weavly-compiler.git
+cd weavly-compiler
 uv pip install -e .
 ```
 
