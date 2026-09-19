@@ -44,7 +44,7 @@ def test_errors_in_every_file_are_reported(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "b.wvl:2:1: error: syntax error" in err
+    assert "b.wvl:2:1: error: unexpected '@endif'" in err
     assert "c.wvl:2:16: error: invalid string" in err
     assert "d.wvl:2: error: invalid encoding" in err
     assert not (tmp_path / "build").exists()

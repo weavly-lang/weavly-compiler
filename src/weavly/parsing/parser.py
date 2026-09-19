@@ -5,14 +5,10 @@ from pathlib import Path
 
 import typer
 from lark import Lark, Transformer, Tree
-from lark.exceptions import (
-    UnexpectedCharacters,
-    UnexpectedInput,
-    UnexpectedToken,
-    VisitError,
-)
+from lark.exceptions import UnexpectedInput, VisitError
 
 from ..reporting import report_error
+from .syntax_errors import describe_syntax_error, terminal_names
 from .wvl_transformer import InvalidStringError, WvlTransformer
 
 PARSER_TYPE = "lalr"
@@ -43,6 +39,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
 
     grammar = _load_grammar(WVL_GRAMMAR_FILE)
     parser = _build_parser(grammar, PARSER_TYPE)
+    names = terminal_names(parser)
     transformer = WvlTransformer()
 
     declarations: list[dict] = []
@@ -71,7 +68,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         try:
             tree = parser.parse(text)
         except UnexpectedInput as e:
-            _report_parse_error(e, file)
+            _report_parse_error(e, file, text, names)
             failed = True
             continue
 
@@ -212,17 +209,8 @@ def _report_string_error(error: InvalidStringError, file: Path) -> None:
     )
 
 
-def _report_parse_error(error: UnexpectedInput, file: Path) -> None:
-    if isinstance(error, UnexpectedToken):
-        message = f"syntax error, unexpected token {error.token.type} {error.token.value!r}"
-    elif isinstance(error, UnexpectedCharacters):
-        message = f"syntax error, unexpected character {error.char!r}"
-    else:
-        message = "syntax error"
-
-    expected = getattr(error, "expected", None) or getattr(error, "allowed", None)
-    details = []
-    if expected:
-        details = ["expected one of:", *(f"  {name}" for name in sorted(expected))]
-
+def _report_parse_error(
+    error: UnexpectedInput, file: Path, text: str, names: dict[str, str]
+) -> None:
+    message, details = describe_syntax_error(error, text, names)
     report_error(message, file, error.line, error.column, details)
