@@ -30,7 +30,7 @@ The build writes:
 - `build/<path>.wvl.json` for each source file, containing its nodes
 - `build/env.json` with every `@env` declaration in the project
 
-Syntax errors, duplicate variable declarations, duplicate node ids and `@goto` targets with no matching node fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids and `@goto` targets with no matching node fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Contributing
 
