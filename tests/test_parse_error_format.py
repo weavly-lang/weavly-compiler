@@ -4,17 +4,17 @@ import pytest
 import typer
 from lark.exceptions import UnexpectedCharacters
 
-from weavly.parsing.parser import _format_parse_error, build_all_files
+from weavly.parsing.parser import _report_parse_error, build_all_files
 
 
 def test_unexpected_characters_lists_allowed_terminals(capsys):
     error = UnexpectedCharacters("x = ~", 4, 1, 5, allowed={"NUMBER", "STRING"})
 
-    _format_parse_error(error, Path("story.wvl"))
+    _report_parse_error(error, Path("story.wvl"))
 
     out, err = capsys.readouterr()
     assert out == ""
-    assert "'~'" in err
+    assert "story.wvl:1:5: error: syntax error, unexpected character '~'" in err
     assert "NUMBER" in err
     assert "STRING" in err
 
@@ -31,4 +31,4 @@ def test_syntax_error_output_goes_to_stderr_only(tmp_path, capsys):
     out, err = capsys.readouterr()
     assert out == ""
     assert "bad.wvl" in err
-    assert "Expected one of" in err
+    assert "expected one of:" in err

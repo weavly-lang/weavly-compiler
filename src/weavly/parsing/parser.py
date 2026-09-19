@@ -12,6 +12,7 @@ from lark.exceptions import (
     VisitError,
 )
 
+from ..reporting import report_error
 from .wvl_transformer import InvalidStringError, WvlTransformer
 
 PARSER_TYPE = "lalr"
@@ -29,15 +30,14 @@ _DECLARATION_RULES = frozenset(
 _NODE_RULES = frozenset({"node_start"})
 _GOTO_RULES = frozenset({"goto", "inline_goto"})
 
+Location = tuple[Path, int, int]
+
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     if not src_dir.is_dir():
-        typer.secho(
-            f"No '{src_dir}' directory found. Run 'weavly init' to create a project "
-            "or run the build from the project root.",
-            fg=typer.colors.RED,
-            bold=True,
-            err=True,
+        report_error(
+            f"no '{src_dir.as_posix()}' directory found. Run 'weavly init' to create "
+            "a project or run the build from the project root."
         )
         raise typer.Exit(code=1)
 
@@ -47,12 +47,11 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
 
     declarations: list[dict] = []
     outputs: list[tuple[Path, dict]] = []
-    # name -> (file, line) of the first declaration seen with that name.
-    declared: dict[str, tuple[Path, int]] = {}
-    duplicate_declarations: list[str] = []
-    node_ids: dict[str, tuple[Path, int]] = {}
-    duplicate_nodes: list[str] = []
-    gotos: list[tuple[str, Path, int]] = []
+    # name -> location of the first declaration seen with that name.
+    declared: dict[str, Location] = {}
+    node_ids: dict[str, Location] = {}
+    gotos: list[tuple[str, Location]] = []
+    validation_errors: list[tuple[Location, str]] = []
     failed = False
 
     for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
@@ -65,14 +64,14 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         try:
             text = file.read_text(encoding=SOURCE_ENCODING)
         except UnicodeDecodeError as e:
-            _format_encoding_error(e, file)
+            _report_encoding_error(e, file)
             failed = True
             continue
 
         try:
             tree = parser.parse(text)
         except UnexpectedInput as e:
-            _format_parse_error(e, file)
+            _report_parse_error(e, file)
             failed = True
             continue
 
@@ -81,19 +80,22 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         except VisitError as e:
             if not isinstance(e.orig_exc, InvalidStringError):
                 raise
-            _format_string_error(e.orig_exc, file)
+            _report_string_error(e.orig_exc, file)
             failed = True
             continue
 
         # Source locations come from the raw tree; the transformed data has no
         # line numbers.
         _record_unique(
-            _id_locations(tree, _DECLARATION_RULES), file, declared, duplicate_declarations
+            _id_locations(tree, _DECLARATION_RULES, file),
+            declared,
+            "variable",
+            validation_errors,
         )
-        _record_unique(_id_locations(tree, _NODE_RULES), file, node_ids, duplicate_nodes)
-        gotos.extend(
-            (target, file, line) for target, line in _id_locations(tree, _GOTO_RULES)
+        _record_unique(
+            _id_locations(tree, _NODE_RULES, file), node_ids, "node id", validation_errors
         )
+        gotos.extend(_id_locations(tree, _GOTO_RULES, file))
         declarations.extend(data.get("declarations", []))
 
         outputs.append((out_file, {"nodes": data["nodes"]}))
@@ -101,24 +103,14 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     if failed:
         raise typer.Exit(code=1)
 
-    unresolved_gotos = [
-        f"  '{target}' at {file}:{line}"
-        for target, file, line in gotos
+    validation_errors.extend(
+        (location, f"goto target '{target}' matches no node")
+        for target, location in gotos
         if target not in node_ids
-    ]
-
-    errors = {
-        "Duplicate variable declarations:": duplicate_declarations,
-        "Duplicate node ids:": duplicate_nodes,
-        "Goto targets with no matching node:": unresolved_gotos,
-    }
-    if any(errors.values()):
-        for header, lines in errors.items():
-            if not lines:
-                continue
-            typer.secho(header, fg=typer.colors.RED, bold=True, err=True)
-            for line in lines:
-                typer.secho(line, fg=typer.colors.RED, err=True)
+    )
+    if validation_errors:
+        for (file, line, column), message in sorted(validation_errors):
+            report_error(message, file, line, column)
         raise typer.Exit(code=1)
 
     outputs.append((Path(ENV_BUILD_FILE), {"declarations": declarations}))
@@ -141,42 +133,44 @@ def _replace_build_dir(
         tmp_dir.rename(build_dir)
     except OSError as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        typer.secho(
-            f"Could not update '{build_dir}': {e.strerror or e}. "
-            "Close any program using its files and build again.",
-            fg=typer.colors.RED,
-            bold=True,
-            err=True,
+        report_error(
+            f"could not update '{build_dir.as_posix()}': {e.strerror or e}. "
+            "Close any program using its files and build again."
         )
         raise typer.Exit(code=1)
     shutil.rmtree(old_dir, ignore_errors=True)
 
 
-def _id_locations(tree: Tree, rules: frozenset[str]) -> list[tuple[str, int]]:
-    """Return (id, line) for the leading ID of every matching rule, in source order."""
+def _id_locations(
+    tree: Tree, rules: frozenset[str], file: Path
+) -> list[tuple[str, Location]]:
+    """Return (id, location) for the leading ID of every matching rule, in source order."""
     locations = []
     for subtree in tree.iter_subtrees_topdown():
         if subtree.data in rules:
             id_token = subtree.children[0]
-            locations.append((str(id_token), id_token.line))
+            locations.append((str(id_token), (file, id_token.line, id_token.column)))
     return locations
 
 
 def _record_unique(
-    locations: list[tuple[str, int]],
-    file: Path,
-    seen: dict[str, tuple[Path, int]],
-    duplicates: list[str],
+    locations: list[tuple[str, Location]],
+    seen: dict[str, Location],
+    kind: str,
+    errors: list[tuple[Location, str]],
 ) -> None:
-    for name, line in locations:
+    for name, location in locations:
         if name in seen:
-            prev_file, prev_line = seen[name]
-            duplicates.append(
-                f"  '{name}' declared at {prev_file}:{prev_line} "
-                f"and again at {file}:{line}"
+            prev_file, prev_line, _ = seen[name]
+            errors.append(
+                (
+                    location,
+                    f"duplicate {kind} '{name}', first declared at "
+                    f"{prev_file.as_posix()}:{prev_line}",
+                )
             )
         else:
-            seen[name] = (file, line)
+            seen[name] = location
 
 
 def _write_json(data: dict, out_file: Path, pretty: bool) -> None:
@@ -206,74 +200,29 @@ def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
     return data
 
 
-def _format_encoding_error(error: UnicodeDecodeError, file: Path) -> None:
+def _report_encoding_error(error: UnicodeDecodeError, file: Path) -> None:
     line = error.object[: error.start].count(b"\n") + 1
-    typer.secho(
-        f"Invalid encoding in file: {file}, Line {line}",
-        fg=typer.colors.RED,
-        bold=True,
-        err=True,
-    )
-    typer.secho("  Files must be saved as UTF-8.", fg=typer.colors.RED, err=True)
+    report_error("invalid encoding, files must be saved as UTF-8", file, line)
 
 
-def _format_string_error(error: InvalidStringError, file: Path) -> None:
-    """Report a string literal whose escapes cannot be decoded."""
+def _report_string_error(error: InvalidStringError, file: Path) -> None:
     token = error.token
-    typer.secho(
-        f"Invalid string in file: {file}, Line {token.line}, Column {token.column}",
-        fg=typer.colors.RED,
-        bold=True,
-        err=True,
+    report_error(
+        f"invalid string {token.value}: {error.reason}", file, token.line, token.column
     )
-    typer.secho(f"  {token.value}", fg=typer.colors.MAGENTA, err=True)
-    typer.secho(f"  {error.reason}", fg=typer.colors.RED, err=True)
 
 
-def _format_parse_error(error: UnexpectedInput, file: Path) -> None:
-    """Format and display a concise parse error message."""
-    typer.echo(err=True)
-    typer.secho(
-        f"Syntax Error in file: {file}, Line {error.line}, Column {error.column}",
-        fg=typer.colors.RED,
-        bold=True,
-        err=True,
-    )
-    typer.echo("", err=True)
-
-    # Show the error type and unexpected token
+def _report_parse_error(error: UnexpectedInput, file: Path) -> None:
     if isinstance(error, UnexpectedToken):
-        token = error.token
-        typer.secho("  Unexpected token: ", nl=False, fg=typer.colors.RED, err=True)
-        typer.secho(
-            f"{token.type!r}", nl=False, fg=typer.colors.MAGENTA, bold=True, err=True
-        )
-        typer.secho(" = ", nl=False, err=True)
-        typer.secho(f"{token.value!r}", fg=typer.colors.BRIGHT_WHITE, err=True)
+        message = f"syntax error, unexpected token {error.token.type} {error.token.value!r}"
     elif isinstance(error, UnexpectedCharacters):
-        typer.secho(
-            "  Unexpected character(s): ", nl=False, fg=typer.colors.RED, err=True
-        )
-        typer.secho(f"{error.char!r}", fg=typer.colors.MAGENTA, bold=True, err=True)
+        message = f"syntax error, unexpected character {error.char!r}"
     else:
-        typer.secho(f"  {error.__class__.__name__}", fg=typer.colors.RED, err=True)
+        message = "syntax error"
 
-    typer.echo("", err=True)
+    expected = getattr(error, "expected", None) or getattr(error, "allowed", None)
+    details = []
+    if expected:
+        details = ["expected one of:", *(f"  {name}" for name in sorted(expected))]
 
-    # Show what was expected
-    expected_terminals = getattr(error, "expected", None) or getattr(
-        error, "allowed", None
-    )
-    if expected_terminals:
-        typer.secho("  Expected one of:", fg=typer.colors.CYAN, err=True)
-        for expected in sorted(expected_terminals):
-            typer.secho(f"    * {expected}", fg=typer.colors.GREEN, err=True)
-        typer.echo("", err=True)
-
-    # Show previous tokens if available
-    if hasattr(error, "previous_tokens") and error.previous_tokens:
-        typer.secho(
-            "  Previous tokens: ", nl=False, fg=typer.colors.BRIGHT_BLACK, err=True
-        )
-        typer.secho(f"{error.previous_tokens}", fg=typer.colors.BRIGHT_BLACK, err=True)
-        typer.echo("", err=True)
+    report_error(message, file, error.line, error.column, details)

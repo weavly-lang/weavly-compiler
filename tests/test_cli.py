@@ -22,6 +22,7 @@ def test_init_refuses_existing_src(tmp_path, monkeypatch):
     result = runner.invoke(app, ["init"])
 
     assert result.exit_code == 1
-    assert "already exists" in result.output
+    assert result.stdout == ""
+    assert "error: directory 'src' already exists" in result.stderr
     assert (tmp_path / "src" / "story.wvl").read_text(encoding="utf-8") == "keep"
     assert not (tmp_path / "src" / "nodes.wvl").exists()

@@ -19,5 +19,5 @@ def test_invalid_escape_is_a_compile_error(tmp_path, capsys):
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
     assert "bad.wvl" in err
-    assert "Line 3" in err
+    assert "bad.wvl:3:16: error: invalid string" in err
     assert '"C:\\games"' in err

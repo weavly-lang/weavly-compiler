@@ -6,6 +6,7 @@ from .parsing import (
     WVL_SOURCE_EXTENSION,
     build_all_files,
 )
+from .reporting import report_error
 
 SOURCE_DIR = Path("src")
 BUILD_DIR = Path("build")
@@ -33,15 +34,15 @@ def init(name: str = typer.Argument(None)):
     if name:
         base = Path(name)
         if base.exists():
-            typer.echo(f"Project '{name}' already exists")
+            report_error(f"project '{name}' already exists")
             raise typer.Exit(code=1)
         base.mkdir()
     else:
-        base = Path.cwd()
+        base = Path()
 
     src: Path = base / "src"
     if src.exists():
-        typer.echo(f"Directory '{src}' already exists")
+        report_error(f"directory '{src.as_posix()}' already exists")
         raise typer.Exit(code=1)
     src.mkdir()
     (src / f"nodes{WVL_SOURCE_EXTENSION}").write_text(
