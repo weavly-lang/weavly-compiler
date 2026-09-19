@@ -20,8 +20,7 @@ def test_non_utf8_file_is_reported_with_line(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "Invalid encoding" in err
-    assert "a.wvl, Line 3" in err
+    assert "a.wvl:3: error: invalid encoding" in err
     assert "Traceback" not in err
 
 
@@ -45,9 +44,9 @@ def test_errors_in_every_file_are_reported(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "Syntax Error in file:" in err and "b.wvl" in err
-    assert "Invalid string in file:" in err and "c.wvl" in err
-    assert "Invalid encoding in file:" in err and "d.wvl" in err
+    assert "b.wvl:2:1: error: syntax error" in err
+    assert "c.wvl:2:16: error: invalid string" in err
+    assert "d.wvl:2: error: invalid encoding" in err
     assert not (tmp_path / "build").exists()
 
 
@@ -62,4 +61,4 @@ def test_file_errors_skip_cross_file_checks(tmp_path, capsys):
 
     err = capsys.readouterr().err
     assert "b.wvl" in err
-    assert "Goto targets" not in err
+    assert "goto target" not in err

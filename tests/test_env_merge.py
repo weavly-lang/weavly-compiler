@@ -112,9 +112,8 @@ def test_duplicate_node_id_across_files_is_an_error(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "Duplicate node ids" in err
+    assert "b.wvl:2:7: error: duplicate node id 'intro', first declared at" in err
     assert "a.wvl:1" in err
-    assert "b.wvl:2" in err
 
 
 def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
@@ -130,8 +129,8 @@ def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "'missing' at" in err and "a.wvl:2" in err
-    assert "'nowhere' at" in err and "a.wvl:3" in err
+    assert "a.wvl:2:7: error: goto target 'missing' matches no node" in err
+    assert "a.wvl:3:19: error: goto target 'nowhere' matches no node" in err
     assert "finale" not in err
 
 
@@ -144,6 +143,6 @@ def test_all_validation_errors_are_reported_together(tmp_path, capsys):
         build_all_files(src, tmp_path / "build", pretty=False)
 
     err = capsys.readouterr().err
-    assert "Duplicate variable declarations" in err
-    assert "Duplicate node ids" in err
-    assert "Goto targets with no matching node" in err
+    assert "duplicate variable 'hp'" in err
+    assert "duplicate node id 'a'" in err
+    assert "goto target 'gone'" in err

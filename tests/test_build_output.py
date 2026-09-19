@@ -58,7 +58,7 @@ def test_failed_swap_keeps_previous_build(tmp_path, monkeypatch, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "Could not update" in err
+    assert f"error: could not update '{build.as_posix()}'" in err
     assert "Access is denied" in err
     assert "Traceback" not in err
     assert sorted(p.name for p in build.iterdir()) == ["old.wvl.json"]
