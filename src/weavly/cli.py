@@ -21,16 +21,28 @@ NODE_INIT_STRING = (
     "@endnode\n"
 )
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False)
 
 
 @app.command()
-def build(pretty: bool = False):
-    build_all_files(SOURCE_DIR, BUILD_DIR, pretty)
+def build(
+    pretty: bool = typer.Option(
+        False, "--pretty", help="Write indented, human-readable JSON."
+    ),
+):
+    """Compile src/**/*.wvl into build/."""
+    count = build_all_files(SOURCE_DIR, BUILD_DIR, pretty)
+    files = "file" if count == 1 else "files"
+    typer.echo(f"Built {count} {files} into {BUILD_DIR.as_posix()}/")
 
 
 @app.command()
-def init(name: str = typer.Argument(None)):
+def init(
+    name: str = typer.Argument(
+        None, help="Directory to create. Defaults to the current directory."
+    ),
+):
+    """Create a new Weavly project with a starter src/nodes.wvl."""
     if name:
         base = Path(name)
         if base.exists():
@@ -45,6 +57,6 @@ def init(name: str = typer.Argument(None)):
         report_error(f"directory '{src.as_posix()}' already exists")
         raise typer.Exit(code=1)
     src.mkdir()
-    (src / f"nodes{WVL_SOURCE_EXTENSION}").write_text(
-        NODE_INIT_STRING, encoding="utf-8"
-    )
+    nodes_file = src / f"nodes{WVL_SOURCE_EXTENSION}"
+    nodes_file.write_text(NODE_INIT_STRING, encoding="utf-8")
+    typer.echo(f"Created {nodes_file.as_posix()}")

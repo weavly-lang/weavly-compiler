@@ -29,7 +29,7 @@ _GOTO_RULES = frozenset({"goto", "inline_goto"})
 Location = tuple[Path, int, int]
 
 
-def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
+def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     if not src_dir.is_dir():
         report_error(
             f"no '{src_dir.as_posix()}' directory found. Run 'weavly init' to create "
@@ -111,8 +111,10 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             report_error(message, file, line, column)
         raise typer.Exit(code=1)
 
+    file_count = len(outputs)
     outputs.append((Path(ENV_BUILD_FILE), {"declarations": declarations}))
     _replace_build_dir(build_dir, outputs, pretty)
+    return file_count
 
 
 def _replace_build_dir(
