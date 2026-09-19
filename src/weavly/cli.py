@@ -1,3 +1,4 @@
+from importlib.metadata import version as package_version
 from pathlib import Path
 
 import typer
@@ -22,6 +23,25 @@ NODE_INIT_STRING = (
 )
 
 app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False)
+
+
+def _print_version(value: bool) -> None:
+    if value:
+        typer.echo(f"weavly {package_version('weavly')}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=_print_version,
+        is_eager=True,
+        help="Show the version and exit.",
+    ),
+):
+    """Compiler for the Weavly dialog scripting language."""
 
 
 @app.command()

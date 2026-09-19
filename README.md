@@ -6,13 +6,15 @@ Language documentation: https://weavly-lang.github.io/weavly-docs/
 
 ## Install
 
-Requires Python 3.11+.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
 ```bash
-git clone https://github.com/weavly-lang/weavly-compiler.git
-cd weavly-compiler
-uv pip install -e .
+uv tool install weavly
 ```
+
+uv installs a suitable Python if needed and puts `weavly` on your PATH (run `uv tool update-shell` if it isn't). Upgrade with `uv tool upgrade weavly`.
+
+With Python 3.11+ already installed, `pipx install weavly` works too.
 
 ## Usage
 
@@ -21,6 +23,7 @@ weavly init my-project   # creates my-project/src/nodes.wvl
 cd my-project
 weavly build             # compiles src/**/*.wvl into build/
 weavly build --pretty    # same, with indented JSON
+weavly --version         # installed compiler version
 ```
 
 `weavly init` without a name sets up `src/` in the current directory.
@@ -32,9 +35,15 @@ The build writes:
 
 Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids and `@goto` targets with no matching node fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
-## Contributing
+## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+```bash
+git clone https://github.com/weavly-lang/weavly-compiler.git
+cd weavly-compiler
+uv sync --group dev
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and release steps.
 
 ## License
 
