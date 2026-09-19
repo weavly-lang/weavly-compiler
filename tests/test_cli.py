@@ -1,8 +1,14 @@
+import re
+
 from typer.testing import CliRunner
 
 from weavly.cli import app
 
 runner = CliRunner()
+
+
+def _plain(text):
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 def test_init_creates_project(tmp_path, monkeypatch):
@@ -75,16 +81,18 @@ def test_failed_build_prints_no_success_message(tmp_path, monkeypatch):
 
 def test_help_describes_commands():
     result = runner.invoke(app, ["--help"])
+    output = _plain(result.stdout)
 
     assert result.exit_code == 0
-    assert "Compile src/**/*.wvl into build/." in result.stdout
-    assert "Create a new Weavly project" in result.stdout
-    assert "--install-completion" not in result.stdout
+    assert "Compile src/**/*.wvl into build/." in output
+    assert "Create a new Weavly project" in output
+    assert "--install-completion" not in output
 
 
 def test_build_help_has_plain_pretty_flag():
     result = runner.invoke(app, ["build", "--help"])
+    output = _plain(result.stdout)
 
     assert result.exit_code == 0
-    assert "--pretty" in result.stdout
-    assert "--no-pretty" not in result.stdout
+    assert "--pretty" in output
+    assert "--no-pretty" not in output
