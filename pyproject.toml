@@ -1,19 +1,40 @@
 [project]
-name = "Weavly"
+name = "weavly"
 version = "0.1.0"
 description = "Compiler for the Weavly dialog scripting language"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Weavly contributors" }]
 requires-python = ">=3.11"
 dependencies = [
     "lark>=1.3.1",
     "typer>=0.21.0",
 ]
+keywords = ["weavly", "dialog", "compiler", "godot", "interactive-fiction"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Compilers",
+]
+
+[project.urls]
+Repository = "https://github.com/weavly-lang/compiler"
+Documentation = "https://weavly-lang.github.io/weavly-docs/"
+Issues = "https://github.com/weavly-lang/compiler/issues"
 
 [project.scripts]
 weavly = "weavly.cli:app"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
