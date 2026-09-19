@@ -35,3 +35,7 @@ Syntax errors, duplicate variable declarations, number declarations whose min, m
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
