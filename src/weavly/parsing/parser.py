@@ -16,6 +16,7 @@ from .wvl_transformer import InvalidStringError, WvlTransformer
 
 PARSER_TYPE = "lalr"
 ENCODING = "utf-8"
+SOURCE_ENCODING = "utf-8-sig"
 
 WVL_SOURCE_EXTENSION = ".wvl"
 WVL_BUILD_EXTENSION = ".wvl.json"
@@ -52,6 +53,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
     node_ids: dict[str, tuple[Path, int]] = {}
     duplicate_nodes: list[str] = []
     gotos: list[tuple[str, Path, int]] = []
+    failed = False
 
     for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
         if not file.is_file():
@@ -60,23 +62,19 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
         relative_path = file.relative_to(src_dir)
         out_file = relative_path.with_suffix(WVL_BUILD_EXTENSION)
 
-        text = file.read_text(encoding=ENCODING)
+        try:
+            text = file.read_text(encoding=SOURCE_ENCODING)
+        except UnicodeDecodeError as e:
+            _format_encoding_error(e, file)
+            failed = True
+            continue
 
         try:
             tree = parser.parse(text)
         except UnexpectedInput as e:
             _format_parse_error(e, file)
-            raise typer.Exit(code=1)
-
-        # Collect declaration source locations from the raw tree (tokens carry
-        # line numbers) before the transform discards them.
-        _record_unique(
-            _id_locations(tree, _DECLARATION_RULES), file, declared, duplicate_declarations
-        )
-        _record_unique(_id_locations(tree, _NODE_RULES), file, node_ids, duplicate_nodes)
-        gotos.extend(
-            (target, file, line) for target, line in _id_locations(tree, _GOTO_RULES)
-        )
+            failed = True
+            continue
 
         try:
             data = transformer.transform(tree)
@@ -84,10 +82,24 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             if not isinstance(e.orig_exc, InvalidStringError):
                 raise
             _format_string_error(e.orig_exc, file)
-            raise typer.Exit(code=1)
+            failed = True
+            continue
+
+        # Source locations come from the raw tree; the transformed data has no
+        # line numbers.
+        _record_unique(
+            _id_locations(tree, _DECLARATION_RULES), file, declared, duplicate_declarations
+        )
+        _record_unique(_id_locations(tree, _NODE_RULES), file, node_ids, duplicate_nodes)
+        gotos.extend(
+            (target, file, line) for target, line in _id_locations(tree, _GOTO_RULES)
+        )
         declarations.extend(data.get("declarations", []))
 
         outputs.append((out_file, {"nodes": data["nodes"]}))
+
+    if failed:
+        raise typer.Exit(code=1)
 
     unresolved_gotos = [
         f"  '{target}' at {file}:{line}"
@@ -192,6 +204,17 @@ def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
     tree = parser.parse(text)
     data = transformer.transform(tree)
     return data
+
+
+def _format_encoding_error(error: UnicodeDecodeError, file: Path) -> None:
+    line = error.object[: error.start].count(b"\n") + 1
+    typer.secho(
+        f"Invalid encoding in file: {file}, Line {line}",
+        fg=typer.colors.RED,
+        bold=True,
+        err=True,
+    )
+    typer.secho("  Files must be saved as UTF-8.", fg=typer.colors.RED, err=True)
 
 
 def _format_string_error(error: InvalidStringError, file: Path) -> None:
