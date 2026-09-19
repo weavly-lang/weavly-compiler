@@ -1,4 +1,5 @@
 import re
+from importlib.metadata import version
 
 from typer.testing import CliRunner
 
@@ -96,3 +97,10 @@ def test_build_help_has_plain_pretty_flag():
     assert result.exit_code == 0
     assert "--pretty" in output
     assert "--no-pretty" not in output
+
+
+def test_version_flag():
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.stdout == f"weavly {version('weavly')}\n"

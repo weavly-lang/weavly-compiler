@@ -60,6 +60,11 @@ Under Settings → Branches → Add protection rule for `main`:
 
 These make the workflow above just work without manual fiddling.
 
+For releases (see [Releasing](#releasing)):
+
+- On PyPI, under Account → Publishing, add a trusted publisher: project `weavly`, owner `weavly-lang`, repository `weavly-compiler`, workflow `release.yml`, environment `pypi`
+- Under Settings → Environments, create `pypi` and add yourself as a required reviewer
+
 ## Local checks before opening a PR
 
 ```bash
@@ -69,3 +74,20 @@ pytest
 ```
 
 CI runs the same checks — running them locally first saves a round-trip.
+
+## Releasing
+
+1. Bump `version` in `pyproject.toml` in a PR and merge it.
+2. Tag the merge commit on `main` and push the tag:
+
+   ```bash
+   git checkout main
+   git pull
+   git tag v<version>
+   git push origin v<version>
+   ```
+
+3. The [release workflow](.github/workflows/release.yml) checks that the tag matches `pyproject.toml`, runs lint and tests, and builds the package.
+4. Approve the `pypi` deployment in the workflow run. It publishes to PyPI, then creates a GitHub Release with the built files and generated notes.
+
+A version can only be uploaded to PyPI once. If a release is broken, yank it on PyPI and publish a new patch version.
