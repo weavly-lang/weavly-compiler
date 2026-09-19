@@ -58,7 +58,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
             continue
 
         relative_path = file.relative_to(src_dir)
-        out_file = (build_dir / relative_path).with_suffix(WVL_BUILD_EXTENSION)
+        out_file = relative_path.with_suffix(WVL_BUILD_EXTENSION)
 
         text = file.read_text(encoding=ENCODING)
 
@@ -109,12 +109,35 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> None:
                 typer.secho(line, fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
 
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
+    outputs.append((Path(ENV_BUILD_FILE), {"declarations": declarations}))
+    _replace_build_dir(build_dir, outputs, pretty)
 
-    for out_file, data in outputs:
-        _write_json(data, out_file, pretty)
-    _write_json({"declarations": declarations}, build_dir / ENV_BUILD_FILE, pretty)
+
+def _replace_build_dir(
+    build_dir: Path, outputs: list[tuple[Path, dict]], pretty: bool
+) -> None:
+    tmp_dir = build_dir.with_name(f".{build_dir.name}.tmp")
+    old_dir = build_dir.with_name(f".{build_dir.name}.old")
+    try:
+        for leftover in (tmp_dir, old_dir):
+            if leftover.exists():
+                shutil.rmtree(leftover)
+        for out_file, data in outputs:
+            _write_json(data, tmp_dir / out_file, pretty)
+        if build_dir.exists():
+            build_dir.rename(old_dir)
+        tmp_dir.rename(build_dir)
+    except OSError as e:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        typer.secho(
+            f"Could not update '{build_dir}': {e.strerror or e}. "
+            "Close any program using its files and build again.",
+            fg=typer.colors.RED,
+            bold=True,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    shutil.rmtree(old_dir, ignore_errors=True)
 
 
 def _id_locations(tree: Tree, rules: frozenset[str]) -> list[tuple[str, int]]:
