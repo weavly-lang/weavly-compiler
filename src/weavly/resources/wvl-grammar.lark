@@ -2,13 +2,13 @@
 // Entry / Nodes
 // =====================
 
-start: (env_block | node)+
+start: _NEWLINE* (env_block | node)+
 
 // =====================
 // Env Block
 // =====================
 
-env_block: _NEWLINE* _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
+env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
 
 ?declaration: number_declaration
     | string_declaration
@@ -21,7 +21,7 @@ flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
     | FALSE
 
 node: node_start body node_end
-node_start: _NEWLINE* _NODESTART ID _NEWLINE
+node_start: _NODESTART ID _NEWLINE
 node_end: _NODEEND _NEWLINE*
 
 body: statement*

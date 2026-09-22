@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "set", "id": "x", "expression": {"op": "-", "left": {"variable": "x"}, "right": 1.0}}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "x", "expression": {"op": "-", "left": {"variable": "x"}, "right": 1.0}}]}]}

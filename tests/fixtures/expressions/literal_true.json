@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "set", "id": "flag", "expression": true}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "flag", "expression": true}]}]}

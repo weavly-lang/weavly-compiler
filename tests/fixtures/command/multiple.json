@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "command", "id": "fade_in", "text": ""}, {"type": "command", "id": "play_music", "text": "theme.ogg"}, {"type": "command", "id": "fade_out", "text": ""}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "command", "line": 2, "id": "fade_in", "text": ""}, {"type": "command", "line": 3, "id": "play_music", "text": "theme.ogg"}, {"type": "command", "line": 4, "id": "fade_out", "text": ""}]}]}

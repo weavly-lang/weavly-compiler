@@ -34,13 +34,15 @@ def test_declarations_merge_into_single_env_json(tmp_path):
     globals_json = json.loads(
         (build / "globals.wvl.json").read_text(encoding="utf-8")
     )
-    assert globals_json == {"nodes": []}
+    assert globals_json == {"source": "globals.wvl", "nodes": []}
 
     witch_json = json.loads(
         (build / "scenes" / "witch.wvl.json").read_text(encoding="utf-8")
     )
     assert "declarations" not in witch_json
+    assert witch_json["source"] == "scenes/witch.wvl"
     assert witch_json["nodes"][0]["id"] == "witch"
+    assert witch_json["nodes"][0]["line"] == 5
 
 
 def test_duplicate_declaration_across_files_is_an_error(tmp_path, capsys):
