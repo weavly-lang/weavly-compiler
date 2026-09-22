@@ -41,7 +41,7 @@ def main(
         help="Show the version and exit.",
     ),
 ):
-    """Compiler for the Weavly dialog scripting language."""
+    """Compiler for the Weavly dialogue scripting language."""
 
 
 @app.command()
