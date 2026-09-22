@@ -1,6 +1,6 @@
 # Weavly Compiler
 
-Compiler for the Weavly dialog scripting language. Parses `.wvl` files and compiles them to JSON for the Weavly Godot runtime.
+Compiler for the Weavly dialogue scripting language. Parses `.wvl` files and compiles them to JSON for the Weavly Godot runtime.
 
 Language documentation: https://weavly-lang.github.io/weavly-docs/
 
