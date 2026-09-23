@@ -1,1 +1,1 @@
-{"nodes":[{"id":"start","body":[{"type":"option","items":[{"condition":true,"text":"Proceed","body":[{"type":"goto","id":"next"}],"hint":false}]}]},{"id":"next","body":[{"type":"finish"}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"line": 2, "condition": true, "text": "Proceed", "body": [{"type": "goto", "line": 2, "id": "next"}], "hint": false}]}]}, {"id": "next", "line": 5, "body": [{"type": "finish", "line": 6}]}]}

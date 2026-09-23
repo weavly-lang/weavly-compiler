@@ -4,6 +4,8 @@ from typing import Any
 from lark import Transformer, v_args
 from lark.visitors import Discard
 
+located = v_args(inline=True, meta=True)
+
 
 class InvalidStringError(ValueError):
     def __init__(self, token: Any, reason: str) -> None:
@@ -28,8 +30,9 @@ class WvlTransformer(Transformer):
             result["declarations"] = declarations
         return result
 
-    def node(self, node_start: str, body: list, _node_end: None) -> dict[str, Any]:
-        return {"id": node_start, "body": body}
+    @located
+    def node(self, meta: Any, node_start: str, body: list, _node_end: None) -> dict[str, Any]:
+        return {"id": node_start, "line": meta.line, "body": body}
 
     # =====================
     # Env Block
@@ -64,88 +67,124 @@ class WvlTransformer(Transformer):
     def body(self, *statements) -> list:
         return list(statements)
     
-    def inline_goto(self, id) -> dict[str, str]:
-        return self.goto(id)
+    @located
+    def inline_goto(self, meta: Any, id) -> dict[str, Any]:
+        return self.goto(meta, id)
 
     # =====================
     # Lines / Statements
     # =====================
 
-    def narration_line(self, text: str) -> dict[str, str]:
-        return {"type": "narration", "text": text}
+    @located
+    def narration_line(self, meta: Any, text: str) -> dict[str, Any]:
+        return {"type": "narration", "line": meta.line, "text": text}
 
-    def character_line(self, var: dict, text: str) -> dict[str, str]:
-        return {"type": "character", "name": var["variable"], "name_is_id": True, "text": text}
-    
-    def named_character_line(self, name: str, text: str) -> dict[str, str]:
-        return {"type": "character", "name": name, "name_is_id": False, "text": text}
+    @located
+    def character_line(self, meta: Any, var: dict, text: str) -> dict[str, Any]:
+        return {
+            "type": "character",
+            "line": meta.line,
+            "name": var["variable"],
+            "name_is_id": True,
+            "text": text,
+        }
+
+    @located
+    def named_character_line(self, meta: Any, name: str, text: str) -> dict[str, Any]:
+        return {
+            "type": "character",
+            "line": meta.line,
+            "name": name,
+            "name_is_id": False,
+            "text": text,
+        }
 
     def blank_line(self) -> Any:
         return Discard
 
-    def set(self, variable: dict, expression: Any) -> dict[str, Any]:
-        return {"type": "set", "id": variable["variable"], "expression": expression}
+    @located
+    def set(self, meta: Any, variable: dict, expression: Any) -> dict[str, Any]:
+        return {
+            "type": "set",
+            "line": meta.line,
+            "id": variable["variable"],
+            "expression": expression,
+        }
 
-    def increase(self, var: dict, number: float | None) -> dict[str, Any]:
+    @located
+    def increase(self, meta: Any, var: dict, number: float | None) -> dict[str, Any]:
         if number is None:
             number = 1.0
         expression = {"op": "+", "left": {"variable": var["variable"]}, "right": number}
-        return self.set(var, expression)
+        return self.set(meta, var, expression)
 
-    def decrease(self, var: dict, number: float | None) -> dict[str, Any]:
+    @located
+    def decrease(self, meta: Any, var: dict, number: float | None) -> dict[str, Any]:
         if number is None:
             number = 1.0
         expression = {"op": "-", "left": {"variable": var["variable"]}, "right": number}
-        return self.set(var, expression)
+        return self.set(meta, var, expression)
 
-    def setflag(self, var: dict) -> dict[str, Any]:
-        return self.set(var, True)
+    @located
+    def setflag(self, meta: Any, var: dict) -> dict[str, Any]:
+        return self.set(meta, var, True)
 
-    def clearflag(self, var: dict) -> dict[str, Any]:
-        return self.set(var, False)
+    @located
+    def clearflag(self, meta: Any, var: dict) -> dict[str, Any]:
+        return self.set(meta, var, False)
 
-    def goto(self, id: str) -> dict[str, str]:
-        return {"type": "goto", "id": id}
+    @located
+    def goto(self, meta: Any, id: str) -> dict[str, Any]:
+        return {"type": "goto", "line": meta.line, "id": id}
 
-    def finish(self) -> dict[str, str]:
-        return {"type": "finish"}
+    @located
+    def finish(self, meta: Any) -> dict[str, Any]:
+        return {"type": "finish", "line": meta.line}
 
-    def command(self, id: str, text: str | None) -> dict[str, str]:
+    @located
+    def command(self, meta: Any, id: str, text: str | None) -> dict[str, Any]:
         if text is None:
             text = ""
-        return {"type": "command", "id": id, "text": text}
+        return {"type": "command", "line": meta.line, "id": id, "text": text}
 
-    def continue_(self, text: str, statement: dict[str, Any] = None) -> dict[str, Any]:
+    @located
+    def continue_(
+        self, meta: Any, text: str, statement: dict[str, Any] = None
+    ) -> dict[str, Any]:
         if statement is None:
             body = []
         else:
             body = [statement]
-        return self.option_block(self.option(True, text, body))
+        return self.option_block(meta, self.option(meta, True, text, body))
 
     # =====================
     # If Block
     # =====================
 
+    @located
     def if_block(
-        self, if_: dict, elif_list: list | None, else_: dict | None
+        self, meta: Any, if_: dict, elif_list: list | None, else_: dict | None
     ) -> dict[str, Any]:
         cases = [if_]
         if elif_list is not None:
             cases.extend(elif_list)
         if else_ is not None:
             cases.append(else_)
-        return {"type": "match", "modifier": "first", "cases": cases}
+        return {"type": "match", "line": meta.line, "modifier": "first", "cases": cases}
 
-    def if_(self, condition: Any, body: list) -> dict[str, Any]:
+    @located
+    def if_(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:
         if not isinstance(body, list):
             body = [body]
-        return {"condition": condition, "body": body}
+        return {"line": meta.line, "condition": condition, "body": body}
 
-    def elif_(self, condition: Any, body: list) -> dict[str, Any]:
-        return self.if_(condition, body)
+    @located
+    def elif_(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:
+        return self.if_(meta, condition, body)
 
-    def else_(self, body: list) -> dict[str, Any]:
-        return self.if_(True, body)
+    @located
+    def else_(self, meta: Any, body: list) -> dict[str, Any]:
+        return self.if_(meta, True, body)
 
     def elif_list(self, *elifs) -> list:
         return list(elifs)
@@ -154,51 +193,73 @@ class WvlTransformer(Transformer):
     # Option Block
     # =====================
 
-    def option_block(self, *items) -> dict[str, Any]:
-        return {"type": "option", "items": list(items)}
+    @located
+    def option_block(self, meta: Any, *items) -> dict[str, Any]:
+        return {"type": "option", "line": meta.line, "items": list(items)}
 
-    def option(self, condition: Any | None, text: str, body: list | dict, hint: bool = False) -> dict[str, Any]:
+    @located
+    def option(
+        self,
+        meta: Any,
+        condition: Any | None,
+        text: str,
+        body: list | dict,
+        hint: bool = False,
+    ) -> dict[str, Any]:
         if condition is None:
             condition = True
         if not isinstance(body, list):
             body = [body]
-        return {"condition": condition, "text": text, "body": body, "hint": hint}
+        return {
+            "line": meta.line,
+            "condition": condition,
+            "text": text,
+            "body": body,
+            "hint": hint,
+        }
 
-    def hint_option(self, condition: Any | None, text: str) -> dict[str, Any]:
-        return self.option(condition, text, [], hint=True)
-    
+    @located
+    def hint_option(self, meta: Any, condition: Any | None, text: str) -> dict[str, Any]:
+        return self.option(meta, condition, text, [], hint=True)
+
     # =====================
     # Random Block
     # =====================
 
-    def random_block(self, *cases) -> dict[str, Any]:
-        return {"type": "random", "cases": list(cases)}
+    @located
+    def random_block(self, meta: Any, *cases) -> dict[str, Any]:
+        return {"type": "random", "line": meta.line, "cases": list(cases)}
 
-    def case(self, condition: Any | None, weight: Any, body: list) -> dict[str, Any]:
+    @located
+    def case(
+        self, meta: Any, condition: Any | None, weight: Any, body: list
+    ) -> dict[str, Any]:
         if condition is None:
             condition = True
         if weight is None:
             weight = 1.0
         if not isinstance(body, list):
             body = [body]
-        return {"condition": condition, "weight": weight, "body": body}
+        return {"line": meta.line, "condition": condition, "weight": weight, "body": body}
 
     # =====================
     # Match Block
     # =====================
 
-    def match_block(self, modifier, *cases) -> dict[str, Any]:
+    @located
+    def match_block(self, meta: Any, modifier, *cases) -> dict[str, Any]:
         if modifier is None:
             modifier = "first"
-        return {"type": "match", "modifier": modifier, "cases": list(cases)}
-    
+        return {"type": "match", "line": meta.line, "modifier": modifier, "cases": list(cases)}
+
     def MATCH_MODIFIER(self, token: Any) -> str:
         return str(token).lstrip()
 
-    def when(self, condition: Any, body: list) -> dict[str, Any]:
+    @located
+    def when(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:
         if not isinstance(body, list):
             body = [body]
-        return {"condition": condition, "body": body}
+        return {"line": meta.line, "condition": condition, "body": body}
 
     # =====================
     # Expressions

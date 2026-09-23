@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "narration", "text": "The door creaks open."}, {"type": "narration", "text": "Dust motes float in the air."}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "narration", "line": 2, "text": "The door creaks open."}, {"type": "narration", "line": 3, "text": "Dust motes float in the air."}]}]}

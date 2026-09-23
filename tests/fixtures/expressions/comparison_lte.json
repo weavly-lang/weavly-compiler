@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "body": [{"type": "match", "modifier": "first", "cases": [{"condition": {"op": "<=", "left": {"variable": "hp"}, "right": 0.0}, "body": [{"type": "narration", "text": "Dead."}]}]}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "match", "line": 2, "modifier": "first", "cases": [{"line": 2, "condition": {"op": "<=", "left": {"variable": "hp"}, "right": 0.0}, "body": [{"type": "narration", "line": 3, "text": "Dead."}]}]}]}]}

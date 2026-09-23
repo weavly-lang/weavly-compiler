@@ -81,8 +81,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
             failed = True
             continue
 
-        # Source locations come from the raw tree; the transformed data has no
-        # line numbers.
+        # Columns are only in the raw tree.
         _record_unique(
             _id_locations(tree, _DECLARATION_RULES, file),
             declared,
@@ -96,7 +95,9 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         validation_errors.extend(_number_range_errors(tree, file))
         declarations.extend(data.get("declarations", []))
 
-        outputs.append((out_file, {"nodes": data["nodes"]}))
+        outputs.append(
+            (out_file, {"source": relative_path.as_posix(), "nodes": data["nodes"]})
+        )
 
     if failed:
         raise typer.Exit(code=1)
@@ -226,7 +227,7 @@ def _load_grammar(grammar_file: str) -> str:
 
 
 def _build_parser(grammar: str, parser_type: str) -> Lark:
-    return Lark(grammar, parser=parser_type)
+    return Lark(grammar, parser=parser_type, propagate_positions=True)
 
 
 def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
