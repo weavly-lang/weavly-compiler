@@ -1,0 +1,6 @@
+@node start
+@if $x
+    @if $y
+    @endif
+@endif
+@endnode

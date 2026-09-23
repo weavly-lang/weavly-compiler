@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "random", "line": 2, "cases": [{"line": 3, "condition": true, "weight": 1.0, "body": []}, {"line": 4, "condition": {"variable": "x"}, "weight": 1.0, "body": []}]}]}]}
