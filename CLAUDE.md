@@ -21,6 +21,8 @@ Fixture-based snapshots in `tests/fixtures/<feature>/<case>.wvl` + sibling `<cas
 1. Create `tests/fixtures/<feature>/` with a `.wvl` file (minimal source for the feature)
 2. Add a sibling `.json` with the exact expected output
 
+Source that must fail to parse goes in `tests/fixtures/<feature>/invalid/<case>.wvl`, with no `.json`; `test_wvl.py` expects a syntax error for every file there. Errors found after parsing (undeclared variables, type errors, unknown functions, bad node targets) aren't syntax errors, so test them through `build_all_files` in `tests/test_type_checker.py` or `tests/test_env_merge.py`.
+
 ## Adding a new statement type
 
 1. Add the rule to [wvl-grammar.lark](src/weavly/resources/wvl-grammar.lark), wire into `?line_statement` or `?block_statement`
