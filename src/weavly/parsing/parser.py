@@ -1,5 +1,6 @@
 import json
 import shutil
+from difflib import get_close_matches
 from importlib import resources
 from pathlib import Path
 
@@ -26,6 +27,17 @@ _DECLARATION_RULES = frozenset(
 _NODE_RULES = frozenset({"node_start"})
 _GOTO_RULES = frozenset({"goto", "inline_goto"})
 _NODE_FUNCTIONS = frozenset({"visited", "visit_count"})
+# name -> (min, max) argument count, max None for no limit.
+_NUMBER_FUNCTIONS = {
+    "random": (2, 2),
+    "min": (2, None),
+    "max": (2, None),
+    "clamp": (3, 3),
+    "round": (1, 1),
+    "floor": (1, 1),
+    "ceil": (1, 1),
+    "abs": (1, 1),
+}
 
 Location = tuple[Path, int, int]
 
@@ -163,16 +175,52 @@ def _id_locations(
 def _call_references(
     tree: Tree, file: Path, errors: list[tuple[Location, str]]
 ) -> list[tuple[str, str, Location]]:
+    """Validate every function call and return the node references of node calls."""
     references = []
-    for call in tree.find_data("call"):
+    for call in tree.find_data("node_call"):
         function, target = call.children
-        if function not in _NODE_FUNCTIONS:
+        if function in _NODE_FUNCTIONS:
+            references.append((str(function), str(target), _location(file, target)))
+        elif function in _NUMBER_FUNCTIONS:
             errors.append(
-                ((file, function.line, function.column), f"unknown function '{function}'")
+                (_location(file, target), f"{function}() takes numbers, not node id '{target}'")
             )
-            continue
-        references.append((str(function), str(target), (file, target.line, target.column)))
+        else:
+            errors.append((_location(file, function), _unknown_function(function)))
+
+    for call in tree.find_data("call"):
+        function, arguments = call.children
+        count = 0 if arguments is None else len(arguments.children)
+        if function in _NODE_FUNCTIONS:
+            errors.append((_location(file, function), f"{function}() takes a single node id"))
+        elif function in _NUMBER_FUNCTIONS:
+            message = _argument_count_error(function, count)
+            if message:
+                errors.append((_location(file, function), message))
+        else:
+            errors.append((_location(file, function), _unknown_function(function)))
     return references
+
+
+def _argument_count_error(function: str, count: int) -> str | None:
+    minimum, maximum = _NUMBER_FUNCTIONS[function]
+    if count >= minimum and (maximum is None or count <= maximum):
+        return None
+    expected = f"at least {minimum}" if maximum is None else str(minimum)
+    noun = "argument" if expected == "1" else "arguments"
+    return f"{function}() takes {expected} {noun}, got {count}"
+
+
+def _unknown_function(function: str) -> str:
+    message = f"unknown function '{function}'"
+    matches = get_close_matches(function, [*_NODE_FUNCTIONS, *_NUMBER_FUNCTIONS], n=1)
+    if matches:
+        message += f", did you mean '{matches[0]}'?"
+    return message
+
+
+def _location(file: Path, token: Token) -> Location:
+    return (file, token.line, token.column)
 
 
 def _record_unique(

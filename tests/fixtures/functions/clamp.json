@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "hp", "expression": {"call": "clamp", "args": [{"op": "-", "left": {"variable": "hp"}, "right": {"variable": "damage"}}, 0.0, {"variable": "max_hp"}]}}]}]}

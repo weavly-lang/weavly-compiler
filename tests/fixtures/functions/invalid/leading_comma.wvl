@@ -1,0 +1,3 @@
+@node start
+@set $x = min(, 1)
+@endnode

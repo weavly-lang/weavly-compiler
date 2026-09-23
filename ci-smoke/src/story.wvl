@@ -4,6 +4,8 @@ Welcome to the smoke test.
 @set $score = 10
 @increase $score 5
 @decrease $score 2
+@set $score = clamp($score + random(1, 6), 0, 100)
+@set $score = round(max(min($score, 50), abs($score - 20)) / 2)
 @setflag $has_key
 @clearflag $has_key
 

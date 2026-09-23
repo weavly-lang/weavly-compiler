@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "x", "expression": {"call": "floor", "args": [{"op": "*", "left": {"call": "random", "args": [1.0, {"call": "max", "args": [{"call": "visit_count", "node": "shop"}, 2.0]}]}, "right": 1.5}]}}]}]}

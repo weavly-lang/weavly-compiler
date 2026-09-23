@@ -33,7 +33,7 @@ The build writes:
 - `build/<path>.wvl.json` for each source file, containing its nodes and a `source` field with the path relative to `src/` (for example `"chapter1/intro.wvl"`). Nodes, statements, match and random cases and option items carry the 1-based `line` they start on, so runtime errors can point back to the `.wvl` source.
 - `build/env.json` with every `@env` declaration in the project
 
-Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, and `@goto`, `visited()` and `visit_count()` targets with no matching node fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, and `@goto`, `visited()` and `visit_count()` targets with no matching node fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

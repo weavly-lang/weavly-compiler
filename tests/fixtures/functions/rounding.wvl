@@ -1,0 +1,5 @@
+@node start
+@set $a = round($x)
+@set $b = floor($x / 2)
+@set $c = ceil(-$x)
+@endnode
