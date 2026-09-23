@@ -148,10 +148,8 @@ class WvlTransformer(Transformer):
         return {"type": "finish", "line": meta.line}
 
     @located
-    def command(self, meta: Any, id: str, text: str | None) -> dict[str, Any]:
-        if text is None:
-            text = ""
-        return {"type": "command", "line": meta.line, "id": id, "text": text}
+    def command(self, meta: Any, id: str, arguments: list | None) -> dict[str, Any]:
+        return {"type": "command", "line": meta.line, "id": id, "args": arguments or []}
 
     @located
     def continue_(

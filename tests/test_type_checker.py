@@ -199,3 +199,38 @@ def test_extern_and_regular_declaration_with_same_name_is_an_error(tmp_path, cap
     assert "b.wvl:2:8: error: duplicate variable 'gold', first declared at" in (
         capsys.readouterr().err
     )
+
+
+def test_command_arguments_are_checked(tmp_path, capsys):
+    errors = _build_errors(
+        tmp_path,
+        capsys,
+        '@play_sound "door", $volume\n@shake $name + 1, clamp(1, 2), visited(gone)',
+    )
+
+    assert errors == [
+        "2:21: error: variable 'volume' isn't declared",
+        "3:8: error: '+' needs a number, got a string",
+        "3:19: error: clamp() takes 3 arguments, got 2",
+        "3:40: error: visited target 'gone' matches no node",
+    ]
+
+
+def test_command_arguments_of_any_type_build(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(
+        src / "a.wvl",
+        '@node start\n@log "{$name}", $name, $score * 2, $has_key, visited(start)\n@endnode\n',
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    assert data["nodes"][0]["body"][0]["args"] == [
+        "{$name}",
+        {"variable": "name"},
+        {"op": "*", "left": {"variable": "score"}, "right": 2.0},
+        {"variable": "has_key"},
+        {"call": "visited", "node": "start"},
+    ]

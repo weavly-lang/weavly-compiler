@@ -77,7 +77,7 @@ goto: _GOTO ID _NEWLINE
 
 finish: _FINISH _NEWLINE
 
-command: _COMMAND ID [_COLON TEXT] _NEWLINE
+command: _COMMAND ID [arguments] _NEWLINE
 
 continue: _CONTINUE STRING (inline_action | _NEWLINE) -> continue_
 
