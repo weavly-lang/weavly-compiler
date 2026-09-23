@@ -10,6 +10,13 @@ from lark.exceptions import UnexpectedInput, VisitError
 
 from ..reporting import report_error
 from .syntax_errors import describe_syntax_error, terminal_names
+from .type_checker import (
+    NODE_FUNCTIONS,
+    NUMBER_FUNCTIONS,
+    Location,
+    check_types,
+    source_location,
+)
 from .wvl_transformer import InvalidStringError, WvlTransformer
 
 PARSER_TYPE = "lalr"
@@ -22,24 +29,10 @@ WVL_GRAMMAR_FILE = "wvl-grammar.lark"
 ENV_BUILD_FILE = "env.json"
 
 _DECLARATION_RULES = frozenset(
-    {"number_declaration", "string_declaration", "flag_declaration"}
+    {"number_declaration", "string_declaration", "flag_declaration", "extern_declaration"}
 )
 _NODE_RULES = frozenset({"node_start"})
 _GOTO_RULES = frozenset({"goto", "inline_goto"})
-_NODE_FUNCTIONS = frozenset({"visited", "visit_count"})
-# name -> (min, max) argument count, max None for no limit.
-_NUMBER_FUNCTIONS = {
-    "random": (2, 2),
-    "min": (2, None),
-    "max": (2, None),
-    "clamp": (3, 3),
-    "round": (1, 1),
-    "floor": (1, 1),
-    "ceil": (1, 1),
-    "abs": (1, 1),
-}
-
-Location = tuple[Path, int, int]
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
@@ -57,6 +50,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
 
     declarations: list[dict] = []
     outputs: list[tuple[Path, dict]] = []
+    trees: list[tuple[Path, Tree]] = []
     # name -> location of the first declaration seen with that name.
     declared: dict[str, Location] = {}
     node_ids: dict[str, Location] = {}
@@ -112,6 +106,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         node_references.extend(_call_references(tree, file, validation_errors))
         validation_errors.extend(_number_range_errors(tree, file))
         declarations.extend(data.get("declarations", []))
+        trees.append((file, tree))
 
         outputs.append(
             (out_file, {"source": relative_path.as_posix(), "nodes": data["nodes"]})
@@ -125,6 +120,11 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         for kind, target, location in node_references
         if target not in node_ids
     )
+    variables: dict[str, str] = {}
+    for declaration in declarations:
+        variables.setdefault(declaration["name"], declaration["type"])
+    for file, tree in trees:
+        validation_errors.extend(check_types(tree, file, variables))
     if validation_errors:
         for (file, line, column), message in sorted(validation_errors):
             report_error(message, file, line, column)
@@ -179,31 +179,36 @@ def _call_references(
     references = []
     for call in tree.find_data("node_call"):
         function, target = call.children
-        if function in _NODE_FUNCTIONS:
-            references.append((str(function), str(target), _location(file, target)))
-        elif function in _NUMBER_FUNCTIONS:
+        if function in NODE_FUNCTIONS:
+            references.append((str(function), str(target), source_location(file, target)))
+        elif function in NUMBER_FUNCTIONS:
             errors.append(
-                (_location(file, target), f"{function}() takes numbers, not node id '{target}'")
+                (
+                    source_location(file, target),
+                    f"{function}() takes numbers, not node id '{target}'",
+                )
             )
         else:
-            errors.append((_location(file, function), _unknown_function(function)))
+            errors.append((source_location(file, function), _unknown_function(function)))
 
     for call in tree.find_data("call"):
         function, arguments = call.children
         count = 0 if arguments is None else len(arguments.children)
-        if function in _NODE_FUNCTIONS:
-            errors.append((_location(file, function), f"{function}() takes a single node id"))
-        elif function in _NUMBER_FUNCTIONS:
+        if function in NODE_FUNCTIONS:
+            errors.append(
+                (source_location(file, function), f"{function}() takes a single node id")
+            )
+        elif function in NUMBER_FUNCTIONS:
             message = _argument_count_error(function, count)
             if message:
-                errors.append((_location(file, function), message))
+                errors.append((source_location(file, function), message))
         else:
-            errors.append((_location(file, function), _unknown_function(function)))
+            errors.append((source_location(file, function), _unknown_function(function)))
     return references
 
 
 def _argument_count_error(function: str, count: int) -> str | None:
-    minimum, maximum = _NUMBER_FUNCTIONS[function]
+    minimum, maximum = NUMBER_FUNCTIONS[function]
     if count >= minimum and (maximum is None or count <= maximum):
         return None
     expected = f"at least {minimum}" if maximum is None else str(minimum)
@@ -213,14 +218,10 @@ def _argument_count_error(function: str, count: int) -> str | None:
 
 def _unknown_function(function: str) -> str:
     message = f"unknown function '{function}'"
-    matches = get_close_matches(function, [*_NODE_FUNCTIONS, *_NUMBER_FUNCTIONS], n=1)
+    matches = get_close_matches(function, [*NODE_FUNCTIONS, *NUMBER_FUNCTIONS], n=1)
     if matches:
         message += f", did you mean '{matches[0]}'?"
     return message
-
-
-def _location(file: Path, token: Token) -> Location:
-    return (file, token.line, token.column)
 
 
 def _record_unique(

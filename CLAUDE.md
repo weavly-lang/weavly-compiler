@@ -30,7 +30,9 @@ Fixture-based snapshots in `tests/fixtures/<feature>/<case>.wvl` + sibling `<cas
 
 ## Variable declarations (`@env`)
 
-Variables are declared in `@env ... @endenv` blocks inside `.wvl` files (sibling of `@node`). Multiple blocks are allowed per file and across the project. The build **merges every declaration project-wide into a single `build/env.json`** (`{"declarations": [...]}`); per-file `build/*.wvl.json` keeps only `{"source": "...", "nodes": [...]}`. Duplicate declaration names anywhere in the project are a compile error naming both source locations.
+Variables are declared in `@env ... @endenv` blocks inside `.wvl` files (sibling of `@node`). Multiple blocks are allowed per file and across the project. The build **merges every declaration project-wide into a single `build/env.json`** (`{"declarations": [...]}`); per-file `build/*.wvl.json` keeps only `{"source": "...", "nodes": [...]}`. Duplicate declaration names anywhere in the project are a compile error naming both source locations. `extern name: type` declares a variable defined outside `.wvl` (no default, min or max; emitted with `"extern": true` and no `value`).
+
+After all files parse, [type_checker.py](src/weavly/parsing/type_checker.py) checks every variable use against the merged declarations and type-checks expressions on the raw lark tree, which has the columns the transformer output lacks.
 
 Note: the `tests/fixtures/env/` snapshots capture the raw transformer output, which *includes* a `declarations` key — that key is split out into `env.json` (and stripped from per-file output) by the build pipeline. The cross-file merge and duplicate detection are covered by `tests/test_env_merge.py`, not the single-file fixture harness.
 

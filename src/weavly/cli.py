@@ -18,7 +18,7 @@ NODE_INIT_STRING = (
     "@endenv\n"
     "\n"
     "@node first_node\n"
-    "Hello $name!\n"
+    "Hello {$name}!\n"
     "@endnode\n"
 )
 

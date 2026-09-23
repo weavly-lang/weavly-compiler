@@ -48,7 +48,10 @@ $player_name: Which path?
 @node end
 @set $score = visit_count(choices)
 @if visited(start) and not visited(end)
-    Thanks for playing.
+    Thanks for playing, {$player_name}.
+@endif
+@if $reputation > 100
+    Everyone knows you.
 @endif
 @finish
 @endnode

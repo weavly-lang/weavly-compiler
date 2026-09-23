@@ -174,15 +174,15 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
 @pytest.mark.parametrize(
     "expression, message",
     [
-        ("clamp($hp, 0)", "a.wvl:2:11: error: clamp() takes 3 arguments, got 2"),
-        ("round($a, 1)", "a.wvl:2:11: error: round() takes 1 argument, got 2"),
+        ("clamp($x, 0)", "a.wvl:2:11: error: clamp() takes 3 arguments, got 2"),
+        ("round($x, 1)", "a.wvl:2:11: error: round() takes 1 argument, got 2"),
         ("random()", "a.wvl:2:11: error: random() takes 2 arguments, got 0"),
         ("min(1)", "a.wvl:2:11: error: min() takes at least 2 arguments, got 1"),
         ("max()", "a.wvl:2:11: error: max() takes at least 2 arguments, got 0"),
         ("visited()", "a.wvl:2:11: error: visited() takes a single node id"),
-        ("visit_count($shop)", "a.wvl:2:11: error: visit_count() takes a single node id"),
+        ("visit_count($x)", "a.wvl:2:11: error: visit_count() takes a single node id"),
         ("abs(shop)", "a.wvl:2:15: error: abs() takes numbers, not node id 'shop'"),
-        ("sqrt($a)", "a.wvl:2:11: error: unknown function 'sqrt'"),
+        ("sqrt($x)", "a.wvl:2:11: error: unknown function 'sqrt'"),
         ("foo(start)", "a.wvl:2:11: error: unknown function 'foo'"),
     ],
     ids=["too_few", "too_many", "none", "min_one", "max_none", "visited_empty",
@@ -190,7 +190,10 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
 )
 def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message):
     src = tmp_path / "src"
-    _write(src / "a.wvl", f"@node start\n@set $x = {expression}\n@endnode\n")
+    _write(
+        src / "a.wvl",
+        f"@node start\n@set $x = {expression}\n@endnode\n@env\nx: number\n@endenv\n",
+    )
 
     with pytest.raises(typer.Exit) as exc:
         build_all_files(src, tmp_path / "build", pretty=False)
