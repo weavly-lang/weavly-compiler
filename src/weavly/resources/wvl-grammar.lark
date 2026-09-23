@@ -146,11 +146,14 @@ condition: expression
 
 ?atom: literal
     | variable
+    | node_call
     | call
     | "(" expression ")"
 
 variable: _VARIABLEMARKER ID
-call: ID "(" ID ")"
+node_call: ID "(" ID ")"
+call: ID "(" [arguments] ")"
+arguments: expression ("," expression)*
 
 ?signed_number: NUMBER
     | "-" NUMBER -> negative_number

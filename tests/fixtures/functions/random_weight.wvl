@@ -1,0 +1,6 @@
+@node start
+@random
+@case random(1, 3): Hello.
+@case [min($a, 2) > 1] 1: Hi.
+@endrandom
+@endnode

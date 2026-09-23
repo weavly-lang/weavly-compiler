@@ -167,8 +167,50 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "a.wvl:2:5: error: unknown function 'visted'" in err
+    assert "a.wvl:2:5: error: unknown function 'visted', did you mean 'visited'?" in err
     assert "target" not in err
+
+
+@pytest.mark.parametrize(
+    "expression, message",
+    [
+        ("clamp($hp, 0)", "a.wvl:2:11: error: clamp() takes 3 arguments, got 2"),
+        ("round($a, 1)", "a.wvl:2:11: error: round() takes 1 argument, got 2"),
+        ("random()", "a.wvl:2:11: error: random() takes 2 arguments, got 0"),
+        ("min(1)", "a.wvl:2:11: error: min() takes at least 2 arguments, got 1"),
+        ("max()", "a.wvl:2:11: error: max() takes at least 2 arguments, got 0"),
+        ("visited()", "a.wvl:2:11: error: visited() takes a single node id"),
+        ("visit_count($shop)", "a.wvl:2:11: error: visit_count() takes a single node id"),
+        ("abs(shop)", "a.wvl:2:15: error: abs() takes numbers, not node id 'shop'"),
+        ("sqrt($a)", "a.wvl:2:11: error: unknown function 'sqrt'"),
+        ("foo(start)", "a.wvl:2:11: error: unknown function 'foo'"),
+    ],
+    ids=["too_few", "too_many", "none", "min_one", "max_none", "visited_empty",
+         "visit_count_variable", "node_id_for_number", "unknown", "unknown_node_form"],
+)
+def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", f"@node start\n@set $x = {expression}\n@endnode\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    err = capsys.readouterr().err
+    assert message in err
+    assert err.count("error:") == 1
+
+
+def test_function_call_errors_inside_arguments_are_reported(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@node start\n@set $x = max(clamp(1, 2), visited(gone))\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    err = capsys.readouterr().err
+    assert "a.wvl:2:15: error: clamp() takes 3 arguments, got 2" in err
+    assert "a.wvl:2:36: error: visited target 'gone' matches no node" in err
 
 
 def test_visit_functions_build(tmp_path):

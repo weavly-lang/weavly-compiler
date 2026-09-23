@@ -303,8 +303,14 @@ class WvlTransformer(Transformer):
     def variable(self, id: str) -> dict[str, str]:
         return {"variable": id}
 
-    def call(self, function: str, node: str) -> dict[str, str]:
+    def node_call(self, function: str, node: str) -> dict[str, str]:
         return {"call": function, "node": node}
+
+    def call(self, function: str, arguments: list | None) -> dict[str, Any]:
+        return {"call": function, "args": arguments or []}
+
+    def arguments(self, *expressions) -> list:
+        return list(expressions)
 
     # =====================
     # Tokens
