@@ -1,0 +1,5 @@
+@node start
+@if not visited(cave) and (visit_count(shop) * 2 > 3 or $brave)
+    Onward.
+@endif
+@endnode

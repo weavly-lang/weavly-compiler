@@ -69,7 +69,11 @@ def describe_syntax_error(
     if hint:
         details.append(f"hint: {hint}")
     else:
-        expected = getattr(error, "expected", None) or getattr(error, "allowed", None)
+        expected = (
+            getattr(error, "accepts", None)
+            or getattr(error, "expected", None)
+            or getattr(error, "allowed", None)
+        )
         if expected:
             details.append(_expected(sorted({names.get(n, n) for n in expected})))
     return message, details

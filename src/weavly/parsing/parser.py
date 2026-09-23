@@ -25,6 +25,7 @@ _DECLARATION_RULES = frozenset(
 )
 _NODE_RULES = frozenset({"node_start"})
 _GOTO_RULES = frozenset({"goto", "inline_goto"})
+_NODE_FUNCTIONS = frozenset({"visited", "visit_count"})
 
 Location = tuple[Path, int, int]
 
@@ -47,7 +48,8 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     # name -> location of the first declaration seen with that name.
     declared: dict[str, Location] = {}
     node_ids: dict[str, Location] = {}
-    gotos: list[tuple[str, Location]] = []
+    # (kind, node id, location) of every reference to a node.
+    node_references: list[tuple[str, str, Location]] = []
     validation_errors: list[tuple[Location, str]] = []
     failed = False
 
@@ -91,7 +93,11 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         _record_unique(
             _id_locations(tree, _NODE_RULES, file), node_ids, "node id", validation_errors
         )
-        gotos.extend(_id_locations(tree, _GOTO_RULES, file))
+        node_references.extend(
+            ("goto", target, location)
+            for target, location in _id_locations(tree, _GOTO_RULES, file)
+        )
+        node_references.extend(_call_references(tree, file, validation_errors))
         validation_errors.extend(_number_range_errors(tree, file))
         declarations.extend(data.get("declarations", []))
 
@@ -103,8 +109,8 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         raise typer.Exit(code=1)
 
     validation_errors.extend(
-        (location, f"goto target '{target}' matches no node")
-        for target, location in gotos
+        (location, f"{kind} target '{target}' matches no node")
+        for kind, target, location in node_references
         if target not in node_ids
     )
     if validation_errors:
@@ -152,6 +158,21 @@ def _id_locations(
             id_token = subtree.children[0]
             locations.append((str(id_token), (file, id_token.line, id_token.column)))
     return locations
+
+
+def _call_references(
+    tree: Tree, file: Path, errors: list[tuple[Location, str]]
+) -> list[tuple[str, str, Location]]:
+    references = []
+    for call in tree.find_data("call"):
+        function, target = call.children
+        if function not in _NODE_FUNCTIONS:
+            errors.append(
+                ((file, function.line, function.column), f"unknown function '{function}'")
+            )
+            continue
+        references.append((str(function), str(target), (file, target.line, target.column)))
+    return references
 
 
 def _record_unique(

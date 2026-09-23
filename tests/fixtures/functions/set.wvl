@@ -1,0 +1,4 @@
+@node start
+@set $been_here = visited(start)
+@set $talks = visit_count(shopkeeper) + 1
+@endnode

@@ -136,6 +136,61 @@ def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
     assert "finale" not in err
 
 
+def test_unresolved_visit_targets_are_errors(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@node start\n"
+        "@if visited(shpo) or visit_count(inn) > 1\n    Hi.\n@endif\n"
+        "@set $count = visit_count(gone) + visit_count(shop)\n"
+        "@endnode\n",
+    )
+    _write(src / "b.wvl", "@node shop\nThe shop.\n@endnode\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    err = capsys.readouterr().err
+    assert "a.wvl:2:13: error: visited target 'shpo' matches no node" in err
+    assert "a.wvl:2:34: error: visit_count target 'inn' matches no node" in err
+    assert "a.wvl:5:27: error: visit_count target 'gone' matches no node" in err
+    assert "'shop'" not in err
+
+
+def test_unknown_function_is_an_error(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@node start\n@if visted(start)\n    Hi.\n@endif\n@endnode\n")
+
+    with pytest.raises(typer.Exit) as exc:
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert exc.value.exit_code == 1
+    err = capsys.readouterr().err
+    assert "a.wvl:2:5: error: unknown function 'visted'" in err
+    assert "target" not in err
+
+
+def test_visit_functions_build(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@node start\n@if visited(start) and visit_count(end) < 2\n    @goto end\n@endif\n"
+        "@endnode\n",
+    )
+    _write(src / "b.wvl", "@node end\n@finish\n@endnode\n")
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    condition = data["nodes"][0]["body"][0]["cases"][0]["condition"]
+    assert condition == {
+        "op": "and",
+        "left": {"call": "visited", "node": "start"},
+        "right": {"op": "<", "left": {"call": "visit_count", "node": "end"}, "right": 2.0},
+    }
+
+
 def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     src = tmp_path / "src"
     _write(src / "a.wvl", "@env\nhp: number\n@endenv\n\n@node a\n@goto gone\n@endnode\n")

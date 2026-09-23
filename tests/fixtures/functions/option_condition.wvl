@@ -1,0 +1,6 @@
+@node start
+@options
+@option [not visited(cave)] "Explore the cave" -> cave
+@hint [visited(cave)] "The cave is empty"
+@endoptions
+@endnode

@@ -1,0 +1,5 @@
+@node start
+@if visited($a)
+    Yes.
+@endif
+@endnode

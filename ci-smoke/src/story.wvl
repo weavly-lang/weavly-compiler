@@ -44,5 +44,9 @@ $player_name: Which path?
 @endnode
 
 @node end
+@set $score = visit_count(choices)
+@if visited(start) and not visited(end)
+    Thanks for playing.
+@endif
 @finish
 @endnode

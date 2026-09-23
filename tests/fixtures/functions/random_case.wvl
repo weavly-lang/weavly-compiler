@@ -1,0 +1,6 @@
+@node start
+@random
+@case [visited(inn)] visit_count(inn): Hello again.
+@case 1: Hello.
+@endrandom
+@endnode
