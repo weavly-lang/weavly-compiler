@@ -1,0 +1,7 @@
+@node start
+@options
+@option "Go"
+@option "Stay"
+    Hi.
+@endoptions
+@endnode

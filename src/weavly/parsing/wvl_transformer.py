@@ -77,6 +77,9 @@ class WvlTransformer(Transformer):
     def inline_goto(self, meta: Any, id) -> dict[str, Any]:
         return self.goto(meta, id)
 
+    def action(self, statement_or_body: dict | list) -> dict | list:
+        return statement_or_body
+
     # =====================
     # Lines / Statements
     # =====================

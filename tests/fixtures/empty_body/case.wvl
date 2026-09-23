@@ -1,0 +1,6 @@
+@node start
+@random
+@case 1
+@case [$x]
+@endrandom
+@endnode

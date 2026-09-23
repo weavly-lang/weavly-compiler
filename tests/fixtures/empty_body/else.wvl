@@ -1,0 +1,6 @@
+@node start
+@if $x
+    Hi.
+@else
+@endif
+@endnode
