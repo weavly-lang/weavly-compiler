@@ -303,6 +303,9 @@ class WvlTransformer(Transformer):
     def variable(self, id: str) -> dict[str, str]:
         return {"variable": id}
 
+    def call(self, function: str, node: str) -> dict[str, str]:
+        return {"call": function, "node": node}
+
     # =====================
     # Tokens
     # =====================

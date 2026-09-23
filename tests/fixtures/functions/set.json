@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "been_here", "expression": {"call": "visited", "node": "start"}}, {"type": "set", "line": 3, "id": "talks", "expression": {"op": "+", "left": {"call": "visit_count", "node": "shopkeeper"}, "right": 1.0}}]}]}

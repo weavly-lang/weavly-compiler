@@ -1,0 +1,5 @@
+@node start
+@if visit_count(shopkeeper) >= 3
+    You again?
+@endif
+@endnode
