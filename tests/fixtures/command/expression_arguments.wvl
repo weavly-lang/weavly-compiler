@@ -1,0 +1,4 @@
+@node start
+@play_sound "door", $volume * 0.5
+@shake -1, ($a + $b) / 2, not $calm
+@endnode

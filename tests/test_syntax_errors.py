@@ -80,6 +80,17 @@ def _build_errors(tmp_path, capsys, source):
                 "    | \t          ^",
             ],
         ),
+        (
+            "@node a\n@log: player entered the cave\n@endnode\n",
+            [
+                "a.wvl:2:5: error: unexpected ':'",
+                '  hint: command arguments are expressions, like @log "player entered the cave"',
+            ],
+        ),
+        (
+            "@node a\n@shake:\n@endnode\n",
+            ['  hint: command arguments are expressions, like @shake "text"'],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -89,6 +100,8 @@ def _build_errors(tmp_path, capsys, source):
         "option_outside_options",
         "incomplete_set",
         "tab_indent",
+        "command_colon_text",
+        "command_colon",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

@@ -1,0 +1,4 @@
+@node start
+@spawn "wolf", random(1, 3)
+@log visited(start), visit_count(start)
+@endnode

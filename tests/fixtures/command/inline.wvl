@@ -1,0 +1,7 @@
+@node start
+@if $scared: @shake 2
+@endif
+@options
+@option "Knock": @play_sound "knock", 0.8
+@endoptions
+@endnode

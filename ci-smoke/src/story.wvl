@@ -1,6 +1,7 @@
 @node start
 Welcome to the smoke test.
 >Guide: Let the test begin.
+@play_sound "chime.ogg", clamp($score / 10, 0, 1)
 @set $score = 10
 @increase $score 5
 @decrease $score 2
@@ -53,5 +54,6 @@ $player_name: Which path?
 @if $reputation > 100
     Everyone knows you.
 @endif
+@fade_out
 @finish
 @endnode

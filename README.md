@@ -33,6 +33,18 @@ The build writes:
 - `build/<path>.wvl.json` for each source file, containing its nodes and a `source` field with the path relative to `src/` (for example `"chapter1/intro.wvl"`). Nodes, statements, match and random cases and option items carry the 1-based `line` they start on, so runtime errors can point back to the `.wvl` source.
 - `build/env.json` with every `@env` declaration in the project
 
+Commands take comma-separated expressions as arguments and are written with them in `args`, for the game to evaluate when the command runs:
+
+```
+@play_sound "door", $volume * 0.5
+```
+
+```json
+{"type": "command", "line": 1, "id": "play_sound", "args": ["door", {"op": "*", "left": {"variable": "volume"}, "right": 0.5}]}
+```
+
+Arguments are checked like any other expression. Command names aren't declared, so the build doesn't check them or how many arguments they get.
+
 Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
 
 ```

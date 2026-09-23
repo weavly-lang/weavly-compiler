@@ -81,6 +81,11 @@ class _TypeChecker:
     def _check_clearflag(self, tree: Tree) -> None:
         self._expect_variable(tree.children[0], FLAG, "@clearflag")
 
+    def _check_command(self, tree: Tree) -> None:
+        arguments = tree.children[1]
+        for argument in arguments.children if arguments is not None else []:
+            self._infer(argument)
+
     def _check_condition(self, tree: Tree) -> None:
         self._expect(tree.children[0], FLAG, "condition")
 
