@@ -13,10 +13,13 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
 ?declaration: number_declaration
     | string_declaration
     | flag_declaration
+    | extern_declaration
 
 number_declaration: ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
 string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
 flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
+extern_declaration: _EXTERN ID _COLON extern_type _NEWLINE
+!extern_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
 ?bool_literal: TRUE
     | FALSE
 
@@ -182,6 +185,7 @@ _ENDENV: "@endenv"
 _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
 _FLAG_TYPE: "flag"
+_EXTERN: "extern"
 
 _SET: "@set"
 _INC: "@increase"

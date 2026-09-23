@@ -58,6 +58,12 @@ class WvlTransformer(Transformer):
             value = False
         return {"type": "flag", "name": name, "value": bool(value)}
 
+    def extern_declaration(self, name: str, type: str) -> dict[str, Any]:
+        return {"type": type, "name": name, "extern": True}
+
+    def extern_type(self, type: Any) -> str:
+        return str(type)
+
     def node_start(self, id: str) -> str:
         return id
 

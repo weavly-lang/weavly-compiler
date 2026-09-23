@@ -1,6 +1,6 @@
 @env
 score: number = 0
-player_name: string = "Hero"
-has_key: flag = false
 extern reputation: number
+extern player_name: string
+extern met_king: flag
 @endenv

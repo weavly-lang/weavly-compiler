@@ -1,0 +1,1 @@
+{"nodes": [], "declarations": [{"type": "number", "name": "score", "value": 0.0, "min": null, "max": null}, {"type": "number", "name": "reputation", "extern": true}, {"type": "string", "name": "player_name", "extern": true}, {"type": "flag", "name": "met_king", "extern": true}]}
