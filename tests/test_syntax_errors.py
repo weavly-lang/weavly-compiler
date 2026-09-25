@@ -108,6 +108,17 @@ def _build_errors(tmp_path, capsys, source):
             '@node a\n@continue "\\"Hi\\" {$x +}"\n@endnode\n',
             ["a.wvl:2:24: error: unexpected '}'"],
         ),
+        (
+            "@node a\nHi.\n@meta\npool: cave\n@endmeta\n@endnode\n",
+            [
+                "a.wvl:3:1: error: unexpected '@meta'",
+                "  hint: a node can have one @meta block, right after its @node line",
+            ],
+        ),
+        (
+            "@node a\n@meta\npool: cave\n",
+            ["  hint: the @meta block opened at line 2 is missing its @endmeta"],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -122,6 +133,8 @@ def _build_errors(tmp_path, capsys, source):
         "unclosed_interpolation",
         "empty_interpolation",
         "interpolation_after_escapes",
+        "meta_after_statement",
+        "missing_endmeta",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

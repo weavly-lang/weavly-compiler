@@ -1,0 +1,11 @@
+@node a  # storylet
+
+# pools first
+@meta
+    pool: cave_outcome  # the cave
+
+    weight: 2
+@endmeta
+
+Hi.
+@endnode

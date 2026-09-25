@@ -1,0 +1,6 @@
+@node a
+@meta
+pool: cave_outcome
+when: $has_key and not visited(b)
+@endmeta
+@endnode

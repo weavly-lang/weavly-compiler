@@ -1,0 +1,6 @@
+@node pool
+@meta
+pool: slot
+@endmeta
+@goto pool
+@endnode

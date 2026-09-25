@@ -1,0 +1,6 @@
+@node a
+Hi.
+@meta
+pool: cave_outcome
+@endmeta
+@endnode

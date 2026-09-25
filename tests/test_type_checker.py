@@ -11,6 +11,9 @@ ENV = (
     'name: string = "Hero"\n'
     "has_key: flag = false\n"
     "extern reputation: number\n"
+    "cave: pool\n"
+    "hall: pool\n"
+    "treasure: slot\n"
     "@endenv\n"
 )
 
@@ -235,6 +238,70 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
         "2:18: error: clamp() takes 3 arguments, got 2",
         "3:21: error: visited target 'gone' matches no node",
     ]
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (
+            "@meta\npools: cave\n@endmeta",
+            "3:1: error: unknown meta key 'pools', did you mean 'pool'?",
+        ),
+        ("@meta\npool: cave\npool: hall\n@endmeta", "4:1: error: duplicate meta key 'pool'"),
+        ("@meta\nwhen: $score\n@endmeta", "3:7: error: when needs a flag, got a number"),
+        ("@meta\nweight: $has_key\n@endmeta", "3:9: error: weight needs a number, got a flag"),
+        ("@meta\npriority: $name\n@endmeta", "3:11: error: priority needs a number, got a string"),
+        (
+            "@meta\npriority: cave\n@endmeta",
+            "3:11: error: priority needs a number, got name 'cave'",
+        ),
+        ("@meta\nonce: $has_key\n@endmeta", "3:7: error: once needs true or false"),
+        ("@meta\nwhen: true, false\n@endmeta", "3:13: error: when takes a single value, got 2"),
+        ("@meta\npool: cavee\n@endmeta", "3:7: error: pool 'cavee' isn't declared"),
+        ("@meta\nslot: tresure\n@endmeta", "3:7: error: slot 'tresure' isn't declared"),
+        ("@meta\npool: cave, treasure\n@endmeta", "3:13: error: 'treasure' is a slot, not a pool"),
+        ("@meta\npool: score\n@endmeta", "3:7: error: 'score' is a number, not a pool"),
+        ("@meta\npool: $score\n@endmeta", "3:7: error: pool takes pool names, not expressions"),
+        ("@meta\nwhen: $gold > 1\n@endmeta", "3:7: error: variable 'gold' isn't declared"),
+        (
+            "@meta\nwhen: visited(gone)\n@endmeta",
+            "3:15: error: visited target 'gone' matches no node",
+        ),
+        ("@if $cave\n    Hi.\n@endif", "2:5: error: 'cave' is a pool, not a variable"),
+        ("@set $cave = 1", "2:6: error: 'cave' is a pool, not a variable"),
+        ("Hi {$treasure}.", "2:5: error: 'treasure' is a slot, not a variable"),
+    ],
+    ids=["unknown_key", "duplicate_key", "when", "weight", "priority", "priority_name",
+         "once", "several_values", "undeclared_pool", "undeclared_slot", "slot_as_pool",
+         "variable_as_pool", "expression_as_pool", "undeclared_variable", "visited_target",
+         "pool_in_condition", "pool_in_set", "slot_in_text"],
+)
+def test_meta_errors(tmp_path, capsys, body, expected):
+    assert _build_errors(tmp_path, capsys, body) == [expected]
+
+
+def test_meta_block_builds(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(
+        src / "a.wvl",
+        "@node start\n"
+        "@meta\n"
+        "pool: cave, hall\n"
+        "slot: treasure\n"
+        "when: $score > 5 and not $has_key\n"
+        "priority: clamp($reputation, 0, 10)\n"
+        "weight: 1 + visit_count(start)\n"
+        "once: true\n"
+        "@endmeta\n"
+        "Hi.\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    assert list(data["nodes"][0]["meta"]) == ["pool", "slot", "when", "priority", "weight"]
 
 
 def test_command_arguments_of_any_type_build(tmp_path):

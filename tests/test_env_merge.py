@@ -289,3 +289,69 @@ def test_valid_number_ranges_build(tmp_path):
     build_all_files(src, tmp_path / "build", pretty=False)
 
     assert (tmp_path / "build" / "env.json").exists()
+
+
+def test_pools_and_slots_are_listed_in_env_json(tmp_path):
+    src = tmp_path / "src"
+    build = tmp_path / "build"
+    _write(src / "a.wvl", "@env\ncave: pool\ngold: number = 0\ntreasure: slot\n@endenv\n")
+    _write(src / "b.wvl", "@env\ncity: pool\n@endenv\n")
+
+    build_all_files(src, build, pretty=False)
+
+    env = json.loads((build / "env.json").read_text(encoding="utf-8"))
+    assert env == {
+        "declarations": [
+            {"type": "number", "name": "gold", "value": 0.0, "min": None, "max": None}
+        ],
+        "pools": ["cave", "city"],
+        "slots": ["treasure"],
+    }
+
+
+def test_env_json_lists_are_empty_without_pools_or_slots(tmp_path):
+    src = tmp_path / "src"
+    build = tmp_path / "build"
+    _write(src / "a.wvl", "@node a\nHi.\n@endnode\n")
+
+    build_all_files(src, build, pretty=False)
+
+    env = json.loads((build / "env.json").read_text(encoding="utf-8"))
+    assert env == {"declarations": [], "pools": [], "slots": []}
+
+
+@pytest.mark.parametrize(
+    "first, second, kind",
+    [
+        ("cave: pool", "cave: pool", "pool"),
+        ("cave: number = 0", "cave: pool", "pool"),
+        ("cave: pool", "cave: slot", "slot"),
+        ("cave: slot", "cave: flag", "variable"),
+    ],
+    ids=["pool_twice", "variable_then_pool", "pool_then_slot", "slot_then_variable"],
+)
+def test_pools_and_slots_share_the_declaration_namespace(
+    tmp_path, capsys, first, second, kind
+):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", f"@env\n{first}\n@endenv\n")
+    _write(src / "b.wvl", f"@env\n{second}\n@endenv\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert f"b.wvl:2:1: error: duplicate {kind} 'cave', first declared at" in (
+        capsys.readouterr().err
+    )
+
+
+def test_node_ids_may_match_pool_and_slot_names(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\ncave: pool\ntreasure: slot\n@endenv\n\n"
+        "@node cave\n@meta\npool: cave\nslot: treasure\n@endmeta\n@goto treasure\n@endnode\n\n"
+        "@node treasure\nHi.\n@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)

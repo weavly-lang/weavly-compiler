@@ -3,4 +3,6 @@ score: number = 0
 player_name: string = "Hero"
 has_key: flag = false
 extern reputation: number
+cave_outcome: pool
+treasure: slot
 @endenv

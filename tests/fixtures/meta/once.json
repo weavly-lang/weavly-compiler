@@ -1,0 +1,1 @@
+{"nodes": [{"id": "a", "line": 1, "meta": {"pool": {"line": 3, "value": ["cave_outcome"]}, "when": {"line": 4, "value": {"op": "not", "expression": {"call": "visited", "node": "a"}}}}, "body": []}]}
