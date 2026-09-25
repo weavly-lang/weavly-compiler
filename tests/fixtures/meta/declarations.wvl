@@ -1,0 +1,4 @@
+@env
+cave_outcome: pool
+treasure: slot
+@endenv

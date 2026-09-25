@@ -1,0 +1,7 @@
+@node a
+@meta
+pool: cave_outcome
+when: $has_key
+once: false
+@endmeta
+@endnode

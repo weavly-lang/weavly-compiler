@@ -25,6 +25,7 @@ PATTERN_NAMES = {
 _BLOCKS = {
     "@node": "@endnode",
     "@env": "@endenv",
+    "@meta": "@endmeta",
     "@if": "@endif",
     "@options": "@endoptions",
     "@random": "@endrandom",
@@ -122,6 +123,8 @@ def _block_hint(token: Token, lines: list[str], line: int) -> str | None:
         return f"the {opener} block opened at line {opened_at} is missing its {_BLOCKS[opener]}"
 
     keyword = str(token.value).strip()
+    if keyword == "@meta":
+        return "a node can have one @meta block, right after its @node line"
     stack = _open_blocks(lines[: line - 1])
     if keyword in _PARENTS:
         parent = _PARENTS[keyword]

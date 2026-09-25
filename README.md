@@ -31,7 +31,7 @@ weavly --version         # installed compiler version
 The build writes:
 
 - `build/<path>.wvl.json` for each source file, containing its nodes and a `source` field with the path relative to `src/` (for example `"chapter1/intro.wvl"`). Nodes, statements, match and random cases and option items carry the 1-based `line` they start on, so runtime errors can point back to the `.wvl` source.
-- `build/env.json` with every `@env` declaration in the project
+- `build/env.json` with every `@env` variable declaration in the project in `declarations`, and the names of all pools and slots in `pools` and `slots`
 
 Commands take comma-separated expressions as arguments and are written with them in `args`, for the game to evaluate when the command runs:
 
@@ -69,6 +69,51 @@ extern reputation: number
 @endenv
 ```
 
+Storylets are nodes the game picks from a pool instead of a script naming them. Pools and slots are declared in `@env`, without a default:
+
+```
+@env
+cave_outcome: pool
+treasure: slot
+@endenv
+```
+
+They share names with variables, so a name can be declared only once in the project, but a node id may match one. A node joins pools with a `@meta` block of `key: value` entries, right after its `@node` line:
+
+```
+@node cave_treasure
+@meta
+pool: cave_outcome
+slot: treasure
+when: $luck > 5
+priority: 1
+weight: 2
+once: true
+@endmeta
+You squeeze through the gap...
+@endnode
+```
+
+- `pool`: comma-separated pool names, at least one.
+- `slot`: comma-separated slot names. Nodes sharing a slot exclude each other when the game lists a pool.
+- `when`: a flag expression, the node is eligible only while it's true.
+- `priority` and `weight`: number expressions. The game defaults them to 0 and 1.
+- `once`: `true` adds `not visited(<this node>)` to `when`. It isn't written to the output.
+
+The node gets a `meta` object with the entries that were written, each with its `line` and `value`:
+
+```json
+{"id": "cave_treasure", "line": 1, "meta": {
+  "pool": {"line": 3, "value": ["cave_outcome"]},
+  "slot": {"line": 4, "value": ["treasure"]},
+  "when": {"line": 5, "value": {"op": "and", "left": {"op": ">", "left": {"variable": "luck"}, "right": 5.0}, "right": {"op": "not", "expression": {"call": "visited", "node": "cave_treasure"}}}},
+  "priority": {"line": 6, "value": 1.0},
+  "weight": {"line": 7, "value": 2.0}
+}, "body": [...]}
+```
+
+A `when` that only comes from `once` carries the `once` line.
+
 Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and in expressions inside `{}` in text. The build also checks types:
 
 - `+ - * /`, unary `-` and random weights need numbers; `and`, `or` and `not` need flags.
@@ -77,8 +122,9 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - `@set` must match the variable's type, `@increase` and `@decrease` need a number variable, `@setflag` and `@clearflag` a flag variable, and a character line's `$name` a string variable.
 - `visited()` is a flag, `visit_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
 - Expressions inside `{}` in text can be of any type.
+- `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 
-Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()` and `visit_count()` targets with no matching node, undeclared variables, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()` and `visit_count()` targets with no matching node, undeclared variables, pools and slots, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

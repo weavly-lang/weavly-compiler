@@ -1,0 +1,8 @@
+@node a
+@meta
+pool: cave_outcome
+@endmeta
+@meta
+weight: 2
+@endmeta
+@endnode

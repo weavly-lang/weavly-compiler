@@ -1,0 +1,1 @@
+{"nodes": [{"id": "a", "line": 1, "meta": {"when": {"line": 4, "value": {"op": "and", "left": {"op": ">", "left": {"variable": "luck"}, "right": 5.0}, "right": {"op": "not", "expression": {"call": "visited", "node": "a"}}}}}, "body": []}]}

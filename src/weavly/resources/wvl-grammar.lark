@@ -14,18 +14,31 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | string_declaration
     | flag_declaration
     | extern_declaration
+    | pool_declaration
+    | slot_declaration
 
 number_declaration: ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
 string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
 flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
 extern_declaration: _EXTERN ID _COLON extern_type _NEWLINE
+pool_declaration: ID _COLON _POOL_TYPE _NEWLINE
+slot_declaration: ID _COLON _SLOT_TYPE _NEWLINE
 !extern_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
 ?bool_literal: TRUE
     | FALSE
 
-node: node_start body node_end
+node: node_start [meta_block] body node_end
 node_start: _NODESTART ID _NEWLINE
 node_end: _NODEEND _NEWLINE*
+
+// =====================
+// Meta Block
+// =====================
+
+meta_block: _META _NEWLINE meta_entry* _ENDMETA _NEWLINE
+meta_entry: ID _COLON meta_value ("," meta_value)* _NEWLINE
+?meta_value: expression
+    | ID
 
 body: statement*
 
@@ -188,6 +201,11 @@ _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
 _FLAG_TYPE: "flag"
 _EXTERN: "extern"
+_POOL_TYPE: "pool"
+_SLOT_TYPE: "slot"
+
+_META: "@meta"
+_ENDMETA: "@endmeta"
 
 _SET: "@set"
 _INC: "@increase"
@@ -196,7 +214,7 @@ _SETFLAG: "@setflag"
 _CLEARFLAG: "@clearflag"
 _GOTO: "@goto"
 _FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch)\b)/
+_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
 _CONTINUE: "@continue"
 
 _IF: "@if"

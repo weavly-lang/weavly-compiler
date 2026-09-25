@@ -57,3 +57,16 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 @fade_out
 @finish
 @endnode
+
+@node cave_treasure
+@meta
+pool: cave_outcome
+slot: treasure
+when: $score > 5
+priority: 1
+weight: 1 + visit_count(cave_treasure)
+once: true
+@endmeta
+You find a chest.
+@goto end
+@endnode

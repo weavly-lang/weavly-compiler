@@ -31,8 +31,34 @@ class WvlTransformer(Transformer):
         return result
 
     @located
-    def node(self, meta: Any, node_start: str, body: list, _node_end: None) -> dict[str, Any]:
-        return {"id": node_start, "line": meta.line, "body": body}
+    def node(
+        self, meta: Any, node_start: str, meta_block: list | None, body: list, _node_end: None
+    ) -> dict[str, Any]:
+        node = {"id": node_start, "line": meta.line}
+        if meta_block is not None:
+            node["meta"] = self._resolve_meta(node_start, meta_block)
+        node["body"] = body
+        return node
+
+    def _resolve_meta(self, node_id: str, entries: list) -> dict[str, Any]:
+        resolved = {}
+        once = None
+        for key, line, values in entries:
+            if key == "once":
+                once = (line, values[0])
+            elif key in ("pool", "slot"):
+                resolved[key] = {"line": line, "value": values}
+            else:
+                resolved[key] = {"line": line, "value": values[0]}
+
+        if once is not None and once[1] is True:
+            not_visited = {"op": "not", "expression": {"call": "visited", "node": node_id}}
+            if "when" in resolved:
+                when = resolved["when"]
+                when["value"] = {"op": "and", "left": when["value"], "right": not_visited}
+            else:
+                resolved["when"] = {"line": once[0], "value": not_visited}
+        return resolved
 
     # =====================
     # Env Block
@@ -64,11 +90,28 @@ class WvlTransformer(Transformer):
     def extern_type(self, type: Any) -> str:
         return str(type)
 
+    def pool_declaration(self, name: str) -> dict[str, str]:
+        return {"type": "pool", "name": name}
+
+    def slot_declaration(self, name: str) -> dict[str, str]:
+        return {"type": "slot", "name": name}
+
     def node_start(self, id: str) -> str:
         return id
 
     def node_end(self) -> None:
         return None
+
+    # =====================
+    # Meta Block
+    # =====================
+
+    def meta_block(self, *entries) -> list:
+        return list(entries)
+
+    @located
+    def meta_entry(self, meta: Any, key: str, *values) -> tuple[str, int, list]:
+        return (key, meta.line, list(values))
 
     def body(self, *statements) -> list:
         return list(statements)

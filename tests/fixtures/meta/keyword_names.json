@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pool", "line": 1, "meta": {"pool": {"line": 3, "value": ["slot"]}}, "body": [{"type": "goto", "line": 5, "id": "pool"}]}]}

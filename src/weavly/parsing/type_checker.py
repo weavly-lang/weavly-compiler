@@ -1,3 +1,4 @@
+from difflib import get_close_matches
 from pathlib import Path
 
 from lark import Token, Tree
@@ -7,6 +8,8 @@ Location = tuple[Path, int, int]
 NUMBER = "number"
 STRING = "string"
 FLAG = "flag"
+POOL = "pool"
+SLOT = "slot"
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER}
@@ -20,6 +23,16 @@ NUMBER_FUNCTIONS = {
     "floor": (1, 1),
     "ceil": (1, 1),
     "abs": (1, 1),
+}
+
+# key -> type of its value.
+META_KEYS = {
+    "pool": POOL,
+    "slot": SLOT,
+    "when": FLAG,
+    "priority": NUMBER,
+    "weight": NUMBER,
+    "once": FLAG,
 }
 
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
@@ -91,6 +104,45 @@ class _TypeChecker:
         if weight is not None:
             self._expect(weight, NUMBER, "random weight")
 
+    def _check_meta_block(self, tree: Tree) -> None:
+        seen = set()
+        for entry in tree.children:
+            key = entry.children[0]
+            if key in seen:
+                self._error(key, f"duplicate meta key '{key}'")
+            seen.add(str(key))
+
+    def _check_meta_entry(self, tree: Tree) -> None:
+        key, *values = tree.children
+        expected = META_KEYS.get(str(key))
+        if expected is None:
+            message = f"unknown meta key '{key}'"
+            matches = get_close_matches(str(key), META_KEYS, n=1)
+            if matches:
+                message += f", did you mean '{matches[0]}'?"
+            self._error(key, message)
+            return
+
+        if expected in (POOL, SLOT):
+            for value in values:
+                if _is_name(value):
+                    self._expect_name(value, expected)
+                else:
+                    self._error(value, f"{key} takes {expected} names, not expressions")
+            return
+
+        if len(values) > 1:
+            self._error(values[1], f"{key} takes a single value, got {len(values)}")
+            return
+        value = values[0]
+        if _is_name(value):
+            self._error(value, f"{key} needs a {expected}, got name '{value}'")
+        elif key == "once":
+            if not isinstance(value, Token) or value.type not in ("TRUE", "FALSE"):
+                self._error(value, "once needs true or false")
+        else:
+            self._expect(value, expected, str(key))
+
     def _check_character_line(self, tree: Tree) -> None:
         self._expect_variable(tree.children[0], STRING, "character name")
 
@@ -158,7 +210,17 @@ class _TypeChecker:
         declared = self.variables.get(name)
         if declared is None:
             self._error(tree, f"variable '{name}' isn't declared")
+        elif declared in (POOL, SLOT):
+            self._error(tree, f"'{name}' is a {declared}, not a variable")
+            return None
         return declared
+
+    def _expect_name(self, token: Token, expected: str) -> None:
+        declared = self.variables.get(str(token))
+        if declared is None:
+            self._error(token, f"{expected} '{token}' isn't declared")
+        elif declared != expected:
+            self._error(token, f"'{token}' is a {declared}, not a {expected}")
 
     def _expect(self, node: Tree | Token, expected: str, context: str) -> None:
         actual = self._infer(node)
@@ -176,3 +238,7 @@ class _TypeChecker:
 
     def _error(self, node: Tree | Token, message: str) -> None:
         self.errors.append((source_location(self.file, node), message))
+
+
+def _is_name(value: Tree | Token) -> bool:
+    return isinstance(value, Token) and value.type == "ID"

@@ -1,5 +1,6 @@
 import json
 import shutil
+from collections.abc import Collection
 from difflib import get_close_matches
 from importlib import resources
 from pathlib import Path
@@ -29,10 +30,18 @@ WVL_BUILD_EXTENSION = ".wvl.json"
 WVL_GRAMMAR_FILE = "wvl-grammar.lark"
 ENV_BUILD_FILE = "env.json"
 
-_DECLARATION_RULES = frozenset(
-    {"number_declaration", "string_declaration", "flag_declaration", "extern_declaration"}
-)
-_NODE_RULES = frozenset({"node_start"})
+# rule -> what its leading ID names, for duplicate errors.
+_DECLARATION_KINDS = {
+    "number_declaration": "variable",
+    "string_declaration": "variable",
+    "flag_declaration": "variable",
+    "extern_declaration": "variable",
+    "pool_declaration": "pool",
+    "slot_declaration": "slot",
+}
+_NODE_KINDS = {"node_start": "node id"}
+# declaration type -> env.json list of names.
+_NAME_LISTS = {"pool": "pools", "slot": "slots"}
 _GOTO_RULES = frozenset({"goto", "inline_goto"})
 
 
@@ -96,17 +105,20 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
 
         # Columns are only in the raw tree.
         _record_unique(
-            _id_locations(tree, _DECLARATION_RULES, file),
+            _id_locations(tree, _DECLARATION_KINDS.keys(), file),
             declared,
-            "variable",
+            _DECLARATION_KINDS,
             validation_errors,
         )
         _record_unique(
-            _id_locations(tree, _NODE_RULES, file), node_ids, "node id", validation_errors
+            _id_locations(tree, _NODE_KINDS.keys(), file),
+            node_ids,
+            _NODE_KINDS,
+            validation_errors,
         )
         node_references.extend(
             ("goto", target, location)
-            for target, location in _id_locations(tree, _GOTO_RULES, file)
+            for _, target, location in _id_locations(tree, _GOTO_RULES, file)
         )
         node_references.extend(_call_references(tree, file, validation_errors))
         validation_errors.extend(_number_range_errors(tree, file))
@@ -136,9 +148,20 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
         raise typer.Exit(code=1)
 
     file_count = len(outputs)
-    outputs.append((Path(ENV_BUILD_FILE), {"declarations": declarations}))
+    outputs.append((Path(ENV_BUILD_FILE), _env(declarations)))
     _replace_build_dir(build_dir, outputs, pretty)
     return file_count
+
+
+def _env(declarations: list[dict]) -> dict[str, list]:
+    env: dict[str, list] = {"declarations": [], "pools": [], "slots": []}
+    for declaration in declarations:
+        name_list = _NAME_LISTS.get(declaration["type"])
+        if name_list is None:
+            env["declarations"].append(declaration)
+        else:
+            env[name_list].append(declaration["name"])
+    return env
 
 
 def _replace_build_dir(
@@ -166,14 +189,16 @@ def _replace_build_dir(
 
 
 def _id_locations(
-    tree: Tree, rules: frozenset[str], file: Path
-) -> list[tuple[str, Location]]:
-    """Return (id, location) for the leading ID of every matching rule, in source order."""
+    tree: Tree, rules: Collection[str], file: Path
+) -> list[tuple[str, str, Location]]:
+    """Return (rule, id, location) for the leading ID of every matching rule, in source order."""
     locations = []
     for subtree in tree.iter_subtrees_topdown():
         if subtree.data in rules:
             id_token = subtree.children[0]
-            locations.append((str(id_token), (file, id_token.line, id_token.column)))
+            locations.append(
+                (subtree.data, str(id_token), (file, id_token.line, id_token.column))
+            )
     return locations
 
 
@@ -230,13 +255,14 @@ def _unknown_function(function: str) -> str:
 
 
 def _record_unique(
-    locations: list[tuple[str, Location]],
+    locations: list[tuple[str, str, Location]],
     seen: dict[str, Location],
-    kind: str,
+    kinds: dict[str, str],
     errors: list[tuple[Location, str]],
 ) -> None:
-    for name, location in locations:
+    for rule, name, location in locations:
         if name in seen:
+            kind = kinds[rule]
             prev_file, prev_line, _ = seen[name]
             errors.append(
                 (

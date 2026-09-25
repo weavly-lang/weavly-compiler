@@ -1,0 +1,6 @@
+@node a
+@meta
+pool: cave_outcome
+once: true
+@endmeta
+@endnode

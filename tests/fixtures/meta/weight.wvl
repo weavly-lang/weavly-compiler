@@ -1,0 +1,6 @@
+@node a
+@meta
+pool: cave_outcome
+weight: 1 + visit_count(a) * $luck
+@endmeta
+@endnode

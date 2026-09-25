@@ -1,0 +1,6 @@
+@node a
+@meta
+once: true
+when: $luck > 5
+@endmeta
+@endnode
