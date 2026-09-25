@@ -1,0 +1,15 @@
+@node cave_treasure
+@meta
+pool: cave_outcome
+when: visit_count() < 3 and not visited()
+weight: 1 + skip_count()
+once: true
+@endmeta
+@if visited() or skip_count() > 2
+    Back again, visit {visit_count()}.
+@endif
+@endnode
+
+@node cave_exit
+@set $left = visited() and visited(cave_treasure)
+@endnode

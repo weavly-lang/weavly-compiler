@@ -226,7 +226,7 @@ def _call_references(
         count = 0 if arguments is None else len(arguments.children)
         if function in NODE_FUNCTIONS:
             errors.append(
-                (source_location(file, function), f"{function}() takes a single node id")
+                (source_location(file, function), f"{function}() takes a node id, or none for the current node")
             )
         elif function in NUMBER_FUNCTIONS:
             message = _argument_count_error(function, count)
@@ -339,7 +339,19 @@ def _build_parser(grammar: str, parser_type: str) -> Lark:
 def _parse_tree(parser: Lark, text: str) -> Tree:
     tree = parser.parse(text, start="start")
     expand_text(tree, parser)
+    _resolve_current_node(tree)
     return tree
+
+
+def _resolve_current_node(tree: Tree) -> None:
+    """Turn node function calls without an argument into calls on their enclosing node."""
+    for node in tree.find_data("node"):
+        node_id = node.children[0].children[0]
+        for call in node.find_data("call"):
+            function, arguments = call.children
+            if function in NODE_FUNCTIONS and arguments is None:
+                call.data = "node_call"
+                call.children = [function, Token.new_borrow_pos("ID", node_id, function)]
 
 
 def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:

@@ -119,9 +119,11 @@ A `when` that only comes from `once` carries the `once` line.
 ```
 @meta
 pool: cave_outcome
-weight: 1 + skip_count(cave_treasure)
+weight: 1 + skip_count()
 @endmeta
 ```
+
+`visited()`, `visit_count()` and `skip_count()` without an argument mean the node they're written in. The build writes that node's id, as if it had been written out.
 
 `@draw` plays one storylet from one or more comma-separated pools, as a statement or an inline action:
 
