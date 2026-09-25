@@ -1,6 +1,6 @@
 [project]
 name = "weavly"
-version = "0.3.0"
+version = "0.4.0"
 description = "Compiler for the Weavly dialogue scripting language"
 readme = "README.md"
 license = "MIT"
