@@ -165,7 +165,7 @@ def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
         "@env\ncave: pool\n@endenv\n\n"
         "@node start\n"
         "@meta\npool: cave\nweight: 1 + skip_count(strat)\nwhen: skip_count(start)\n@endmeta\n"
-        "@if skip_count() > 1\n    Hi.\n@endif\n"
+        "@if skip_count(1) > 1\n    Hi.\n@endif\n"
         "@endnode\n",
     )
 
@@ -176,7 +176,7 @@ def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
     assert errors == [
         "8:24: error: skip_count target 'strat' matches no node",
         "9:7: error: when needs a flag, got a number",
-        "11:5: error: skip_count() takes a single node id",
+        "11:5: error: skip_count() takes a node id, or none for the current node",
     ]
 
 
@@ -201,13 +201,19 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
         ("random()", "a.wvl:2:11: error: random() takes 2 arguments, got 0"),
         ("min(1)", "a.wvl:2:11: error: min() takes at least 2 arguments, got 1"),
         ("max()", "a.wvl:2:11: error: max() takes at least 2 arguments, got 0"),
-        ("visited()", "a.wvl:2:11: error: visited() takes a single node id"),
-        ("visit_count($x)", "a.wvl:2:11: error: visit_count() takes a single node id"),
+        (
+            "visited(1)",
+            "a.wvl:2:11: error: visited() takes a node id, or none for the current node",
+        ),
+        (
+            "visit_count($x)",
+            "a.wvl:2:11: error: visit_count() takes a node id, or none for the current node",
+        ),
         ("abs(shop)", "a.wvl:2:15: error: abs() takes numbers, not node id 'shop'"),
         ("sqrt($x)", "a.wvl:2:11: error: unknown function 'sqrt'"),
         ("foo(start)", "a.wvl:2:11: error: unknown function 'foo'"),
     ],
-    ids=["too_few", "too_many", "none", "min_one", "max_none", "visited_empty",
+    ids=["too_few", "too_many", "none", "min_one", "max_none", "visited_number",
          "visit_count_variable", "node_id_for_number", "unknown", "unknown_node_form"],
 )
 def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message):
@@ -256,6 +262,39 @@ def test_visit_functions_build(tmp_path):
         "left": {"call": "visited", "node": "start"},
         "right": {"op": "<", "left": {"call": "visit_count", "node": "end"}, "right": 2.0},
     }
+
+
+def test_node_functions_without_argument_mean_the_current_node(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\ncave: pool\n@endenv\n\n"
+        "@node treasure\n"
+        "@meta\npool: cave\nwhen: visit_count() < 3\nweight: 1 + skip_count()\n@endmeta\n"
+        "@if not visited()\n    First time.\n@endif\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    node = data["nodes"][0]
+    assert node["meta"]["when"]["value"]["left"] == {"call": "visit_count", "node": "treasure"}
+    assert node["meta"]["weight"]["value"]["right"] == {"call": "skip_count", "node": "treasure"}
+    assert node["body"][0]["cases"][0]["condition"]["expression"] == {
+        "call": "visited",
+        "node": "treasure",
+    }
+
+
+def test_node_functions_without_argument_are_type_checked(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@node a\n@if visit_count()\n    Hi.\n@endif\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert "a.wvl:2:5: error: condition needs a flag, got a number" in capsys.readouterr().err
 
 
 def test_all_validation_errors_are_reported_together(tmp_path, capsys):
