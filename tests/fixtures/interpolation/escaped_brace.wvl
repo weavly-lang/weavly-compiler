@@ -1,0 +1,3 @@
+@node start
+    Write \{$gold} to show a value, } stays plain.
+@endnode

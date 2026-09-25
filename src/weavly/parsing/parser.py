@@ -10,6 +10,7 @@ from lark.exceptions import UnexpectedInput, VisitError
 
 from ..reporting import report_error
 from .syntax_errors import describe_syntax_error, terminal_names
+from .text import expand_text
 from .type_checker import (
     NODE_FUNCTIONS,
     NUMBER_FUNCTIONS,
@@ -74,9 +75,13 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
             continue
 
         try:
-            tree = parser.parse(text)
+            tree = _parse_tree(parser, text)
         except UnexpectedInput as e:
             _report_parse_error(e, file, text, names)
+            failed = True
+            continue
+        except InvalidStringError as e:
+            _report_string_error(e, file)
             failed = True
             continue
 
@@ -297,11 +302,22 @@ def _load_grammar(grammar_file: str) -> str:
 
 
 def _build_parser(grammar: str, parser_type: str) -> Lark:
-    return Lark(grammar, parser=parser_type, propagate_positions=True)
+    return Lark(
+        grammar,
+        parser=parser_type,
+        propagate_positions=True,
+        start=["start", "interpolation"],
+    )
+
+
+def _parse_tree(parser: Lark, text: str) -> Tree:
+    tree = parser.parse(text, start="start")
+    expand_text(tree, parser)
+    return tree
 
 
 def _parse(parser: Lark, text: str, transformer: Transformer) -> dict:
-    tree = parser.parse(text)
+    tree = _parse_tree(parser, text)
     data = transformer.transform(tree)
     return data
 

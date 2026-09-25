@@ -91,6 +91,23 @@ def _build_errors(tmp_path, capsys, source):
             "@node a\n@shake:\n@endnode\n",
             ['  hint: command arguments are expressions, like @shake "text"'],
         ),
+        (
+            "@node a\nYou have {$gold gold.\n@endnode\n",
+            [
+                "a.wvl:2:10: error: unclosed '{' in text",
+                "  2 | You have {$gold gold.",
+                "    |          ^",
+                "  hint: close it with '}' or write '\\{' for a literal brace",
+            ],
+        ),
+        (
+            "@node a\nYou have {} gold.\n@endnode\n",
+            ["a.wvl:2:11: error: unexpected '}'"],
+        ),
+        (
+            '@node a\n@continue "\\"Hi\\" {$x +}"\n@endnode\n',
+            ["a.wvl:2:24: error: unexpected '}'"],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -102,6 +119,9 @@ def _build_errors(tmp_path, capsys, source):
         "tab_indent",
         "command_colon_text",
         "command_colon",
+        "unclosed_interpolation",
+        "empty_interpolation",
+        "interpolation_after_escapes",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

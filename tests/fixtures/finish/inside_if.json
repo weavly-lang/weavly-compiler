@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "match", "line": 2, "modifier": "first", "cases": [{"line": 2, "condition": {"variable": "done"}, "body": [{"type": "finish", "line": 3}]}]}, {"type": "narration", "line": 5, "text": "Keep going."}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "match", "line": 2, "modifier": "first", "cases": [{"line": 2, "condition": {"variable": "done"}, "body": [{"type": "finish", "line": 3}]}]}, {"type": "narration", "line": 5, "text": ["Keep going."]}]}]}

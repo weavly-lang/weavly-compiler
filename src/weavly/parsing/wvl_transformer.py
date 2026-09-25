@@ -85,11 +85,11 @@ class WvlTransformer(Transformer):
     # =====================
 
     @located
-    def narration_line(self, meta: Any, text: str) -> dict[str, Any]:
+    def narration_line(self, meta: Any, text: list) -> dict[str, Any]:
         return {"type": "narration", "line": meta.line, "text": text}
 
     @located
-    def character_line(self, meta: Any, var: dict, text: str) -> dict[str, Any]:
+    def character_line(self, meta: Any, var: dict, text: list) -> dict[str, Any]:
         return {
             "type": "character",
             "line": meta.line,
@@ -99,7 +99,7 @@ class WvlTransformer(Transformer):
         }
 
     @located
-    def named_character_line(self, meta: Any, name: str, text: str) -> dict[str, Any]:
+    def named_character_line(self, meta: Any, name: str, text: list) -> dict[str, Any]:
         return {
             "type": "character",
             "line": meta.line,
@@ -156,7 +156,7 @@ class WvlTransformer(Transformer):
 
     @located
     def continue_(
-        self, meta: Any, text: str, statement: dict[str, Any] = None
+        self, meta: Any, text: list, statement: dict[str, Any] = None
     ) -> dict[str, Any]:
         if statement is None:
             body = []
@@ -209,7 +209,7 @@ class WvlTransformer(Transformer):
         self,
         meta: Any,
         condition: Any | None,
-        text: str,
+        text: list,
         body: list | dict,
         hint: bool = False,
     ) -> dict[str, Any]:
@@ -226,7 +226,7 @@ class WvlTransformer(Transformer):
         }
 
     @located
-    def hint_option(self, meta: Any, condition: Any | None, text: str) -> dict[str, Any]:
+    def hint_option(self, meta: Any, condition: Any | None, text: list) -> dict[str, Any]:
         return self.option(meta, condition, text, [], hint=True)
 
     # =====================
@@ -320,12 +320,19 @@ class WvlTransformer(Transformer):
         return list(expressions)
 
     # =====================
+    # Text
+    # =====================
+
+    def text(self, *segments) -> list:
+        return list(segments)
+
+    def interpolation(self, expression: Any) -> Any:
+        return expression
+
+    # =====================
     # Tokens
     # =====================
 
-    def TEXT(self, token: Any) -> str:
-        return str(token).lstrip()
-    
     def CHARACTER_NAME(self, token: Any) -> str:
         return str(token).lstrip()
 

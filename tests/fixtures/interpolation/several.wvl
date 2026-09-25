@@ -1,0 +1,3 @@
+@node start
+    {$first} and {$second}{$third}
+@endnode

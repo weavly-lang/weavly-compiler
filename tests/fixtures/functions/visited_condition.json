@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "match", "line": 2, "modifier": "first", "cases": [{"line": 2, "condition": {"call": "visited", "node": "shop"}, "body": [{"type": "narration", "line": 3, "text": "Welcome back."}]}]}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "match", "line": 2, "modifier": "first", "cases": [{"line": 2, "condition": {"call": "visited", "node": "shop"}, "body": [{"type": "narration", "line": 3, "text": ["Welcome back."]}]}]}]}]}

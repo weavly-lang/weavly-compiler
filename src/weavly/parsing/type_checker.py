@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 from lark import Token, Tree
@@ -26,8 +25,6 @@ NUMBER_FUNCTIONS = {
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
 _LOGIC = {"and_": "and", "or_": "or"}
-_TEXT_TOKENS = frozenset({"TEXT", "STRING"})
-_INTERPOLATION = re.compile(r"\{\$([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def source_location(file: Path, item: Tree | Token) -> Location:
@@ -96,34 +93,9 @@ class _TypeChecker:
 
     def _check_character_line(self, tree: Tree) -> None:
         self._expect_variable(tree.children[0], STRING, "character name")
-        self._check_text(tree)
 
-    def _check_narration_line(self, tree: Tree) -> None:
-        self._check_text(tree)
-
-    def _check_named_character_line(self, tree: Tree) -> None:
-        self._check_text(tree)
-
-    def _check_option(self, tree: Tree) -> None:
-        self._check_text(tree)
-
-    def _check_hint_option(self, tree: Tree) -> None:
-        self._check_text(tree)
-
-    def _check_continue_(self, tree: Tree) -> None:
-        self._check_text(tree)
-
-    def _check_text(self, tree: Tree) -> None:
-        for token in tree.children:
-            if not isinstance(token, Token) or token.type not in _TEXT_TOKENS:
-                continue
-            for match in _INTERPOLATION.finditer(token.value):
-                name = match.group(1)
-                if name not in self.variables:
-                    column = token.column + match.start(1) - 1
-                    self.errors.append(
-                        ((self.file, token.line, column), f"variable '{name}' isn't declared")
-                    )
+    def _check_interpolation(self, tree: Tree) -> None:
+        self._infer(tree.children[0])
 
     # =====================
     # Expressions

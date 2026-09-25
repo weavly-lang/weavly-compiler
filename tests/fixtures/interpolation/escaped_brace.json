@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "narration", "line": 2, "text": ["Write {$gold} to show a value, } stays plain."]}]}]}

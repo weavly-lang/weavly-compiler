@@ -158,6 +158,8 @@ node_call: ID "(" ID ")"
 call: ID "(" [arguments] ")"
 arguments: expression ("," expression)*
 
+interpolation: _LBRACE expression _RBRACE
+
 ?signed_number: NUMBER
     | "-" NUMBER -> negative_number
     | "+" NUMBER
@@ -226,6 +228,8 @@ _COLON: ":"
 _LBRACKET: "["
 _RBRACKET: "]"
 _ARROW: "->"
+_LBRACE: "{"
+_RBRACE: "}"
 
 // =====================
 // Imports
