@@ -4,6 +4,8 @@ from lark import Lark, Token
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 from lark.lexer import PatternStr
 
+from .text import UnclosedInterpolationError
+
 END = "$END"
 
 PATTERN_NAMES = {
@@ -66,6 +68,9 @@ def describe_syntax_error(
     elif isinstance(error, UnexpectedCharacters):
         message = f"unexpected character {error.char!r}"
         hint = None
+    elif isinstance(error, UnclosedInterpolationError):
+        message = "unclosed '{' in text"
+        hint = "close it with '}' or write '\\{' for a literal brace"
     else:
         return "syntax error", details
 

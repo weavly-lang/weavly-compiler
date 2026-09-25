@@ -21,3 +21,16 @@ def test_invalid_escape_is_a_compile_error(tmp_path, capsys):
     assert "bad.wvl" in err
     assert "bad.wvl:3:16: error: invalid string" in err
     assert '"C:\\games"' in err
+
+
+def test_invalid_escape_in_text_is_a_compile_error(tmp_path, capsys):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "bad.wvl").write_text(
+        '@node a\n@continue "Open C:\\games"\n@endnode\n', encoding="utf-8"
+    )
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert 'bad.wvl:2:11: error: invalid string "Open C:\\games"' in capsys.readouterr().err

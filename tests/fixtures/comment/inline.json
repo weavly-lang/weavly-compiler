@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "hp", "expression": 10.0}, {"type": "goto", "line": 3, "id": "next"}]}, {"id": "next", "line": 6, "body": [{"type": "narration", "line": 7, "text": "Go to room #5."}, {"type": "finish", "line": 8}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "set", "line": 2, "id": "hp", "expression": 10.0}, {"type": "goto", "line": 3, "id": "next"}]}, {"id": "next", "line": 6, "body": [{"type": "narration", "line": 7, "text": ["Go to room #5."]}, {"type": "finish", "line": 8}]}]}

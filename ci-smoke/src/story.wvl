@@ -20,11 +20,11 @@ Welcome to the smoke test.
 @endnode
 
 @node choices
-$player_name: Which path?
+$player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} fame.
 
 @options
 @option "Roll the dice" -> random_node
-@option [ $has_key ] "Use key" -> end
+@option [ $has_key ] "Use key on door \{{visit_count(choices)}}" -> end
 @endoptions
 @endnode
 
@@ -49,7 +49,7 @@ $player_name: Which path?
 @node end
 @set $score = visit_count(choices)
 @if visited(start) and not visited(end)
-    Thanks for playing, {$player_name}.
+    Thanks for playing, {$player_name}. Final score: {round($score)}.
 @endif
 @if $reputation > 100
     Everyone knows you.

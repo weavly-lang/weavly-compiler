@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"line": 2, "condition": true, "text": "Next", "body": [], "hint": false}]}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"line": 2, "condition": true, "text": ["Next"], "body": [], "hint": false}]}]}]}

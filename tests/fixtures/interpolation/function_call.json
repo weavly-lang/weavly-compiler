@@ -1,0 +1,1 @@
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "narration", "line": 2, "text": [{"call": "max", "args": [{"variable": "hp"}, 0.0]}, " HP left."]}, {"type": "narration", "line": 3, "text": ["Visit number ", {"call": "visit_count", "node": "start"}, "."]}]}]}

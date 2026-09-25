@@ -48,10 +48,13 @@ def _build_errors(tmp_path, capsys, body):
         ('@options\n@option "Pay {$scroe}" -> start\n@endoptions', "3:15"),
         ('@options\n@hint "Need {$scroe}"\n@endoptions', "3:14"),
         ('@continue "Onward, {$scroe}"', "2:21"),
+        ("Costs {$score + $scroe}.", "2:17"),
+        ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
     ],
     ids=["expression", "set", "increase", "decrease", "setflag", "clearflag",
          "character_name", "narration_text", "named_character_text", "character_text",
-         "option_text", "hint_text", "continue_text"],
+         "option_text", "hint_text", "continue_text", "text_expression",
+         "text_after_escapes"],
 )
 def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
@@ -95,10 +98,16 @@ def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
             "$score: Hi.",
             "2:1: error: character name needs a string variable, 'score' is a number",
         ),
+        ("Costs {$name * 2}.", "2:8: error: '*' needs a number, got a string"),
+        (
+            '@options\n@option "Is {$score == \\"x\\"}" -> start\n@endoptions',
+            "3:14: error: '==' needs both sides of the same type, got a number and a string",
+        ),
     ],
     ids=["set", "set_function", "add", "mul", "neg", "div_node_function", "and", "or",
          "not", "compare_eq", "compare_lt", "function_argument", "function_arguments",
-         "increase", "decrease", "setflag", "clearflag", "character_name"],
+         "increase", "decrease", "setflag", "clearflag", "character_name", "text",
+         "option_text"],
 )
 def test_type_errors(tmp_path, capsys, body, expected):
     assert _build_errors(tmp_path, capsys, body) == [expected]
@@ -213,6 +222,18 @@ def test_command_arguments_are_checked(tmp_path, capsys):
         "3:8: error: '+' needs a number, got a string",
         "3:19: error: clamp() takes 3 arguments, got 2",
         "3:40: error: visited target 'gone' matches no node",
+    ]
+
+
+def test_functions_in_text_are_checked(tmp_path, capsys):
+    errors = _build_errors(
+        tmp_path, capsys, 'Hi {maxx(1, 2)} {clamp(1, 2)}\n@continue "{visited(gone)}"'
+    )
+
+    assert errors == [
+        "2:5: error: unknown function 'maxx', did you mean 'max'?",
+        "2:18: error: clamp() takes 3 arguments, got 2",
+        "3:21: error: visited target 'gone' matches no node",
     ]
 
 

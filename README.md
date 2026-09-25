@@ -45,6 +45,21 @@ Commands take comma-separated expressions as arguments and are written with them
 
 Arguments are checked like any other expression. Command names aren't declared, so the build doesn't check them or how many arguments they get.
 
+Line, character line, option, hint and continue text can hold any expression inside `{}`:
+
+```
+The room costs {$base_price * $markup} gold.
+@option "Pay {round($price)} gold"
+```
+
+`text` is written as a list of plain strings and expressions, for the game to evaluate each expression and join the segments. It's a list even without expressions, and never holds empty strings:
+
+```json
+{"type": "narration", "line": 1, "text": ["The room costs ", {"op": "*", "left": {"variable": "base_price"}, "right": {"variable": "markup"}}, " gold."]}
+```
+
+Write `\{` for a literal brace. A `}` outside an expression is plain text. String literals inside `{}` in quoted text escape their quotes like any other quote in it: `@option "Greet {$name == \"Bob\"}"`.
+
 Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
 
 ```
@@ -54,13 +69,14 @@ extern reputation: number
 @endenv
 ```
 
-Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and as `{$name}` in line, option, hint and continue text. The build also checks types:
+Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and in expressions inside `{}` in text. The build also checks types:
 
 - `+ - * /`, unary `-` and random weights need numbers; `and`, `or` and `not` need flags.
 - Comparisons need both sides of the same type.
 - Conditions (`@if`, `@elif`, `@when`, option, hint and case conditions) must be flags.
 - `@set` must match the variable's type, `@increase` and `@decrease` need a number variable, `@setflag` and `@clearflag` a flag variable, and a character line's `$name` a string variable.
 - `visited()` is a flag, `visit_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
+- Expressions inside `{}` in text can be of any type.
 
 Syntax errors, duplicate variable declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()` and `visit_count()` targets with no matching node, undeclared variables, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 

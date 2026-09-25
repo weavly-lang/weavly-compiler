@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "character", "line": 2, "name": "Alice", "name_is_id": false, "text": "Hello."}, {"type": "character", "line": 3, "name": "hero", "name_is_id": true, "text": "Hi there."}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "character", "line": 2, "name": "Alice", "name_is_id": false, "text": ["Hello."]}, {"type": "character", "line": 3, "name": "hero", "name_is_id": true, "text": ["Hi there."]}]}]}

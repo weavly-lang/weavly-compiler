@@ -1,0 +1,6 @@
+@node start
+    @options
+        @option "Greet {$name == \"Bob\"}" -> start
+        @option "\{not a value} \"quoted\"" -> start
+    @endoptions
+@endnode
