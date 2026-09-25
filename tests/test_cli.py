@@ -32,6 +32,15 @@ def test_init_named_project(tmp_path, monkeypatch):
     assert (tmp_path / "my-project" / "src" / "nodes.wvl").is_file()
 
 
+def test_init_creates_missing_parent_directories(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["init", "games/my-project"])
+
+    assert result.exit_code == 0
+    assert (tmp_path / "games" / "my-project" / "src" / "nodes.wvl").is_file()
+
+
 def test_init_refuses_existing_src(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "src").mkdir()

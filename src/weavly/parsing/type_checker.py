@@ -112,7 +112,7 @@ class _TypeChecker:
         seen = set()
         for entry in tree.children:
             key = entry.children[0]
-            if key in seen:
+            if str(key) in seen:
                 self._error(key, f"duplicate meta key '{key}'")
             seen.add(str(key))
 

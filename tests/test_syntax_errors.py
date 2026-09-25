@@ -3,13 +3,8 @@ import typer
 from lark.exceptions import UnexpectedCharacters
 from lark.lexer import PatternStr
 
-from weavly.parsing.parser import (
-    PARSER_TYPE,
-    WVL_GRAMMAR_FILE,
-    _build_parser,
-    _load_grammar,
-    build_all_files,
-)
+from weavly.parsing import build_all_files
+from weavly.parsing.parser import create_parser
 from weavly.parsing.syntax_errors import PATTERN_NAMES, describe_syntax_error
 
 
@@ -146,7 +141,7 @@ def test_syntax_error_output(tmp_path, capsys, source, expected):
 
 
 def test_every_pattern_terminal_has_a_readable_name():
-    parser = _build_parser(_load_grammar(WVL_GRAMMAR_FILE), PARSER_TYPE)
+    parser = create_parser()
     pattern_terminals = {
         terminal.name
         for terminal in parser.terminals

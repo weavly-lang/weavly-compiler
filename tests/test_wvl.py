@@ -4,22 +4,9 @@ from pathlib import Path
 import pytest
 from lark.exceptions import UnexpectedInput
 
-from weavly.parsing.parser import (
-    PARSER_TYPE,
-    WVL_GRAMMAR_FILE,
-    _build_parser,
-    _load_grammar,
-    _parse,
-)
-from weavly.parsing.wvl_transformer import WvlTransformer
+from weavly.parsing.parser import compile_source
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
-
-
-def compile_wvl(source: str) -> dict:
-    grammar = _load_grammar(WVL_GRAMMAR_FILE)
-    parser = _build_parser(grammar, PARSER_TYPE)
-    return _parse(parser, source, WvlTransformer())
 
 
 wvl_files = sorted(
@@ -37,7 +24,7 @@ invalid_wvl_files = sorted(FIXTURES_DIR.rglob("invalid/*.wvl"))
 def test_compile(wvl_file):
     source = wvl_file.read_text(encoding="utf-8")
     expected = json.loads(wvl_file.with_suffix(".json").read_text(encoding="utf-8"))
-    assert compile_wvl(source) == expected
+    assert compile_source(source) == expected
 
 
 @pytest.mark.parametrize(
@@ -48,4 +35,4 @@ def test_compile(wvl_file):
 def test_compile_error(wvl_file):
     source = wvl_file.read_text(encoding="utf-8")
     with pytest.raises(UnexpectedInput):
-        compile_wvl(source)
+        compile_source(source)

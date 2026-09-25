@@ -73,22 +73,26 @@ class WvlTransformer(Transformer):
         return {"type": "string", "name": name, "value": str(value)}
 
     def number_declaration(
-        self, name: str, min=None, max=None, value: float | None = None
+        self,
+        name: str,
+        minimum: float | None,
+        maximum: float | None,
+        value: float | None,
     ) -> dict[str, Any]:
         if value is None:
             value = 0.0
-        return {"type": "number", "name": name, "value": float(value), "min": min, "max": max}
+        return {"type": "number", "name": name, "value": value, "min": minimum, "max": maximum}
 
     def flag_declaration(self, name: str, value: bool | None = None) -> dict[str, Any]:
         if value is None:
             value = False
         return {"type": "flag", "name": name, "value": bool(value)}
 
-    def extern_declaration(self, name: str, type: str) -> dict[str, Any]:
-        return {"type": type, "name": name, "extern": True}
+    def extern_declaration(self, name: str, value_type: str) -> dict[str, Any]:
+        return {"type": value_type, "name": name, "extern": True}
 
-    def extern_type(self, type: Any) -> str:
-        return str(type)
+    def extern_type(self, token: Any) -> str:
+        return str(token)
 
     def pool_declaration(self, name: str) -> dict[str, str]:
         return {"type": "pool", "name": name}
@@ -115,13 +119,15 @@ class WvlTransformer(Transformer):
 
     def body(self, *statements) -> list:
         return list(statements)
-    
+
     @located
-    def inline_goto(self, meta: Any, id) -> dict[str, Any]:
+    def inline_goto(self, meta: Any, id: str) -> dict[str, Any]:
         return self.goto(meta, id)
 
-    def action(self, statement_or_body: dict | list) -> dict | list:
-        return statement_or_body
+    def action(self, statement_or_body: dict | list) -> list:
+        if isinstance(statement_or_body, list):
+            return statement_or_body
+        return [statement_or_body]
 
     # =====================
     # Lines / Statements
@@ -164,17 +170,17 @@ class WvlTransformer(Transformer):
         }
 
     @located
-    def increase(self, meta: Any, var: dict, number: float | None) -> dict[str, Any]:
-        if number is None:
-            number = 1.0
-        expression = {"op": "+", "left": {"variable": var["variable"]}, "right": number}
-        return self.set(meta, var, expression)
+    def increase(self, meta: Any, var: dict, amount: float | None) -> dict[str, Any]:
+        return self._change(meta, var, "+", amount)
 
     @located
-    def decrease(self, meta: Any, var: dict, number: float | None) -> dict[str, Any]:
-        if number is None:
-            number = 1.0
-        expression = {"op": "-", "left": {"variable": var["variable"]}, "right": number}
+    def decrease(self, meta: Any, var: dict, amount: float | None) -> dict[str, Any]:
+        return self._change(meta, var, "-", amount)
+
+    def _change(self, meta: Any, var: dict, op: str, amount: float | None) -> dict[str, Any]:
+        if amount is None:
+            amount = 1.0
+        expression = {"op": op, "left": {"variable": var["variable"]}, "right": amount}
         return self.set(meta, var, expression)
 
     @located
@@ -203,13 +209,10 @@ class WvlTransformer(Transformer):
 
     @located
     def continue_(
-        self, meta: Any, text: list, statement: dict[str, Any] = None
+        self, meta: Any, text: list, statement: dict[str, Any] | None = None
     ) -> dict[str, Any]:
-        if statement is None:
-            body = []
-        else:
-            body = [statement]
-        return self.option_block(meta, self.option(meta, True, text, body))
+        body = [] if statement is None else [statement]
+        return self.option_block(meta, self.option(meta, None, text, body))
 
     # =====================
     # If Block
@@ -228,8 +231,6 @@ class WvlTransformer(Transformer):
 
     @located
     def if_(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:
-        if not isinstance(body, list):
-            body = [body]
         return {"line": meta.line, "condition": condition, "body": body}
 
     @located
@@ -257,13 +258,11 @@ class WvlTransformer(Transformer):
         meta: Any,
         condition: Any | None,
         text: list,
-        body: list | dict,
+        body: list,
         hint: bool = False,
     ) -> dict[str, Any]:
         if condition is None:
             condition = True
-        if not isinstance(body, list):
-            body = [body]
         return {
             "line": meta.line,
             "condition": condition,
@@ -292,8 +291,6 @@ class WvlTransformer(Transformer):
             condition = True
         if weight is None:
             weight = 1.0
-        if not isinstance(body, list):
-            body = [body]
         return {"line": meta.line, "condition": condition, "weight": weight, "body": body}
 
     # =====================
@@ -307,12 +304,10 @@ class WvlTransformer(Transformer):
         return {"type": "match", "line": meta.line, "modifier": modifier, "cases": list(cases)}
 
     def MATCH_MODIFIER(self, token: Any) -> str:
-        return str(token).lstrip()
+        return str(token)
 
     @located
     def when(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:
-        if not isinstance(body, list):
-            body = [body]
         return {"line": meta.line, "condition": condition, "body": body}
 
     # =====================
@@ -381,7 +376,7 @@ class WvlTransformer(Transformer):
     # =====================
 
     def CHARACTER_NAME(self, token: Any) -> str:
-        return str(token).lstrip()
+        return str(token).strip()
 
     def COMP_OP(self, token: Any) -> str:
         return str(token)

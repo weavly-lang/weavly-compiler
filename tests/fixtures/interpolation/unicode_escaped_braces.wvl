@@ -1,0 +1,3 @@
+@node a
+    @continue "\u007bnot code\u007d {$gold}"
+@endnode
