@@ -12,7 +12,7 @@ POOL = "pool"
 SLOT = "slot"
 
 # name -> result type.
-NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER}
+NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER, "skip_count": NUMBER}
 # name -> (min, max) argument count, max None for no limit.
 NUMBER_FUNCTIONS = {
     "random": (2, 2),

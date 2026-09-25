@@ -114,6 +114,15 @@ The node gets a `meta` object with the entries that were written, each with its 
 
 A `when` that only comes from `once` carries the `once` line.
 
+`skip_count(<node>)` is how often the node was eligible when the game listed or drew from one of its pools, but wasn't taken. The game resets it when the node is taken, so a storylet that keeps being passed over can raise its own chances:
+
+```
+@meta
+pool: cave_outcome
+weight: 1 + skip_count(cave_treasure)
+@endmeta
+```
+
 `@draw` plays one storylet from one or more comma-separated pools, as a statement or an inline action:
 
 ```
@@ -136,11 +145,11 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - Comparisons need both sides of the same type.
 - Conditions (`@if`, `@elif`, `@when`, option, hint and case conditions) must be flags.
 - `@set` must match the variable's type, `@increase` and `@decrease` need a number variable, `@setflag` and `@clearflag` a flag variable, and a character line's `$name` a string variable.
-- `visited()` is a flag, `visit_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
+- `visited()` is a flag, `visit_count()`, `skip_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
 - Expressions inside `{}` in text can be of any type.
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()` and `visit_count()` targets with no matching node, undeclared variables, pools and slots, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 
