@@ -41,6 +41,20 @@ def test_init_creates_missing_parent_directories(tmp_path, monkeypatch):
     assert (tmp_path / "games" / "my-project" / "src" / "nodes.wvl").is_file()
 
 
+def test_init_refuses_existing_project(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "my-project").mkdir()
+    (tmp_path / "my-project" / "notes.txt").write_text("keep", encoding="utf-8")
+
+    result = runner.invoke(app, ["init", "my-project"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "error: project 'my-project' already exists" in result.stderr
+    assert (tmp_path / "my-project" / "notes.txt").read_text(encoding="utf-8") == "keep"
+    assert not (tmp_path / "my-project" / "src").exists()
+
+
 def test_init_refuses_existing_src(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "src").mkdir()
