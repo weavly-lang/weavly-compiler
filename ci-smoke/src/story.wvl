@@ -24,6 +24,7 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 
 @options
 @option "Roll the dice" -> random_node
+@option "Explore the cave": @draw cave_outcome
 @option [ $has_key ] "Use key on door \{{visit_count(choices)}}" -> end
 @endoptions
 @endnode
@@ -42,6 +43,7 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
         @goto end
     @when not $has_key
         No key needed.
+        @draw cave_outcome
         @goto end
 @endmatch
 @endnode

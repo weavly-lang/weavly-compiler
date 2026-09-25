@@ -190,6 +190,10 @@ class WvlTransformer(Transformer):
         return {"type": "goto", "line": meta.line, "id": id}
 
     @located
+    def draw(self, meta: Any, *pools: str) -> dict[str, Any]:
+        return {"type": "draw", "line": meta.line, "pools": list(pools)}
+
+    @located
     def finish(self, meta: Any) -> dict[str, Any]:
         return {"type": "finish", "line": meta.line}
 

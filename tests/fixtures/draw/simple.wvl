@@ -1,0 +1,5 @@
+@node cave_enter
+    You search the cave.
+    @draw cave_outcome
+    You find nothing of interest.
+@endnode
