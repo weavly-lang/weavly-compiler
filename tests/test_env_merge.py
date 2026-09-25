@@ -158,6 +158,28 @@ def test_unresolved_visit_targets_are_errors(tmp_path, capsys):
     assert "'shop'" not in err
 
 
+def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\ncave: pool\n@endenv\n\n"
+        "@node start\n"
+        "@meta\npool: cave\nweight: 1 + skip_count(strat)\nwhen: skip_count(start)\n@endmeta\n"
+        "@if skip_count() > 1\n    Hi.\n@endif\n"
+        "@endnode\n",
+    )
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [
+        "8:24: error: skip_count target 'strat' matches no node",
+        "9:7: error: when needs a flag, got a number",
+        "11:5: error: skip_count() takes a single node id",
+    ]
+
+
 def test_unknown_function_is_an_error(tmp_path, capsys):
     src = tmp_path / "src"
     _write(src / "a.wvl", "@node start\n@if visted(start)\n    Hi.\n@endif\n@endnode\n")

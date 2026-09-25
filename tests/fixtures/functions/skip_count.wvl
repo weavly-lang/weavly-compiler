@@ -1,0 +1,11 @@
+@node cave_treasure
+@meta
+pool: cave_outcome
+when: skip_count(cave_treasure) < 5
+priority: skip_count(cave_treasure) / 2
+weight: 1 + skip_count(cave_treasure)
+@endmeta
+@if skip_count(cave_treasure) > 3
+    Finally.
+@endif
+@endnode
