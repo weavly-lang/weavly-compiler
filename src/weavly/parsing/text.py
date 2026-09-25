@@ -1,5 +1,6 @@
 import json
 import re
+from typing import NamedTuple
 
 from lark import Lark, Token, Tree
 from lark.exceptions import UnexpectedInput
@@ -23,8 +24,13 @@ _QUOTED_UNIT = re.compile(
     re.DOTALL,
 )
 
-# (character, offset in the raw token, written as \{)
-_Char = tuple[str, int, bool]
+
+class _Char(NamedTuple):
+    char: str
+    # Offset in the raw token.
+    offset: int
+    # Written as an escape, so never a brace that opens or closes an interpolation.
+    escaped: bool
 
 
 class UnclosedInterpolationError(UnexpectedInput):
@@ -52,14 +58,13 @@ def _text(token: Token, parser: Lark) -> Tree:
     plain: list[str] = []
     i = 0
     while i < len(chars):
-        char, offset, escaped = chars[i]
-        if char != "{" or escaped:
-            plain.append(char)
+        if chars[i].char != "{" or chars[i].escaped:
+            plain.append(chars[i].char)
             i += 1
             continue
         end = _closing_brace(chars, i)
         if end is None:
-            raise UnclosedInterpolationError(token.line, token.column + offset)
+            raise UnclosedInterpolationError(token.line, token.column + chars[i].offset)
         if plain:
             segments.append("".join(plain))
             plain = []
@@ -75,17 +80,17 @@ def _chars(token: Token) -> list[_Char]:
     if token.type == "STRING":
         pattern, start, end = _QUOTED_UNIT, 1, len(raw) - 1
     else:
-        pattern, start, end = _TEXT_UNIT, len(raw) - len(raw.lstrip()), len(raw)
+        pattern, start, end = _TEXT_UNIT, len(raw) - len(raw.lstrip()), len(raw.rstrip())
 
     chars = []
     for match in pattern.finditer(raw, start, end):
         unit = match.group()
         if unit == "\\{":
-            chars.append(("{", match.start(), True))
+            chars.append(_Char("{", match.start(), True))
         elif len(unit) == 1:
-            chars.append((unit, match.start(), False))
+            chars.append(_Char(unit, match.start(), False))
         else:
-            chars.append((_unescape(unit, token), match.start(), False))
+            chars.append(_Char(_unescape(unit, token), match.start(), True))
     return chars
 
 
@@ -100,26 +105,26 @@ def _closing_brace(chars: list[_Char], start: int) -> int | None:
     in_string = False
     i = start + 1
     while i < len(chars):
-        char = chars[i][0]
+        char = chars[i].char
         if in_string and char == "\\":
             i += 1
         elif char == '"':
             in_string = not in_string
-        elif char == "}" and not in_string:
+        elif char == "}" and not in_string and not chars[i].escaped:
             return i
         i += 1
     return None
 
 
 def _interpolation(chars: list[_Char], token: Token, parser: Lark) -> Tree:
-    offsets = [offset for _, offset, _ in chars]
+    offsets = [char.offset for char in chars]
     offsets.append(offsets[-1] + 1)
 
     def column(relative: int) -> int:
         return token.column + offsets[relative - 1]
 
     try:
-        tree = parser.parse("".join(char for char, _, _ in chars), start="interpolation")
+        tree = parser.parse("".join(char.char for char in chars), start="interpolation")
     except UnexpectedInput as e:
         e.line = token.line
         e.column = column(e.column)

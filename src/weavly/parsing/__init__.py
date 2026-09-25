@@ -1,4 +1,4 @@
-from .parser import WVL_BUILD_EXTENSION, WVL_SOURCE_EXTENSION, build_all_files
+from .build import WVL_BUILD_EXTENSION, WVL_SOURCE_EXTENSION, build_all_files
 
 __all__ = [
     "build_all_files",

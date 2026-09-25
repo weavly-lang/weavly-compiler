@@ -1,7 +1,7 @@
 import pytest
 import typer
 
-from weavly.parsing.parser import build_all_files
+from weavly.parsing import build_all_files
 
 
 def test_invalid_escape_is_a_compile_error(tmp_path, capsys):

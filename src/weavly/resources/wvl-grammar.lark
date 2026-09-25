@@ -2,7 +2,7 @@
 // Entry / Nodes
 // =====================
 
-start: _NEWLINE* (env_block | node)+
+start: _NEWLINE* (env_block | node)*
 
 // =====================
 // Env Block
@@ -68,7 +68,7 @@ body: statement*
 
 inline_goto: _ARROW ID _NEWLINE
 
-action: (inline_statement | inline_goto | _NEWLINE body)
+action: inline_action | _NEWLINE body
 
 ?inline_action: (inline_statement | inline_goto)
 

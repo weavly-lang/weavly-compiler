@@ -3,7 +3,7 @@ import json
 import pytest
 import typer
 
-from weavly.parsing.parser import build_all_files
+from weavly.parsing import build_all_files
 
 ENV = (
     "@env\n"

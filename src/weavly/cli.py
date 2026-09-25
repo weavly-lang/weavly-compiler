@@ -68,7 +68,7 @@ def init(
         if base.exists():
             report_error(f"project '{name}' already exists")
             raise typer.Exit(code=1)
-        base.mkdir()
+        base.mkdir(parents=True)
     else:
         base = Path()
 

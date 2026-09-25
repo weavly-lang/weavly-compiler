@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import typer
 
-from weavly.parsing.parser import build_all_files
+from weavly.parsing import build_all_files
 
 
 def _project(tmp_path):
@@ -61,6 +61,26 @@ def test_failed_swap_keeps_previous_build(tmp_path, monkeypatch, capsys):
     assert f"error: could not update '{build.as_posix()}'" in err
     assert "Access is denied" in err
     assert "Traceback" not in err
+    assert sorted(p.name for p in build.iterdir()) == ["old.wvl.json"]
+    assert _entries(tmp_path) == ["build", "src"]
+
+
+def test_failed_move_into_place_restores_previous_build(tmp_path, monkeypatch, capsys):
+    src, build = _project(tmp_path)
+    rename = Path.rename
+    tmp_dir = tmp_path / ".build.tmp"
+
+    def locked_rename(self, target):
+        if self == tmp_dir:
+            raise PermissionError(13, "Access is denied", str(self))
+        return rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", locked_rename)
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, build, pretty=False)
+
+    assert "Access is denied" in capsys.readouterr().err
     assert sorted(p.name for p in build.iterdir()) == ["old.wvl.json"]
     assert _entries(tmp_path) == ["build", "src"]
 
