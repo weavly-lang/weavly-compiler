@@ -1,0 +1,1 @@
+{"nodes": [{"id": "city_gate", "line": 1, "body": [{"type": "draw", "line": 2, "pools": ["city_arrival", "anywhere"]}]}]}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "cave_enter", "line": 1, "body": [{"type": "narration", "line": 2, "text": ["You search the cave."]}, {"type": "draw", "line": 3, "pools": ["cave_outcome"]}, {"type": "narration", "line": 4, "text": ["You find nothing of interest."]}]}]}

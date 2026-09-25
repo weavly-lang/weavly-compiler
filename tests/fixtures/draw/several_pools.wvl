@@ -1,0 +1,3 @@
+@node city_gate
+    @draw city_arrival, anywhere
+@endnode

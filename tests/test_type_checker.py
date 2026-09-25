@@ -304,6 +304,38 @@ def test_meta_block_builds(tmp_path):
     assert list(data["nodes"][0]["meta"]) == ["pool", "slot", "when", "priority", "weight"]
 
 
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ("@draw cavee", "2:7: error: pool 'cavee' isn't declared"),
+        ("@draw cave, treasure", "2:13: error: 'treasure' is a slot, not a pool"),
+        ("@draw score", "2:7: error: 'score' is a number, not a pool"),
+        (
+            '@options\n@option "Go": @draw nowhere\n@endoptions',
+            "3:21: error: pool 'nowhere' isn't declared",
+        ),
+    ],
+    ids=["undeclared", "slot", "variable", "inline"],
+)
+def test_draw_errors(tmp_path, capsys, body, expected):
+    assert _build_errors(tmp_path, capsys, body) == [expected]
+
+
+def test_draw_from_pools_without_members_builds(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "a.wvl", "@node start\n@draw cave, hall, cave\nNothing here.\n@endnode\n")
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    assert data["nodes"][0]["body"][0] == {
+        "type": "draw",
+        "line": 2,
+        "pools": ["cave", "hall", "cave"],
+    }
+
+
 def test_command_arguments_of_any_type_build(tmp_path):
     src = tmp_path / "src"
     _write(src / "globals.wvl", ENV)

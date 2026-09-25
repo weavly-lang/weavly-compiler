@@ -55,6 +55,7 @@ body: statement*
     | clearflag
     | command
     | goto
+    | draw
     | finish
     | continue
 
@@ -87,6 +88,8 @@ setflag: _SETFLAG variable _NEWLINE
 clearflag: _CLEARFLAG variable _NEWLINE
 
 goto: _GOTO ID _NEWLINE
+
+draw: _DRAW ID ("," ID)* _NEWLINE
 
 finish: _FINISH _NEWLINE
 
@@ -213,8 +216,9 @@ _DEC: "@decrease"
 _SETFLAG: "@setflag"
 _CLEARFLAG: "@clearflag"
 _GOTO: "@goto"
+_DRAW: "@draw"
 _FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|goto|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
+_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|goto|draw|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
 _CONTINUE: "@continue"
 
 _IF: "@if"

@@ -1,0 +1,3 @@
+@node a
+    @draw cave_outcome,
+@endnode

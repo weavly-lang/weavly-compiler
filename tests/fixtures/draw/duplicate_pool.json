@@ -1,0 +1,1 @@
+{"nodes": [{"id": "a", "line": 1, "body": [{"type": "draw", "line": 2, "pools": ["cave_outcome", "anywhere", "cave_outcome"]}]}]}

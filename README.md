@@ -114,6 +114,22 @@ The node gets a `meta` object with the entries that were written, each with its 
 
 A `when` that only comes from `once` carries the `once` line.
 
+`@draw` plays one storylet from one or more comma-separated pools, as a statement or an inline action:
+
+```
+@node cave_enter
+You search the cave.
+@draw cave_outcome
+You find nothing of interest.
+@endnode
+```
+
+```json
+{"type": "draw", "line": 3, "pools": ["cave_outcome"]}
+```
+
+`pools` is always a list, in the written order. Every pool must be declared, but it can still be without members. The game combines the members of all given pools, counting a node that's in several of them once, and picks the eligible node with the highest priority, with weight deciding between equal priorities. It jumps there like `@goto`. If no node is eligible, execution continues with the next statement, which is where a fallback goes.
+
 Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and in expressions inside `{}` in text. The build also checks types:
 
 - `+ - * /`, unary `-` and random weights need numbers; `and`, `or` and `not` need flags.
