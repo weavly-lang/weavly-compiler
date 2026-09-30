@@ -1,6 +1,6 @@
 @env
-greeting: string = "say \"hi\""
-trailing: string = "say \""
+var greeting: string = "say \"hi\""
+var trailing: string = "say \""
 @endenv
 
 @node start

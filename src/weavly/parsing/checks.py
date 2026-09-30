@@ -19,6 +19,7 @@ _DECLARATION_KINDS = {
     "number_declaration": "variable",
     "string_declaration": "variable",
     "flag_declaration": "variable",
+    "name_declaration": "variable",
     "extern_declaration": "variable",
     "pool_declaration": "pool",
     "slot_declaration": "slot",
@@ -58,10 +59,14 @@ class ProjectChecks:
             if target not in self._node_ids
         )
         variables: dict[str, str] = {}
+        kinds: dict[str, str] = {}
         for declaration in declarations:
-            variables.setdefault(declaration["name"], declaration["type"])
+            if "kind" in declaration:
+                kinds.setdefault(declaration["name"], declaration["kind"])
+            else:
+                variables.setdefault(declaration["name"], declaration["type"])
         for file, tree in self._trees:
-            self.errors.extend(check_types(tree, file, variables))
+            self.errors.extend(check_types(tree, file, variables, kinds, self._node_ids))
         return self.errors
 
     def _record_unique(
@@ -84,14 +89,9 @@ class ProjectChecks:
     def _check_calls(self, tree: Tree, file: Path) -> None:
         for call in tree.find_data("node_call"):
             function, target = call.children
-            if function in NODE_FUNCTIONS:
-                self._node_references.append(
-                    (str(function), str(target), source_location(file, target))
-                )
-            elif function in NUMBER_FUNCTIONS:
-                self._error(file, target, f"{function}() takes numbers, not node id '{target}'")
-            else:
-                self._error(file, function, _unknown_function(function))
+            self._node_references.append(
+                (str(function), str(target), source_location(file, target))
+            )
 
         for call in tree.find_data("call"):
             function, arguments = call.children

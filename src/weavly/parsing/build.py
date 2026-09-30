@@ -20,7 +20,7 @@ WVL_SOURCE_EXTENSION = ".wvl"
 WVL_BUILD_EXTENSION = ".wvl.json"
 ENV_BUILD_FILE = "env.json"
 
-# declaration type -> env.json list of names.
+# declaration kind -> env.json list of names.
 _NAME_LISTS = {"pool": "pools", "slot": "slots"}
 
 
@@ -109,7 +109,7 @@ def _report_string_error(error: InvalidStringError, file: Path) -> None:
 def _env(declarations: list[dict]) -> dict[str, list]:
     env: dict[str, list] = {"declarations": [], "pools": [], "slots": []}
     for declaration in declarations:
-        name_list = _NAME_LISTS.get(declaration["type"])
+        name_list = _NAME_LISTS.get(declaration.get("kind"))
         if name_list is None:
             env["declarations"].append(declaration)
         else:

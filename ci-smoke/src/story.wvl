@@ -50,6 +50,10 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 
 @node end
 @set $score = visit_count(choices)
+@set $last_scene = end
+@if $region == cave_outcome and $last_scene != start
+    You came back from the cave.
+@endif
 @if visited(start) and not visited(end)
     Thanks for playing, {$player_name}. Final score: {round($score)}.
 @endif

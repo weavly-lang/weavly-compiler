@@ -1,0 +1,1 @@
+{"nodes": [], "declarations": [{"kind": "pool", "name": "city"}, {"kind": "slot", "name": "bob"}, {"type": "node", "name": "next_quest", "value": "start"}, {"type": "pool", "name": "region", "value": "city"}, {"type": "slot", "name": "partner", "value": "bob"}, {"type": "pool", "name": "home", "extern": true}]}

@@ -1,5 +1,5 @@
 @env
-gold: number = 0
+var gold: number = 0
 @endenv
 
 @node start

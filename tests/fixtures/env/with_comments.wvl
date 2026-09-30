@@ -1,5 +1,5 @@
 @env
 # player health
-hp: number = 50
-name: string = "Hero"  # display name
+var hp: number = 50
+var name: string = "Hero"  # display name
 @endenv

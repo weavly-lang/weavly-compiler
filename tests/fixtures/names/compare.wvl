@@ -1,0 +1,5 @@
+@node start
+@if $region == city and $quest != start
+    Home again.
+@endif
+@endnode

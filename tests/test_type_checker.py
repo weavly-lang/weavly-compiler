@@ -7,13 +7,13 @@ from weavly.parsing import build_all_files
 
 ENV = (
     "@env\n"
-    "score: number = 0\n"
-    'name: string = "Hero"\n'
-    "has_key: flag = false\n"
-    "extern reputation: number\n"
-    "cave: pool\n"
-    "hall: pool\n"
-    "treasure: slot\n"
+    "var score: number = 0\n"
+    'var name: string = "Hero"\n'
+    "var has_key: flag = false\n"
+    "extern var reputation: number\n"
+    "pool cave\n"
+    "pool hall\n"
+    "slot treasure\n"
     "@endenv\n"
 )
 
@@ -185,7 +185,7 @@ def test_well_typed_script_builds(tmp_path):
 def test_variables_declared_in_other_files_are_known(tmp_path):
     src = tmp_path / "src"
     _write(src / "a.wvl", "@node start\n@increase $gold\n@endnode\n")
-    _write(src / "z" / "b.wvl", "@env\nextern gold: number\n@endenv\n")
+    _write(src / "z" / "b.wvl", "@env\nextern var gold: number\n@endenv\n")
 
     build_all_files(src, tmp_path / "build", pretty=False)
 
@@ -202,13 +202,13 @@ def test_extern_declarations_are_written_to_env_json(tmp_path):
 
 def test_extern_and_regular_declaration_with_same_name_is_an_error(tmp_path, capsys):
     src = tmp_path / "src"
-    _write(src / "a.wvl", "@env\ngold: number = 0\n@endenv\n")
-    _write(src / "b.wvl", "@env\nextern gold: number\n@endenv\n")
+    _write(src / "a.wvl", "@env\nvar gold: number = 0\n@endenv\n")
+    _write(src / "b.wvl", "@env\nextern var gold: number\n@endenv\n")
 
     with pytest.raises(typer.Exit):
         build_all_files(src, tmp_path / "build", pretty=False)
 
-    assert "b.wvl:2:8: error: duplicate variable 'gold', first declared at" in (
+    assert "b.wvl:2:12: error: duplicate variable 'gold', first declared at" in (
         capsys.readouterr().err
     )
 
@@ -253,14 +253,14 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
         ("@meta\npriority: $name\n@endmeta", "3:11: error: priority needs a number, got a string"),
         (
             "@meta\npriority: cave\n@endmeta",
-            "3:11: error: priority needs a number, got name 'cave'",
+            "3:11: error: priority needs a number, got a pool",
         ),
         ("@meta\nonce: $has_key\n@endmeta", "3:7: error: once needs true or false"),
         ("@meta\nwhen: true, false\n@endmeta", "3:13: error: when takes a single value, got 2"),
         ("@meta\npool: cavee\n@endmeta", "3:7: error: pool 'cavee' isn't declared"),
         ("@meta\nslot: tresure\n@endmeta", "3:7: error: slot 'tresure' isn't declared"),
         ("@meta\npool: cave, treasure\n@endmeta", "3:13: error: 'treasure' is a slot, not a pool"),
-        ("@meta\npool: score\n@endmeta", "3:7: error: 'score' is a number, not a pool"),
+        ("@meta\npool: score\n@endmeta", "3:7: error: 'score' is a variable, not a pool"),
         ("@meta\npool: $score\n@endmeta", "3:7: error: pool takes pool names, not expressions"),
         ("@meta\nwhen: $gold > 1\n@endmeta", "3:7: error: variable 'gold' isn't declared"),
         (
@@ -309,7 +309,7 @@ def test_meta_block_builds(tmp_path):
     [
         ("@draw cavee", "2:7: error: pool 'cavee' isn't declared"),
         ("@draw cave, treasure", "2:13: error: 'treasure' is a slot, not a pool"),
-        ("@draw score", "2:7: error: 'score' is a number, not a pool"),
+        ("@draw score", "2:7: error: 'score' is a variable, not a pool"),
         (
             '@options\n@option "Go": @draw nowhere\n@endoptions',
             "3:21: error: pool 'nowhere' isn't declared",
@@ -354,3 +354,105 @@ def test_command_arguments_of_any_type_build(tmp_path):
         {"variable": "has_key"},
         {"call": "visited", "node": "start"},
     ]
+
+
+NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@endenv\n"
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ("@set $region = treasure", "2:16: error: @set $region needs a pool, got a slot"),
+        ("@set $region = 1", "2:16: error: @set $region needs a pool, got a number"),
+        ("@set $quest = cave", "2:15: error: @set $quest needs a node, got a pool"),
+        (
+            "@if $region == treasure\n    Hi.\n@endif",
+            "2:5: error: '==' needs both sides of the same type, got a pool and a slot",
+        ),
+        ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' can't compare pools"),
+        ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
+        ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a flag, got a pool"),
+        ("@spawn wolf", "2:8: error: 'wolf' isn't a node, pool or slot"),
+        ("You have {score} gold.", "2:11: error: 'score' is a variable, write $score"),
+        (
+            "@increase $region",
+            "2:11: error: @increase needs a number variable, 'region' is a pool",
+        ),
+        (
+            "@if visited(start, start)\n    Hi.\n@endif",
+            "2:5: error: visited() takes a node id, or none for the current node",
+        ),
+    ],
+    ids=["set_slot", "set_number", "set_pool_as_node", "compare_types", "order",
+         "arithmetic", "condition", "undeclared", "variable_without_marker", "increase",
+         "node_function_two_names"],
+)
+def test_name_errors(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", NAME_ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+@pytest.mark.parametrize(
+    "declaration, expected",
+    [
+        ("var region: pool = treasure", "2:20: error: 'treasure' is a slot, not a pool"),
+        ("var region: pool = cavee", "2:20: error: pool 'cavee' isn't declared"),
+        ("var region: pool = score", "2:20: error: 'score' is a variable, not a pool"),
+        ("var quest: node = gone", "2:19: error: 'gone' matches no node"),
+    ],
+    ids=["slot_as_pool", "undeclared_pool", "variable_as_pool", "missing_node"],
+)
+def test_name_variable_defaults_are_checked(tmp_path, capsys, declaration, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "a.wvl", f"@env\n{declaration}\n@endenv\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+def test_name_variables_build(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "pool cave\n"
+        "slot treasure\n"
+        "var region: pool = cave\n"
+        "var quest: node = cave\n"
+        "var partner: slot = treasure\n"
+        "extern var home: pool\n"
+        "@endenv\n\n"
+        "@node cave\n"
+        "@if $region == cave and cave == $quest and $home != $region and visited(cave)\n"
+        "    @set $region = cave\n"
+        "    @set $quest = cave\n"
+        "@endif\n"
+        "@unlock cave, $partner\n"
+        "You reach {cave}.\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
+    assert env == {
+        "declarations": [
+            {"type": "pool", "name": "region", "value": "cave"},
+            {"type": "node", "name": "quest", "value": "cave"},
+            {"type": "slot", "name": "partner", "value": "treasure"},
+            {"type": "pool", "name": "home", "extern": True},
+        ],
+        "pools": ["cave"],
+        "slots": ["treasure"],
+    }

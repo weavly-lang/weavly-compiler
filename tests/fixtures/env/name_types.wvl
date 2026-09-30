@@ -1,0 +1,8 @@
+@env
+pool city
+slot bob
+var next_quest: node = start
+var region: pool = city
+var partner: slot = bob
+extern var home: pool
+@endenv

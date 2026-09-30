@@ -60,23 +60,43 @@ The room costs {$base_price * $markup} gold.
 
 Write `\{` for a literal brace. A `}` outside an expression is plain text. String literals inside `{}` in quoted text escape their quotes like any other quote in it: `@option "Greet {$name == \"Bob\"}"`.
 
-Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
+Every `@env` declaration starts with its kind: `var`, `extern var`, `pool` or `slot`. Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern var` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
 
 ```
 @env
-score: number = 0
-extern reputation: number
+var score: number(0, 100) = 0
+extern var reputation: number
 @endenv
 ```
 
-Storylets are nodes the game picks from a pool instead of a script naming them. Pools and slots are declared in `@env`, without a default:
+Storylets are nodes the game picks from a pool instead of a script naming them. Pools and slots are declared by name:
 
 ```
 @env
-cave_outcome: pool
-treasure: slot
+pool cave_outcome
+slot treasure
 @endenv
 ```
+
+Besides `number`, `string` and `flag`, a variable can hold a `node`, `pool` or `slot`. It needs a default, written as a bare name, and `extern var` works with these types too. In expressions, a bare name is such a value: it can be compared with `==` and `!=`, set with `@set` and passed to commands. The build checks that the name exists and has the right type, and writes it as a string, in `env.json` and in expressions:
+
+```
+@env
+var region: pool = cave_outcome
+@endenv
+
+@node camp
+@if $region == cave_outcome
+    The cave is close.
+@endif
+@endnode
+```
+
+```json
+{"type": "pool", "name": "region", "value": "cave_outcome"}
+```
+
+`@goto`, `@draw` and `@meta` keys still take names, not variables.
 
 They share names with variables, so a name can be declared only once in the project, but a node id may match one. A node joins pools with a `@meta` block of `key: value` entries, right after its `@node` line:
 
@@ -150,8 +170,9 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - `visited()` is a flag, `visit_count()`, `skip_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
 - Expressions inside `{}` in text can be of any type.
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
+- A bare name is a `node`, `pool` or `slot`, and `<`, `>`, `<=` and `>=` can't compare them. A name that is both a node and a pool or slot takes the type the expression needs.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

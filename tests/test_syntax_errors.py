@@ -114,6 +114,10 @@ def _build_errors(tmp_path, capsys, source):
             "@node a\n@meta\npool: cave\n",
             ["  hint: the @meta block opened at line 2 is missing its @endmeta"],
         ),
+        (
+            "@env\nvar region: pool\n@endenv\n",
+            ["a.wvl:2:17: error: unexpected end of line", "  expected '='"],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -130,6 +134,7 @@ def _build_errors(tmp_path, capsys, source):
         "interpolation_after_escapes",
         "meta_after_statement",
         "missing_endmeta",
+        "name_type_without_default",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

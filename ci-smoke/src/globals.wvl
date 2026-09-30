@@ -1,8 +1,10 @@
 @env
-score: number = 0
-player_name: string = "Hero"
-has_key: flag = false
-extern reputation: number
-cave_outcome: pool
-treasure: slot
+var score: number = 0
+var player_name: string = "Hero"
+var has_key: flag = false
+extern var reputation: number
+var region: pool = cave_outcome
+var last_scene: node = start
+pool cave_outcome
+slot treasure
 @endenv

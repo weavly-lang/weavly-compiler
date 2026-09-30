@@ -1,5 +1,5 @@
 @env
-hp: number
-name: string
-brave: flag
+var hp: number
+var name: string
+var brave: flag
 @endenv

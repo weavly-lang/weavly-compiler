@@ -1,3 +1,3 @@
 @env
-bad: pool = 1
+pool bad = 1
 @endenv
