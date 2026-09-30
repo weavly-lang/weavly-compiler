@@ -2,8 +2,8 @@
     @random
     @case 3
         You find treasure.
-        @goto end
-    @case 1: @goto end
+        @jump end
+    @case 1: @jump end
     @endrandom
 @endnode
 

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "travel", "line": 1, "body": [{"type": "narration", "line": 2, "text": ["You set off toward the city."]}, {"type": "detour", "line": 3, "id": "ambush"}, {"type": "narration", "line": 4, "text": ["You arrive at the gates."]}]}, {"id": "ambush", "line": 7, "body": [{"type": "narration", "line": 8, "text": ["Bandits!"]}]}]}

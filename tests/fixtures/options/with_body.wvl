@@ -2,9 +2,9 @@
     @options
         @option "Search"
             You find nothing.
-            @goto end
+            @jump end
         @option "Leave"
-            @goto end
+            @jump end
     @endoptions
 @endnode
 

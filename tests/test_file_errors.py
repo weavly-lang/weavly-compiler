@@ -52,7 +52,7 @@ def test_errors_in_every_file_are_reported(tmp_path, capsys):
 
 def test_file_errors_skip_cross_file_checks(tmp_path, capsys):
     files = {
-        "a.wvl": b"@node a\n@goto missing\n@endnode\n",
+        "a.wvl": b"@node a\n@jump missing\n@endnode\n",
         "b.wvl": b"@node b\n@endif\n@endnode\n",
     }
 
@@ -61,4 +61,4 @@ def test_file_errors_skip_cross_file_checks(tmp_path, capsys):
 
     err = capsys.readouterr().err
     assert "b.wvl" in err
-    assert "goto target" not in err
+    assert "jump target" not in err

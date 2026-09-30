@@ -2,10 +2,10 @@
     @match
         @when $flag_a
             Route A.
-            @goto node_a
+            @jump node_a
         @when $flag_b
             Route B.
-            @goto node_b
+            @jump node_b
     @endmatch
 @endnode
 

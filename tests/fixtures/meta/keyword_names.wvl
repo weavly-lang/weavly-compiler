@@ -2,5 +2,5 @@
 @meta
 pool: slot
 @endmeta
-@goto pool
+@jump pool
 @endnode

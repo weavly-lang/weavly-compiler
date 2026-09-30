@@ -1,6 +1,6 @@
 @node start
     @if $flag
-        @goto end
+        @jump end
     @endif
     @finish
 @endnode

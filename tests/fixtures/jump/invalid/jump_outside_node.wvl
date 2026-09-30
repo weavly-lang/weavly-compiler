@@ -1,4 +1,4 @@
-@goto somewhere
+@jump somewhere
 
 @node start
     @finish
