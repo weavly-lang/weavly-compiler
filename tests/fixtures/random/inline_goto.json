@@ -1,1 +1,0 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "random", "line": 2, "cases": [{"line": 3, "condition": true, "weight": 3.0, "body": [{"type": "goto", "line": 3, "id": "end"}]}, {"line": 4, "condition": true, "weight": 1.0, "body": [{"type": "goto", "line": 4, "id": "end"}]}]}]}, {"id": "end", "line": 8, "body": [{"type": "finish", "line": 9}]}]}

@@ -1,6 +1,7 @@
 @node start
 Welcome to the smoke test.
 >Guide: Let the test begin.
+@detour aside
 @play_sound "chime.ogg", clamp($score / 10, 0, 1)
 @set $score = 10
 @increase $score 5
@@ -11,11 +12,11 @@ Welcome to the smoke test.
 @clearflag $has_key
 
 @if $score > 10
-    @goto choices
+    @jump choices
 @elif $score == 10
-    @goto choices
+    @jump choices
 @else
-    @goto choices
+    @jump choices
 @endif
 @endnode
 
@@ -31,8 +32,8 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 
 @node random_node
 @random
-@case 1: @goto match_node
-@case 1: @goto match_node
+@case 1: @jump match_node
+@case 1: @jump match_node
 @endrandom
 @endnode
 
@@ -40,11 +41,11 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 @match
     @when $has_key
         You have the key.
-        @goto end
+        @jump end
     @when not $has_key
         No key needed.
         @draw cave_outcome
-        @goto end
+        @jump end
 @endmatch
 @endnode
 
@@ -74,5 +75,9 @@ weight: 1 + skip_count()
 once: true
 @endmeta
 You find a chest.
-@goto end
+@jump end
+@endnode
+
+@node aside
+A quick aside before we start.
 @endnode

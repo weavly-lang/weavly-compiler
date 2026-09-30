@@ -2,7 +2,7 @@
     @match
         @when $flag
             You made it.
-            @goto end
+            @jump end
     @endmatch
 @endnode
 

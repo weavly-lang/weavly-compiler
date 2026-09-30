@@ -1,0 +1,3 @@
+@node start
+    @detour a, b
+@endnode

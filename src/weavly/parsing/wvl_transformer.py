@@ -127,8 +127,8 @@ class WvlTransformer(Transformer):
         return list(statements)
 
     @located
-    def inline_goto(self, meta: Any, id: str) -> dict[str, Any]:
-        return self.goto(meta, id)
+    def inline_jump(self, meta: Any, id: str) -> dict[str, Any]:
+        return self.jump(meta, id)
 
     def action(self, statement_or_body: dict | list) -> list:
         if isinstance(statement_or_body, list):
@@ -198,8 +198,12 @@ class WvlTransformer(Transformer):
         return self.set(meta, var, False)
 
     @located
-    def goto(self, meta: Any, id: str) -> dict[str, Any]:
-        return {"type": "goto", "line": meta.line, "id": id}
+    def jump(self, meta: Any, id: str) -> dict[str, Any]:
+        return {"type": "jump", "line": meta.line, "id": id}
+
+    @located
+    def detour(self, meta: Any, id: str) -> dict[str, Any]:
+        return {"type": "detour", "line": meta.line, "id": id}
 
     @located
     def draw(self, meta: Any, *pools: str) -> dict[str, Any]:

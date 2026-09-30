@@ -1,6 +1,6 @@
 @node start
     @options
-    @option "Go to end": @goto end
+    @option "Go to end": @jump end
     @option "Stay": @finish
     @endoptions
 @endnode

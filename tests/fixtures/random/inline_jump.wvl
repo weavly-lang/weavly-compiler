@@ -1,7 +1,7 @@
 @node start
     @random
     @case 3 -> end
-    @case 1: @goto end
+    @case 1: @jump end
     @endrandom
 @endnode
 

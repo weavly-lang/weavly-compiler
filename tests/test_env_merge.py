@@ -118,11 +118,12 @@ def test_duplicate_node_id_across_files_is_an_error(tmp_path, capsys):
     assert "a.wvl:1" in err
 
 
-def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
+def test_unresolved_jump_and_detour_targets_are_errors(tmp_path, capsys):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@node start\n@goto missing\n@continue \"Go\" -> nowhere\n@goto finale\n@endnode\n",
+        "@node start\n@jump missing\n@continue \"Go\" -> nowhere\n@jump finale\n"
+        "@detour lost\n@detour finale\n@endnode\n",
     )
     _write(src / "b.wvl", "@node finale\nThe end.\n@endnode\n")
 
@@ -131,8 +132,9 @@ def test_unresolved_goto_targets_are_errors(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "a.wvl:2:7: error: goto target 'missing' matches no node" in err
-    assert "a.wvl:3:19: error: goto target 'nowhere' matches no node" in err
+    assert "a.wvl:2:7: error: jump target 'missing' matches no node" in err
+    assert "a.wvl:3:19: error: jump target 'nowhere' matches no node" in err
+    assert "a.wvl:5:9: error: detour target 'lost' matches no node" in err
     assert "finale" not in err
 
 
@@ -248,7 +250,7 @@ def test_visit_functions_build(tmp_path):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@node start\n@if visited(start) and visit_count(end) < 2\n    @goto end\n@endif\n"
+        "@node start\n@if visited(start) and visit_count(end) < 2\n    @jump end\n@endif\n"
         "@endnode\n",
     )
     _write(src / "b.wvl", "@node end\n@finish\n@endnode\n")
@@ -299,7 +301,7 @@ def test_node_functions_without_argument_are_type_checked(tmp_path, capsys):
 
 def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     src = tmp_path / "src"
-    _write(src / "a.wvl", "@env\nvar hp: number\n@endenv\n\n@node a\n@goto gone\n@endnode\n")
+    _write(src / "a.wvl", "@env\nvar hp: number\n@endenv\n\n@node a\n@jump gone\n@endnode\n")
     _write(src / "b.wvl", "@env\nvar hp: number\n@endenv\n\n@node a\nHi.\n@endnode\n")
 
     with pytest.raises(typer.Exit):
@@ -308,7 +310,7 @@ def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "duplicate variable 'hp'" in err
     assert "duplicate node id 'a'" in err
-    assert "goto target 'gone'" in err
+    assert "jump target 'gone'" in err
 
 
 @pytest.mark.parametrize(
@@ -412,7 +414,7 @@ def test_node_ids_may_match_pool_and_slot_names(tmp_path):
     _write(
         src / "a.wvl",
         "@env\npool cave\nslot treasure\n@endenv\n\n"
-        "@node cave\n@meta\npool: cave\nslot: treasure\n@endmeta\n@goto treasure\n@endnode\n\n"
+        "@node cave\n@meta\npool: cave\nslot: treasure\n@endmeta\n@jump treasure\n@endnode\n\n"
         "@node treasure\nHi.\n@endnode\n",
     )
 

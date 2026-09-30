@@ -2,7 +2,7 @@
     @random              # pick one outcome
         # first outcome
         @case 3 -> end   # heavy weight
-        @case 1: @goto end
+        @case 1: @jump end
         # trailing comment before endrandom
     @endrandom
 @endnode

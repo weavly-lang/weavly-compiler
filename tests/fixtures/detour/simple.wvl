@@ -1,0 +1,9 @@
+@node travel
+    You set off toward the city.
+    @detour ambush
+    You arrive at the gates.
+@endnode
+
+@node ambush
+    Bandits!
+@endnode

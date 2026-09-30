@@ -25,7 +25,8 @@ _DECLARATION_KINDS = {
     "slot_declaration": "slot",
 }
 _NODE_KINDS = {"node_start": "node id"}
-_GOTO_RULES = frozenset({"goto", "inline_goto"})
+# rule -> what its target is called in errors.
+_TARGET_KINDS = {"jump": "jump", "inline_jump": "jump", "detour": "detour"}
 
 
 class ProjectChecks:
@@ -44,8 +45,8 @@ class ProjectChecks:
         self._record_unique(tree, file, _DECLARATION_KINDS, self._declared)
         self._record_unique(tree, file, _NODE_KINDS, self._node_ids)
         self._node_references.extend(
-            ("goto", target, location)
-            for _, target, location in _id_locations(tree, _GOTO_RULES, file)
+            (_TARGET_KINDS[rule], target, location)
+            for rule, target, location in _id_locations(tree, _TARGET_KINDS, file)
         )
         self._check_calls(tree, file)
         self._check_number_ranges(tree, file)

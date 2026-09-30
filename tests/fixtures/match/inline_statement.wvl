@@ -1,6 +1,6 @@
 @node start
     @match
-        @when $done: @goto end
+        @when $done: @jump end
     @endmatch
 @endnode
 

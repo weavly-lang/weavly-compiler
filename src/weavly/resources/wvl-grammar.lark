@@ -55,7 +55,8 @@ body: statement*
     | setflag
     | clearflag
     | command
-    | goto
+    | jump
+    | detour
     | draw
     | finish
     | continue
@@ -67,11 +68,11 @@ body: statement*
 
 ?inline_statement: _COLON line_statement
 
-inline_goto: _ARROW ID _NEWLINE
+inline_jump: _ARROW ID _NEWLINE
 
 action: inline_action | _NEWLINE body
 
-?inline_action: (inline_statement | inline_goto)
+?inline_action: (inline_statement | inline_jump)
 
 // =====================
 // Lines / Statements
@@ -88,7 +89,8 @@ decrease: _DEC variable [signed_number] _NEWLINE
 setflag: _SETFLAG variable _NEWLINE
 clearflag: _CLEARFLAG variable _NEWLINE
 
-goto: _GOTO ID _NEWLINE
+jump: _JUMP ID _NEWLINE
+detour: _DETOUR ID _NEWLINE
 
 draw: _DRAW ID ("," ID)* _NEWLINE
 
@@ -217,10 +219,11 @@ _INC: "@increase"
 _DEC: "@decrease"
 _SETFLAG: "@setflag"
 _CLEARFLAG: "@clearflag"
-_GOTO: "@goto"
+_JUMP: "@jump"
+_DETOUR: "@detour"
 _DRAW: "@draw"
 _FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|goto|draw|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
+_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|jump|detour|draw|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
 _CONTINUE: "@continue"
 
 _IF: "@if"

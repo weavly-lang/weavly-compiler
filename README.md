@@ -96,7 +96,7 @@ var region: pool = cave_outcome
 {"type": "pool", "name": "region", "value": "cave_outcome"}
 ```
 
-`@goto`, `@draw` and `@meta` keys still take names, not variables.
+`@jump`, `@detour`, `@draw` and `@meta` keys still take names, not variables.
 
 They share names with variables, so a name can be declared only once in the project, but a node id may match one. A node joins pools with a `@meta` block of `key: value` entries, right after its `@node` line:
 
@@ -145,13 +145,31 @@ weight: 1 + skip_count()
 
 `visited()`, `visit_count()` and `skip_count()` without an argument mean the node they're written in. The build writes that node's id, as if it had been written out.
 
-`@draw` plays one storylet from one or more comma-separated pools, as a statement or an inline action:
+`@jump` moves to another node for good. `@detour` runs another node and, when it ends, continues after the `@detour`. `->` is the short form of `@jump` in an inline action, like `@option "Leave" -> road`:
+
+```
+@node travel
+You set off toward the city.
+@detour ambush
+You arrive at the gates.
+@jump city
+@endnode
+```
+
+```json
+{"type": "detour", "line": 3, "id": "ambush"}
+{"type": "jump", "line": 5, "id": "city"}
+```
+
+A `@jump` drops every point a detour would return to, including the scenes that detoured or drew into the current node. `@finish` ends the whole dialogue, inside a detour too.
+
+`@draw` plays one storylet from one or more comma-separated pools, as a statement or an inline action. It runs the storylet like a `@detour`:
 
 ```
 @node cave_enter
 You search the cave.
 @draw cave_outcome
-You find nothing of interest.
+You climb back out.
 @endnode
 ```
 
@@ -159,7 +177,17 @@ You find nothing of interest.
 {"type": "draw", "line": 3, "pools": ["cave_outcome"]}
 ```
 
-`pools` is always a list, in the written order. Every pool must be declared, but it can still be without members. The game combines the members of all given pools, counting a node that's in several of them once, and picks the eligible node with the highest priority, with weight deciding between equal priorities. It jumps there like `@goto`. If no node is eligible, execution continues with the next statement, which is where a fallback goes.
+`pools` is always a list, in the written order. Every pool must be declared, but it can still be without members. The game combines the members of all given pools, counting a node that's in several of them once, and picks the eligible node with the highest priority, with weight deciding between equal priorities. If no node is eligible, nothing is played. A fallback is a node in the pool with the lowest priority:
+
+```
+@node quiet_cave
+@meta
+pool: cave_outcome
+priority: -1
+@endmeta
+Nothing but dripping water.
+@endnode
+```
 
 Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and in expressions inside `{}` in text. The build also checks types:
 
@@ -172,7 +200,7 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 - A bare name is a `node`, `pool` or `slot`, and `<`, `>`, `<=` and `>=` can't compare them. A name that is both a node and a pool or slot takes the type the expression needs.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@goto`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 
