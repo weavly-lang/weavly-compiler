@@ -1,5 +1,5 @@
 @env
-bounded: number(0, 10) = 5
-capped: number(, 100) = 0
-floored: number(-5, ) = 0
+var bounded: number(0, 10) = 5
+var capped: number(, 100) = 0
+var floored: number(-5, ) = 0
 @endenv

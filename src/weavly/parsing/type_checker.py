@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from difflib import get_close_matches
 from pathlib import Path
 
@@ -8,8 +9,10 @@ Location = tuple[Path, int, int]
 NUMBER = "number"
 STRING = "string"
 FLAG = "flag"
+NODE = "node"
 POOL = "pool"
 SLOT = "slot"
+NAME_TYPES = (NODE, POOL, SLOT)
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER, "skip_count": NUMBER}
@@ -38,6 +41,7 @@ META_KEYS = {
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
 _LOGIC = {"and_": "and", "or_": "or"}
+_EQUALITY = frozenset({"==", "!="})
 
 
 def source_location(file: Path, item: Tree | Token) -> Location:
@@ -47,16 +51,28 @@ def source_location(file: Path, item: Tree | Token) -> Location:
 
 
 def check_types(
-    tree: Tree, file: Path, variables: dict[str, str]
+    tree: Tree,
+    file: Path,
+    variables: dict[str, str],
+    kinds: dict[str, str],
+    nodes: Collection[str],
 ) -> list[tuple[Location, str]]:
-    """Check every variable use in `tree` against `variables` (name -> type)."""
-    return _TypeChecker(file, variables).check(tree)
+    """Check `tree` against variables (name -> type), pools and slots (name -> kind) and nodes."""
+    return _TypeChecker(file, variables, kinds, nodes).check(tree)
 
 
 class _TypeChecker:
-    def __init__(self, file: Path, variables: dict[str, str]) -> None:
+    def __init__(
+        self,
+        file: Path,
+        variables: dict[str, str],
+        kinds: dict[str, str],
+        nodes: Collection[str],
+    ) -> None:
         self.file = file
         self.variables = variables
+        self.kinds = kinds
+        self.nodes = nodes
         self.errors: list[tuple[Location, str]] = []
 
     def check(self, tree: Tree) -> list[tuple[Location, str]]:
@@ -70,10 +86,14 @@ class _TypeChecker:
     # Statements
     # =====================
 
+    def _check_name_declaration(self, tree: Tree) -> None:
+        _, name_type, value = tree.children
+        self._expect_name(value, str(name_type.children[0]))
+
     def _check_set(self, tree: Tree) -> None:
         variable, expression = tree.children
         declared = self._variable(variable)
-        actual = self._infer(expression)
+        actual = self._infer(expression, declared)
         if declared and actual and declared != actual:
             self._error(
                 expression, f"@set ${variable.children[0]} needs a {declared}, got a {actual}"
@@ -139,9 +159,7 @@ class _TypeChecker:
             self._error(values[1], f"{key} takes a single value, got {len(values)}")
             return
         value = values[0]
-        if _is_name(value):
-            self._error(value, f"{key} needs a {expected}, got name '{value}'")
-        elif key == "once":
+        if key == "once":
             if not isinstance(value, Token) or value.type not in ("TRUE", "FALSE"):
                 self._error(value, "once needs true or false")
         else:
@@ -157,14 +175,19 @@ class _TypeChecker:
     # Expressions
     # =====================
 
-    def _infer(self, node: Tree | Token) -> str | None:
-        """Return the type of an expression, or None if it has no known type."""
+    def _infer(self, node: Tree | Token, expected: str | None = None) -> str | None:
+        """Return the type of an expression, or None if it has no known type.
+
+        `expected` picks the type of a name that is both a node and a pool or slot.
+        """
         if isinstance(node, Token):
             return _LITERAL_TYPES[node.type]
 
         rule = node.data
         if rule == "variable":
             return self._variable(node)
+        if rule == "name":
+            return self._infer_name(node, expected)
         if rule in _ARITHMETIC:
             for operand in node.children:
                 self._expect(operand, NUMBER, f"'{_ARITHMETIC[rule]}'")
@@ -181,13 +204,18 @@ class _TypeChecker:
             return FLAG
         if rule == "compare":
             left, operator, right = node.children
-            left_type, right_type = self._infer(left), self._infer(right)
+            left_type = None if _is_name(left) else self._infer(left)
+            right_type = self._infer(right, left_type)
+            if _is_name(left):
+                left_type = self._infer(left, right_type)
             if left_type and right_type and left_type != right_type:
                 self._error(
                     node,
                     f"'{operator}' needs both sides of the same type, "
                     f"got a {left_type} and a {right_type}",
                 )
+            elif left_type in NAME_TYPES and operator not in _EQUALITY:
+                self._error(node, f"'{operator}' can't compare {left_type}s")
             return FLAG
         if rule == "node_call":
             return NODE_FUNCTIONS.get(str(node.children[0]))
@@ -212,22 +240,47 @@ class _TypeChecker:
     def _variable(self, tree: Tree) -> str | None:
         name = str(tree.children[0])
         declared = self.variables.get(name)
-        if declared is None:
+        if declared is None and name in self.kinds:
+            self._error(tree, f"'{name}' is a {self.kinds[name]}, not a variable")
+        elif declared is None:
             self._error(tree, f"variable '{name}' isn't declared")
-        elif declared in (POOL, SLOT):
-            self._error(tree, f"'{name}' is a {declared}, not a variable")
-            return None
         return declared
 
-    def _expect_name(self, token: Token, expected: str) -> None:
-        declared = self.variables.get(str(token))
-        if declared is None:
-            self._error(token, f"{expected} '{token}' isn't declared")
-        elif declared != expected:
-            self._error(token, f"'{token}' is a {declared}, not a {expected}")
+    def _infer_name(self, tree: Tree, expected: str | None) -> str | None:
+        name = str(tree.children[0])
+        types = self._name_types(name)
+        if expected in types:
+            return expected
+        if types:
+            return types[0]
+        if name in self.variables:
+            self._error(tree, f"'{name}' is a variable, write ${name}")
+        else:
+            self._error(tree, f"'{name}' isn't a node, pool or slot")
+        return None
+
+    def _expect_name(self, item: Tree | Token, expected: str) -> None:
+        name = str(item if isinstance(item, Token) else item.children[0])
+        types = self._name_types(name)
+        if expected in types:
+            return
+        if name in self.variables:
+            self._error(item, f"'{name}' is a variable, not a {expected}")
+        elif types:
+            self._error(item, f"'{name}' is a {types[0]}, not a {expected}")
+        elif expected == NODE:
+            self._error(item, f"'{name}' matches no node")
+        else:
+            self._error(item, f"{expected} '{name}' isn't declared")
+
+    def _name_types(self, name: str) -> list[str]:
+        types = [self.kinds[name]] if name in self.kinds else []
+        if name in self.nodes:
+            types.append(NODE)
+        return types
 
     def _expect(self, node: Tree | Token, expected: str, context: str) -> None:
-        actual = self._infer(node)
+        actual = self._infer(node, expected)
         if actual and actual != expected:
             self._error(node, f"{context} needs a {expected}, got a {actual}")
 
@@ -245,4 +298,4 @@ class _TypeChecker:
 
 
 def _is_name(value: Tree | Token) -> bool:
-    return isinstance(value, Token) and value.type == "ID"
+    return isinstance(value, Tree) and value.data == "name"

@@ -1,4 +1,4 @@
 @env
-cave_outcome: pool
-treasure: slot
+pool cave_outcome
+slot treasure
 @endenv

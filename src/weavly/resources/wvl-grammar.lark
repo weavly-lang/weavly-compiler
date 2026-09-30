@@ -13,17 +13,20 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
 ?declaration: number_declaration
     | string_declaration
     | flag_declaration
+    | name_declaration
     | extern_declaration
     | pool_declaration
     | slot_declaration
 
-number_declaration: ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
-string_declaration: ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
-flag_declaration: ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
-extern_declaration: _EXTERN ID _COLON extern_type _NEWLINE
-pool_declaration: ID _COLON _POOL_TYPE _NEWLINE
-slot_declaration: ID _COLON _SLOT_TYPE _NEWLINE
-!extern_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
+number_declaration: _VAR ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
+string_declaration: _VAR ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
+flag_declaration: _VAR ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
+name_declaration: _VAR ID _COLON name_type "=" ID _NEWLINE
+extern_declaration: _EXTERN _VAR ID _COLON (value_type | name_type) _NEWLINE
+pool_declaration: _POOL_TYPE ID _NEWLINE
+slot_declaration: _SLOT_TYPE ID _NEWLINE
+!value_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
+!name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE
 ?bool_literal: TRUE
     | FALSE
 
@@ -36,9 +39,7 @@ node_end: _NODEEND _NEWLINE*
 // =====================
 
 meta_block: _META _NEWLINE meta_entry* _ENDMETA _NEWLINE
-meta_entry: ID _COLON meta_value ("," meta_value)* _NEWLINE
-?meta_value: expression
-    | ID
+meta_entry: ID _COLON expression ("," expression)* _NEWLINE
 
 body: statement*
 
@@ -165,12 +166,11 @@ condition: expression
 
 ?atom: literal
     | variable
-    | node_call
     | call
+    | ID -> name
     | "(" expression ")"
 
 variable: _VARIABLEMARKER ID
-node_call: ID "(" ID ")"
 call: ID "(" [arguments] ")"
 arguments: expression ("," expression)*
 
@@ -203,7 +203,9 @@ _ENDENV: "@endenv"
 _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
 _FLAG_TYPE: "flag"
+_VAR: "var"
 _EXTERN: "extern"
+_NODE_TYPE: "node"
 _POOL_TYPE: "pool"
 _SLOT_TYPE: "slot"
 

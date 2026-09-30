@@ -9,7 +9,7 @@ def test_invalid_escape_is_a_compile_error(tmp_path, capsys):
     build = tmp_path / "build"
     src.mkdir()
     (src / "bad.wvl").write_text(
-        '@env\nok: string = "fine"\npath: string = "C:\\games"\n@endenv\n',
+        '@env\nvar ok: string = "fine"\nvar path: string = "C:\\games"\n@endenv\n',
         encoding="utf-8",
     )
 
@@ -19,7 +19,7 @@ def test_invalid_escape_is_a_compile_error(tmp_path, capsys):
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
     assert "bad.wvl" in err
-    assert "bad.wvl:3:16: error: invalid string" in err
+    assert "bad.wvl:3:20: error: invalid string" in err
     assert '"C:\\games"' in err
 
 

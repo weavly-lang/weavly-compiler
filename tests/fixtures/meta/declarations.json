@@ -1,1 +1,1 @@
-{"nodes": [], "declarations": [{"type": "pool", "name": "cave_outcome"}, {"type": "slot", "name": "treasure"}]}
+{"nodes": [], "declarations": [{"kind": "pool", "name": "cave_outcome"}, {"kind": "slot", "name": "treasure"}]}

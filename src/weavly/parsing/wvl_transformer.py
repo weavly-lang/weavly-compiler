@@ -88,17 +88,23 @@ class WvlTransformer(Transformer):
             value = False
         return {"type": "flag", "name": name, "value": bool(value)}
 
+    def name_declaration(self, name: str, value_type: str, value: str) -> dict[str, str]:
+        return {"type": value_type, "name": name, "value": value}
+
     def extern_declaration(self, name: str, value_type: str) -> dict[str, Any]:
         return {"type": value_type, "name": name, "extern": True}
 
-    def extern_type(self, token: Any) -> str:
+    def value_type(self, token: Any) -> str:
+        return str(token)
+
+    def name_type(self, token: Any) -> str:
         return str(token)
 
     def pool_declaration(self, name: str) -> dict[str, str]:
-        return {"type": "pool", "name": name}
+        return {"kind": "pool", "name": name}
 
     def slot_declaration(self, name: str) -> dict[str, str]:
-        return {"type": "slot", "name": name}
+        return {"kind": "slot", "name": name}
 
     def node_start(self, id: str) -> str:
         return id
@@ -351,6 +357,9 @@ class WvlTransformer(Transformer):
 
     def variable(self, id: str) -> dict[str, str]:
         return {"variable": id}
+
+    def name(self, id: str) -> str:
+        return id
 
     def node_call(self, function: str, node: str) -> dict[str, str]:
         return {"call": function, "node": node}

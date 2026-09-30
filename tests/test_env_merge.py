@@ -17,11 +17,11 @@ def test_declarations_merge_into_single_env_json(tmp_path):
 
     _write(
         src / "globals.wvl",
-        "@env\nhp: number(0, 100) = 50\ngold: number = 0\n@endenv\n",
+        "@env\nvar hp: number(0, 100) = 50\nvar gold: number = 0\n@endenv\n",
     )
     _write(
         src / "scenes" / "witch.wvl",
-        "@env\nbrave: flag = true\n@endenv\n\n@node witch\nThe witch cackles.\n@endnode\n",
+        "@env\nvar brave: flag = true\n@endenv\n\n@node witch\nThe witch cackles.\n@endnode\n",
     )
 
     build_all_files(src, build, pretty=False)
@@ -49,8 +49,8 @@ def test_duplicate_declaration_across_files_is_an_error(tmp_path, capsys):
     src = tmp_path / "src"
     build = tmp_path / "build"
 
-    _write(src / "a.wvl", "@env\nhp: number = 50\n@endenv\n")
-    _write(src / "b.wvl", "@env\nhp: number = 10\n@endenv\n")
+    _write(src / "a.wvl", "@env\nvar hp: number = 50\n@endenv\n")
+    _write(src / "b.wvl", "@env\nvar hp: number = 10\n@endenv\n")
 
     with pytest.raises(typer.Exit) as exc:
         build_all_files(src, build, pretty=False)
@@ -86,15 +86,15 @@ def test_missing_src_dir_does_not_create_build(tmp_path):
     "bad_source",
     [
         "@node b\n@endif\n@endnode\n",
-        '@env\npath: string = "C:\\games"\n@endenv\n',
-        "@env\nhp: number = 10\n@endenv\n",
+        '@env\nvar path: string = "C:\\games"\n@endenv\n',
+        "@env\nvar hp: number = 10\n@endenv\n",
     ],
     ids=["parse_error", "invalid_string", "duplicate_declaration"],
 )
 def test_failed_build_keeps_previous_build(tmp_path, bad_source):
     src = tmp_path / "src"
     build = tmp_path / "build"
-    _write(src / "a.wvl", "@env\nhp: number = 50\n@endenv\n\n@node a\nHi.\n@endnode\n")
+    _write(src / "a.wvl", "@env\nvar hp: number = 50\n@endenv\n\n@node a\nHi.\n@endnode\n")
     _write(build / "old.wvl.json", '{"nodes": []}')
     _write(src / "b.wvl", bad_source)
 
@@ -162,7 +162,7 @@ def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@env\ncave: pool\n@endenv\n\n"
+        "@env\npool cave\n@endenv\n\n"
         "@node start\n"
         "@meta\npool: cave\nweight: 1 + skip_count(strat)\nwhen: skip_count(start)\n@endmeta\n"
         "@if skip_count(1) > 1\n    Hi.\n@endif\n"
@@ -209,7 +209,7 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
             "visit_count($x)",
             "a.wvl:2:11: error: visit_count() takes a node id, or none for the current node",
         ),
-        ("abs(shop)", "a.wvl:2:15: error: abs() takes numbers, not node id 'shop'"),
+        ("abs(start)", "a.wvl:2:15: error: abs() needs a number, got a node"),
         ("sqrt($x)", "a.wvl:2:11: error: unknown function 'sqrt'"),
         ("foo(start)", "a.wvl:2:11: error: unknown function 'foo'"),
     ],
@@ -220,7 +220,7 @@ def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        f"@node start\n@set $x = {expression}\n@endnode\n@env\nx: number\n@endenv\n",
+        f"@node start\n@set $x = {expression}\n@endnode\n@env\nvar x: number\n@endenv\n",
     )
 
     with pytest.raises(typer.Exit) as exc:
@@ -268,7 +268,7 @@ def test_node_functions_without_argument_mean_the_current_node(tmp_path):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@env\ncave: pool\n@endenv\n\n"
+        "@env\npool cave\n@endenv\n\n"
         "@node treasure\n"
         "@meta\npool: cave\nwhen: visit_count() < 3\nweight: 1 + skip_count()\n@endmeta\n"
         "@if not visited()\n    First time.\n@endif\n"
@@ -299,8 +299,8 @@ def test_node_functions_without_argument_are_type_checked(tmp_path, capsys):
 
 def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     src = tmp_path / "src"
-    _write(src / "a.wvl", "@env\nhp: number\n@endenv\n\n@node a\n@goto gone\n@endnode\n")
-    _write(src / "b.wvl", "@env\nhp: number\n@endenv\n\n@node a\nHi.\n@endnode\n")
+    _write(src / "a.wvl", "@env\nvar hp: number\n@endenv\n\n@node a\n@goto gone\n@endnode\n")
+    _write(src / "b.wvl", "@env\nvar hp: number\n@endenv\n\n@node a\nHi.\n@endnode\n")
 
     with pytest.raises(typer.Exit):
         build_all_files(src, tmp_path / "build", pretty=False)
@@ -314,11 +314,11 @@ def test_all_validation_errors_are_reported_together(tmp_path, capsys):
 @pytest.mark.parametrize(
     "declaration, message",
     [
-        ("a: number(10, 0) = 5", "number 'a' has min 10 greater than max 0"),
-        ("a: number(0, 10) = 50", "number 'a' has default 50 above its max 10"),
-        ("a: number(5, ) = 0", "number 'a' has default 0 below its min 5"),
-        ("a: number(5, )", "number 'a' has implicit default 0 below its min 5"),
-        ("a: number(-3, -1) = -4", "number 'a' has default -4 below its min -3"),
+        ("var a: number(10, 0) = 5", "number 'a' has min 10 greater than max 0"),
+        ("var a: number(0, 10) = 50", "number 'a' has default 50 above its max 10"),
+        ("var a: number(5, ) = 0", "number 'a' has default 0 below its min 5"),
+        ("var a: number(5, )", "number 'a' has implicit default 0 below its min 5"),
+        ("var a: number(-3, -1) = -4", "number 'a' has default -4 below its min -3"),
     ],
     ids=["min_above_max", "above_max", "below_min", "implicit_below_min", "negative"],
 )
@@ -330,7 +330,7 @@ def test_invalid_number_range_is_an_error(tmp_path, capsys, declaration, message
         build_all_files(src, tmp_path / "build", pretty=False)
 
     assert exc.value.exit_code == 1
-    assert f"a.wvl:2:1: error: {message}" in capsys.readouterr().err
+    assert f"a.wvl:2:5: error: {message}" in capsys.readouterr().err
 
 
 def test_valid_number_ranges_build(tmp_path):
@@ -338,12 +338,12 @@ def test_valid_number_ranges_build(tmp_path):
     _write(
         src / "a.wvl",
         "@env\n"
-        "a: number\n"
-        "b: number(0, 1) = 1\n"
-        "c: number(-5, 5) = -2.5\n"
-        "d: number(, 100)\n"
-        "e: number(-10, )\n"
-        "f: number(3, 3) = 3\n"
+        "var a: number\n"
+        "var b: number(0, 1) = 1\n"
+        "var c: number(-5, 5) = -2.5\n"
+        "var d: number(, 100)\n"
+        "var e: number(-10, )\n"
+        "var f: number(3, 3) = 3\n"
         "@endenv\n",
     )
 
@@ -355,8 +355,8 @@ def test_valid_number_ranges_build(tmp_path):
 def test_pools_and_slots_are_listed_in_env_json(tmp_path):
     src = tmp_path / "src"
     build = tmp_path / "build"
-    _write(src / "a.wvl", "@env\ncave: pool\ngold: number = 0\ntreasure: slot\n@endenv\n")
-    _write(src / "b.wvl", "@env\ncity: pool\n@endenv\n")
+    _write(src / "a.wvl", "@env\npool cave\nvar gold: number = 0\nslot treasure\n@endenv\n")
+    _write(src / "b.wvl", "@env\npool city\n@endenv\n")
 
     build_all_files(src, build, pretty=False)
 
@@ -384,10 +384,10 @@ def test_env_json_lists_are_empty_without_pools_or_slots(tmp_path):
 @pytest.mark.parametrize(
     "first, second, kind",
     [
-        ("cave: pool", "cave: pool", "pool"),
-        ("cave: number = 0", "cave: pool", "pool"),
-        ("cave: pool", "cave: slot", "slot"),
-        ("cave: slot", "cave: flag", "variable"),
+        ("pool cave", "pool cave", "pool"),
+        ("var cave: number = 0", "pool cave", "pool"),
+        ("pool cave", "slot cave", "slot"),
+        ("slot cave", "var cave: flag", "variable"),
     ],
     ids=["pool_twice", "variable_then_pool", "pool_then_slot", "slot_then_variable"],
 )
@@ -401,7 +401,8 @@ def test_pools_and_slots_share_the_declaration_namespace(
     with pytest.raises(typer.Exit):
         build_all_files(src, tmp_path / "build", pretty=False)
 
-    assert f"b.wvl:2:1: error: duplicate {kind} 'cave', first declared at" in (
+    column = second.index("cave") + 1
+    assert f"b.wvl:2:{column}: error: duplicate {kind} 'cave', first declared at" in (
         capsys.readouterr().err
     )
 
@@ -410,7 +411,7 @@ def test_node_ids_may_match_pool_and_slot_names(tmp_path):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@env\ncave: pool\ntreasure: slot\n@endenv\n\n"
+        "@env\npool cave\nslot treasure\n@endenv\n\n"
         "@node cave\n@meta\npool: cave\nslot: treasure\n@endmeta\n@goto treasure\n@endnode\n\n"
         "@node treasure\nHi.\n@endnode\n",
     )

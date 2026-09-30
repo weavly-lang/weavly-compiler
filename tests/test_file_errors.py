@@ -35,7 +35,7 @@ def test_errors_in_every_file_are_reported(tmp_path, capsys):
     files = {
         "a.wvl": b"@node a\nHi.\n@endnode\n",
         "b.wvl": b"@node b\n@endif\n@endnode\n",
-        "c.wvl": b'@env\npath: string = "C:\\games"\n@endenv\n',
+        "c.wvl": b'@env\nvar path: string = "C:\\games"\n@endenv\n',
         "d.wvl": b"@node d\n\xff\n@endnode\n",
     }
 
@@ -45,7 +45,7 @@ def test_errors_in_every_file_are_reported(tmp_path, capsys):
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
     assert "b.wvl:2:1: error: unexpected '@endif'" in err
-    assert "c.wvl:2:16: error: invalid string" in err
+    assert "c.wvl:2:20: error: invalid string" in err
     assert "d.wvl:2: error: invalid encoding" in err
     assert not (tmp_path / "build").exists()
 

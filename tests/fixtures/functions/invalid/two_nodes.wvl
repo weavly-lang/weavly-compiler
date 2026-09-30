@@ -1,5 +1,0 @@
-@node start
-@if visited(a, b)
-    Yes.
-@endif
-@endnode

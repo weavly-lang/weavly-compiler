@@ -1,6 +1,6 @@
 @env
-score: number = 0
-extern reputation: number
-extern player_name: string
-extern met_king: flag
+var score: number = 0
+extern var reputation: number
+extern var player_name: string
+extern var met_king: flag
 @endenv

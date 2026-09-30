@@ -1,4 +1,4 @@
-hp: number = 50
+var hp: number = 50
 
 @node start
 Hello
