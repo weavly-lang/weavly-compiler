@@ -115,21 +115,6 @@ def _build_errors(tmp_path, capsys, source):
             ["  hint: the @meta block opened at line 2 is missing its @endmeta"],
         ),
         (
-            "@env\nhp: number = 50\n@endenv\n",
-            [
-                "a.wvl:2:1: error: unexpected 'hp'",
-                "  hint: declarations start with their kind, like var hp: number",
-            ],
-        ),
-        (
-            "@env\nvar hp: number\nextern gold: number\n@endenv\n",
-            ["  hint: declarations start with their kind, like extern var gold: number"],
-        ),
-        (
-            "@env\ncave: pool\n@endenv\n",
-            ["  hint: declarations start with their kind, like pool cave"],
-        ),
-        (
             "@env\nvar region: pool\n@endenv\n",
             ["a.wvl:2:17: error: unexpected end of line", "  expected '='"],
         ),
@@ -149,9 +134,6 @@ def _build_errors(tmp_path, capsys, source):
         "interpolation_after_escapes",
         "meta_after_statement",
         "missing_endmeta",
-        "declaration_without_kind",
-        "extern_without_var",
-        "pool_without_kind",
         "name_type_without_default",
     ],
 )

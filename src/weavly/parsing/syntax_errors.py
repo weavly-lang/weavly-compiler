@@ -42,7 +42,6 @@ _PARENTS = {
 }
 _KEYWORD = re.compile(r"\s*(@\w+)")
 _COMMAND_START = re.compile(r"\s*@(\w+)\s*")
-_KINDLESS_DECLARATION = re.compile(r"\s*(extern\s+)?(\w+)\s*:\s*(\w+)")
 _MAX_TOKEN_LENGTH = 40
 
 
@@ -64,10 +63,8 @@ def describe_syntax_error(
 
     if isinstance(error, UnexpectedToken):
         message = f"unexpected {_describe_token(error.token, names)}"
-        hint = (
-            _block_hint(error.token, lines, error.line)
-            or _command_hint(error.token, lines, error.line, names)
-            or _declaration_hint(error.token, lines, error.line)
+        hint = _block_hint(error.token, lines, error.line) or _command_hint(
+            error.token, lines, error.line, names
         )
     elif isinstance(error, UnexpectedCharacters):
         message = f"unexpected character {error.char!r}"
@@ -162,23 +159,6 @@ def _command_hint(
     rest = source[token.column - 1 :].strip()[1:].strip()
     example = rest.replace('"', '\\"') or "text"
     return f'command arguments are expressions, like @{match.group(1)} "{example}"'
-
-
-def _declaration_hint(token: Token, lines: list[str], line: int) -> str | None:
-    if token.type != "ID" or not 1 <= line <= len(lines):
-        return None
-    stack = _open_blocks(lines[: line - 1])
-    match = _KINDLESS_DECLARATION.match(lines[line - 1])
-    if not stack or stack[-1][0] != "@env" or not match:
-        return None
-    extern, name, value_type = match.groups()
-    if extern:
-        example = f"extern var {name}: {value_type}"
-    elif value_type in ("pool", "slot"):
-        example = f"{value_type} {name}"
-    else:
-        example = f"var {name}: {value_type}"
-    return f"declarations start with their kind, like {example}"
 
 
 def _open_blocks(lines: list[str]) -> list[tuple[str, int]]:
