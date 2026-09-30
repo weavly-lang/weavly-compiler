@@ -28,7 +28,9 @@ NUMBER_FUNCTIONS = {
     "abs": (1, 1),
 }
 
-# key -> type of its value.
+META_FUNCTION = "meta"
+
+# built-in key -> type of its value.
 META_KEYS = {
     "pool": POOL,
     "slot": SLOT,
@@ -37,6 +39,8 @@ META_KEYS = {
     "weight": NUMBER,
     "once": FLAG,
 }
+# Built-in keys meta() can't read: lists, or not written to the output.
+_UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once"})
 
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
@@ -55,10 +59,12 @@ def check_types(
     file: Path,
     variables: dict[str, str],
     kinds: dict[str, str],
+    meta_keys: dict[str, str],
     nodes: Collection[str],
 ) -> list[tuple[Location, str]]:
-    """Check `tree` against variables (name -> type), pools and slots (name -> kind) and nodes."""
-    return _TypeChecker(file, variables, kinds, nodes).check(tree)
+    """Check `tree` against variables (name -> type), other declarations (name -> kind),
+    custom meta keys (name -> type) and nodes."""
+    return _TypeChecker(file, variables, kinds, meta_keys, nodes).check(tree)
 
 
 class _TypeChecker:
@@ -67,11 +73,13 @@ class _TypeChecker:
         file: Path,
         variables: dict[str, str],
         kinds: dict[str, str],
+        meta_keys: dict[str, str],
         nodes: Collection[str],
     ) -> None:
         self.file = file
         self.variables = variables
         self.kinds = kinds
+        self.meta_keys = META_KEYS | meta_keys
         self.nodes = nodes
         self.errors: list[tuple[Location, str]] = []
 
@@ -88,6 +96,10 @@ class _TypeChecker:
 
     def _check_name_declaration(self, tree: Tree) -> None:
         _, name_type, value = tree.children
+        self._expect_name(value, str(name_type.children[0]))
+
+    def _check_name_default(self, tree: Tree) -> None:
+        name_type, value = tree.children
         self._expect_name(value, str(name_type.children[0]))
 
     def _check_set(self, tree: Tree) -> None:
@@ -138,16 +150,12 @@ class _TypeChecker:
 
     def _check_meta_entry(self, tree: Tree) -> None:
         key, *values = tree.children
-        expected = META_KEYS.get(str(key))
+        expected = self.meta_keys.get(str(key))
         if expected is None:
-            message = f"unknown meta key '{key}'"
-            matches = get_close_matches(str(key), META_KEYS, n=1)
-            if matches:
-                message += f", did you mean '{matches[0]}'?"
-            self._error(key, message)
+            self._error(key, self._unknown_meta_key(str(key)))
             return
 
-        if expected in (POOL, SLOT):
+        if key in ("pool", "slot"):
             for value in values:
                 if _is_name(value):
                     self._expect_name(value, expected)
@@ -219,6 +227,8 @@ class _TypeChecker:
             return FLAG
         if rule == "node_call":
             return NODE_FUNCTIONS.get(str(node.children[0]))
+        if rule == "meta_call":
+            return self._infer_meta_call(node)
         if rule == "call":
             return self._infer_call(node)
         raise ValueError(f"Unhandled expression: {rule}")
@@ -232,6 +242,16 @@ class _TypeChecker:
             else:
                 self._infer(argument)
         return NUMBER if is_number_function else None
+
+    def _infer_meta_call(self, tree: Tree) -> str | None:
+        key = tree.children[1]
+        if key in _UNREADABLE_META_KEYS:
+            self._error(key, f"meta() can't read {key}")
+            return None
+        value_type = self.meta_keys.get(str(key))
+        if value_type is None:
+            self._error(key, self._unknown_meta_key(str(key)))
+        return value_type
 
     # =====================
     # Helpers
@@ -255,6 +275,8 @@ class _TypeChecker:
             return types[0]
         if name in self.variables:
             self._error(tree, f"'{name}' is a variable, write ${name}")
+        elif name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
+            self._error(tree, f"'{name}' is a meta key, write meta({name})")
         else:
             self._error(tree, f"'{name}' isn't a node, pool or slot")
         return None
@@ -264,17 +286,26 @@ class _TypeChecker:
         types = self._name_types(name)
         if expected in types:
             return
+        actual = types[0] if types else self.kinds.get(name)
         if name in self.variables:
             self._error(item, f"'{name}' is a variable, not a {expected}")
-        elif types:
-            self._error(item, f"'{name}' is a {types[0]}, not a {expected}")
+        elif actual:
+            self._error(item, f"'{name}' is a {actual}, not a {expected}")
         elif expected == NODE:
             self._error(item, f"'{name}' matches no node")
         else:
             self._error(item, f"{expected} '{name}' isn't declared")
 
+    def _unknown_meta_key(self, key: str) -> str:
+        message = f"unknown meta key '{key}'"
+        matches = get_close_matches(key, self.meta_keys, n=1)
+        if matches:
+            message += f", did you mean '{matches[0]}'?"
+        return message
+
     def _name_types(self, name: str) -> list[str]:
-        types = [self.kinds[name]] if name in self.kinds else []
+        kind = self.kinds.get(name)
+        types = [kind] if kind in (POOL, SLOT) else []
         if name in self.nodes:
             types.append(NODE)
         return types

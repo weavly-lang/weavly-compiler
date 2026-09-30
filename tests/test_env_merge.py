@@ -369,6 +369,7 @@ def test_pools_and_slots_are_listed_in_env_json(tmp_path):
         ],
         "pools": ["cave", "city"],
         "slots": ["treasure"],
+        "meta_keys": [],
     }
 
 
@@ -380,7 +381,7 @@ def test_env_json_lists_are_empty_without_pools_or_slots(tmp_path):
     build_all_files(src, build, pretty=False)
 
     env = json.loads((build / "env.json").read_text(encoding="utf-8"))
-    assert env == {"declarations": [], "pools": [], "slots": []}
+    assert env == {"declarations": [], "pools": [], "slots": [], "meta_keys": []}
 
 
 @pytest.mark.parametrize(

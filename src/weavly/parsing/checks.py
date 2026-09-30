@@ -5,6 +5,8 @@ from pathlib import Path
 from lark import Token, Tree
 
 from .type_checker import (
+    META_FUNCTION,
+    META_KEYS,
     NODE_FUNCTIONS,
     NUMBER_FUNCTIONS,
     Location,
@@ -13,6 +15,8 @@ from .type_checker import (
 )
 
 Error = tuple[Location, str]
+# (node id, meta key)
+MetaRef = tuple[str, str]
 
 # rule -> what its leading ID names, for duplicate errors.
 _DECLARATION_KINDS = {
@@ -23,6 +27,7 @@ _DECLARATION_KINDS = {
     "extern_declaration": "variable",
     "pool_declaration": "pool",
     "slot_declaration": "slot",
+    "meta_declaration": "meta key",
 }
 _NODE_KINDS = {"node_start": "node id"}
 # rule -> what its target is called in errors.
@@ -40,6 +45,8 @@ class ProjectChecks:
         self._node_ids: dict[str, Location] = {}
         # (kind, node id, location) of every reference to a node.
         self._node_references: list[tuple[str, str, Location]] = []
+        # meta value -> location of its key and the meta values it reads.
+        self._meta_values: dict[MetaRef, tuple[Location, list[MetaRef]]] = {}
 
     def add_file(self, file: Path, tree: Tree) -> None:
         self._record_unique(tree, file, _DECLARATION_KINDS, self._declared)
@@ -50,6 +57,8 @@ class ProjectChecks:
         )
         self._check_calls(tree, file)
         self._check_number_ranges(tree, file)
+        self._check_meta_declarations(tree, file)
+        self._record_meta_values(tree, file)
         self._trees.append((file, tree))
 
     def finish(self, declarations: list[dict]) -> list[Error]:
@@ -59,15 +68,23 @@ class ProjectChecks:
             for kind, target, location in self._node_references
             if target not in self._node_ids
         )
+        self.errors.extend(_meta_cycle_errors(self._meta_values))
         variables: dict[str, str] = {}
         kinds: dict[str, str] = {}
+        meta_keys: dict[str, str] = {}
         for declaration in declarations:
-            if "kind" in declaration:
-                kinds.setdefault(declaration["name"], declaration["kind"])
+            name, kind = declaration["name"], declaration.get("kind")
+            if kind is None:
+                variables.setdefault(name, declaration["type"])
+            elif kind == "meta":
+                kinds.setdefault(name, "meta key")
+                meta_keys.setdefault(name, declaration["type"])
             else:
-                variables.setdefault(declaration["name"], declaration["type"])
+                kinds.setdefault(name, kind)
         for file, tree in self._trees:
-            self.errors.extend(check_types(tree, file, variables, kinds, self._node_ids))
+            self.errors.extend(
+                check_types(tree, file, variables, kinds, meta_keys, self._node_ids)
+            )
         return self.errors
 
     def _record_unique(
@@ -94,10 +111,16 @@ class ProjectChecks:
                 (str(function), str(target), source_location(file, target))
             )
 
+        for call in tree.find_data("meta_call"):
+            target = call.children[0]
+            self._node_references.append(("meta", str(target), source_location(file, target)))
+
         for call in tree.find_data("call"):
             function, arguments = call.children
             if function in NODE_FUNCTIONS:
                 message = f"{function}() takes a node id, or none for the current node"
+            elif function == META_FUNCTION:
+                message = "meta() takes a meta key, or a node id and a meta key"
             elif function in NUMBER_FUNCTIONS:
                 count = 0 if arguments is None else len(arguments.children)
                 message = _argument_count_error(function, count)
@@ -123,6 +146,25 @@ class ProjectChecks:
                 self._error(file, name, f"number '{name}' has {default} below its min {minimum:g}")
             elif maximum is not None and value > maximum:
                 self._error(file, name, f"number '{name}' has {default} above its max {maximum:g}")
+
+    def _check_meta_declarations(self, tree: Tree, file: Path) -> None:
+        for declaration in tree.find_data("meta_declaration"):
+            name = declaration.children[0]
+            if name in META_KEYS:
+                self._error(file, name, f"'{name}' is a built-in meta key")
+
+    def _record_meta_values(self, tree: Tree, file: Path) -> None:
+        for node in tree.find_data("node"):
+            node_id = str(node.children[0].children[0])
+            for entry in node.find_data("meta_entry"):
+                key = entry.children[0]
+                reads = [
+                    (str(call.children[0]), str(call.children[1]))
+                    for call in entry.find_data("meta_call")
+                ]
+                self._meta_values.setdefault(
+                    (node_id, str(key)), (source_location(file, key), reads)
+                )
 
     def _error(self, file: Path, item: Tree | Token, message: str) -> None:
         self.errors.append((source_location(file, item), message))
@@ -151,10 +193,36 @@ def _argument_count_error(function: str, count: int) -> str | None:
 
 def _unknown_function(function: str) -> str:
     message = f"unknown function '{function}'"
-    matches = get_close_matches(function, [*NODE_FUNCTIONS, *NUMBER_FUNCTIONS], n=1)
+    functions = [*NODE_FUNCTIONS, *NUMBER_FUNCTIONS, META_FUNCTION]
+    matches = get_close_matches(function, functions, n=1)
     if matches:
         message += f", did you mean '{matches[0]}'?"
     return message
+
+
+def _meta_cycle_errors(values: dict[MetaRef, tuple[Location, list[MetaRef]]]) -> list[Error]:
+    """Report every meta value that reads itself, directly or through other meta values."""
+    errors: list[Error] = []
+    finished: set[MetaRef] = set()
+    path: list[MetaRef] = []
+
+    def visit(ref: MetaRef) -> None:
+        if ref in finished or ref not in values:
+            return
+        if ref in path:
+            cycle = [*path[path.index(ref) :], ref]
+            chain = " -> ".join(f"{node}.{key}" for node, key in cycle)
+            errors.append((values[ref][0], f"meta key '{ref[1]}' reads itself: {chain}"))
+            return
+        path.append(ref)
+        for read in values[ref][1]:
+            visit(read)
+        path.pop()
+        finished.add(ref)
+
+    for ref in values:
+        visit(ref)
+    return errors
 
 
 def _number(child: Tree | Token | None) -> float | None:

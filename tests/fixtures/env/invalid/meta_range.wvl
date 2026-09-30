@@ -1,0 +1,4 @@
+@env
+meta cost: number = 1
+meta discount: number(0, 1)
+@endenv

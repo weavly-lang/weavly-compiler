@@ -73,8 +73,10 @@ when: $score > 5
 priority: 1
 weight: 1 + skip_count()
 once: true
+reward: 2 + skip_count()
 @endmeta
 You find a chest.
+@set $score = $score + meta(reward)
 @jump end
 @endnode
 

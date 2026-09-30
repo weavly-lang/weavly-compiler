@@ -455,4 +455,132 @@ def test_name_variables_build(tmp_path):
         ],
         "pools": ["cave"],
         "slots": ["treasure"],
+        "meta_keys": [],
     }
+
+
+META_ENV = ENV + "@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool = cave\n@endenv\n"
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ('@meta\ncost: "x"\n@endmeta', "3:7: error: cost needs a number, got a string"),
+        ("@meta\ncots: 1\n@endmeta", "3:1: error: unknown meta key 'cots', did you mean 'cost'?"),
+        ("@meta\nhome: treasure\n@endmeta", "3:7: error: home needs a pool, got a slot"),
+        ("@meta\nhome: cave, hall\n@endmeta", "3:13: error: home takes a single value, got 2"),
+        (
+            "@set $score = meta(cots)",
+            "2:20: error: unknown meta key 'cots', did you mean 'cost'?",
+        ),
+        ("@set $score = meta(art)", "2:15: error: @set $score needs a number, got a string"),
+        ("@if meta(pool)\n    Hi.\n@endif", "2:10: error: meta() can't read pool"),
+        ("@set $score = meta(gone, cost)", "2:20: error: meta target 'gone' matches no node"),
+        (
+            "@set $score = meta($score)",
+            "2:15: error: meta() takes a meta key, or a node id and a meta key",
+        ),
+        ("@set $score = $cost", "2:15: error: 'cost' is a meta key, not a variable"),
+        ("@draw cost", "2:7: error: 'cost' is a meta key, not a pool"),
+        ("@set $score = cost", "2:15: error: 'cost' is a meta key, write meta(cost)"),
+    ],
+    ids=["wrong_type", "unknown_key", "name_type", "several_values", "unknown_read",
+         "read_type", "unreadable", "missing_node", "not_a_name", "as_variable",
+         "as_pool", "without_meta"],
+)
+def test_meta_key_errors(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", META_ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+@pytest.mark.parametrize(
+    "declaration, expected",
+    [
+        ("meta pool: number", "2:6: error: 'pool' is a built-in meta key"),
+        ("meta home: pool = treasure", "2:19: error: 'treasure' is a slot, not a pool"),
+        ("meta score: number", "2:6: error: duplicate meta key 'score', first declared at"),
+    ],
+    ids=["built_in", "name_default", "duplicate"],
+)
+def test_meta_declaration_errors(tmp_path, capsys, declaration, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "z.wvl", f"@env\n{declaration}\n@endenv\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("z.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert len(errors) == 1
+    assert errors[0].startswith(expected)
+
+
+@pytest.mark.parametrize(
+    "nodes, expected",
+    [
+        (
+            "@node a\n@meta\ncost: meta(cost) + 1\n@endmeta\n@endnode\n",
+            ["3:1: error: meta key 'cost' reads itself: a.cost -> a.cost"],
+        ),
+        (
+            "@node a\n@meta\ncost: meta(weight)\nweight: meta(cost)\n@endmeta\n@endnode\n",
+            ["3:1: error: meta key 'cost' reads itself: a.cost -> a.weight -> a.cost"],
+        ),
+        (
+            "@node a\n@meta\ncost: meta(b, cost)\n@endmeta\n@endnode\n"
+            "@node b\n@meta\ncost: 1 + meta(a, cost)\n@endmeta\n@endnode\n",
+            ["3:1: error: meta key 'cost' reads itself: a.cost -> b.cost -> a.cost"],
+        ),
+    ],
+    ids=["self", "two_keys", "two_nodes"],
+)
+def test_meta_values_that_read_themselves_are_errors(tmp_path, capsys, nodes, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", META_ENV)
+    _write(src / "a.wvl", nodes)
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == expected
+
+
+def test_meta_keys_build(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", META_ENV)
+    _write(
+        src / "a.wvl",
+        "@node start\n"
+        "@meta\n"
+        "pool: cave\n"
+        "cost: 1 + $score\n"
+        'art: "fire_{$name}"\n'
+        "home: hall\n"
+        "weight: meta(cost) + meta(other, cost)\n"
+        "when: meta(start, home) == hall and meta(priority) > 0\n"
+        "@endmeta\n"
+        "Costs {meta(cost)}.\n"
+        "@endnode\n"
+        "@node other\n"
+        "@meta\n"
+        "cost: meta(start, priority)\n"
+        "@endmeta\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
+    assert env["meta_keys"] == [
+        {"type": "number", "name": "cost", "value": 1.0},
+        {"type": "string", "name": "art", "value": ""},
+        {"type": "pool", "name": "home", "value": "cave"},
+    ]
