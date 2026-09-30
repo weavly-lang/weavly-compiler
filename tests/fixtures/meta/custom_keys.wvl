@@ -1,0 +1,9 @@
+@node rest_at_camp
+@meta
+pool: camp
+cost: 1 + $fatigue
+art: "camp_fire"
+home: city
+@endmeta
+You rest.
+@endnode

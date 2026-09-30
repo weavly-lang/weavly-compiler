@@ -31,7 +31,7 @@ weavly --version         # installed compiler version
 The build writes:
 
 - `build/<path>.wvl.json` for each source file, containing its nodes and a `source` field with the path relative to `src/` (for example `"chapter1/intro.wvl"`). Nodes, statements, match and random cases and option items carry the 1-based `line` they start on, so runtime errors can point back to the `.wvl` source.
-- `build/env.json` with every `@env` variable declaration in the project in `declarations`, and the names of all pools and slots in `pools` and `slots`
+- `build/env.json` with every `@env` variable declaration in the project in `declarations`, the names of all pools and slots in `pools` and `slots`, and custom meta keys in `meta_keys`
 
 Commands take comma-separated expressions as arguments and are written with them in `args`, for the game to evaluate when the command runs:
 
@@ -60,7 +60,7 @@ The room costs {$base_price * $markup} gold.
 
 Write `\{` for a literal brace. A `}` outside an expression is plain text. String literals inside `{}` in quoted text escape their quotes like any other quote in it: `@option "Greet {$name == \"Bob\"}"`.
 
-Every `@env` declaration starts with its kind: `var`, `extern var`, `pool` or `slot`. Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern var` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
+Every `@env` declaration starts with its kind: `var`, `extern var`, `pool`, `slot` or `meta`. Variables defined outside `.wvl`, as Godot resources or by game code, are declared with `extern var` and a type, without a default, min or max. They're written to `env.json` with `"extern": true` and no `value`:
 
 ```
 @env
@@ -134,6 +134,34 @@ The node gets a `meta` object with the entries that were written, each with its 
 
 A `when` that only comes from `once` carries the `once` line.
 
+Games can attach their own data to a node with custom meta keys, declared in `@env` with a type and an optional default. Defaults work like variable defaults: `number`, `string` and `flag` default to 0, "" and false, and `node`, `pool` and `slot` need one. Custom keys have no range. In `@meta`, a custom key takes one expression of its type, and it's written next to the built-in keys, in the same shape:
+
+```
+@env
+meta cost: number = 1
+meta art: string
+@endenv
+
+@node rest_at_camp
+@meta
+pool: camp
+cost: 1 + $fatigue
+art: "camp_fire"
+@endmeta
+@set $energy = $energy - meta(cost)
+@endnode
+```
+
+`env.json` lists each key in `meta_keys` with its type and default:
+
+```json
+{"type": "number", "name": "cost", "value": 1.0}
+```
+
+Built-in key names can't be declared, and custom keys share names with variables, pools and slots.
+
+`meta(<key>)` reads a key of the current node, and `meta(<node>, <key>)` reads one of another node. The build writes the current node's id when it's left out: `{"call": "meta", "node": "rest_at_camp", "key": "cost"}`. The game evaluates the value when it's read, and uses the default for a node that doesn't write the key. `meta()` reads custom keys and `when`, `priority` and `weight`. A meta value that reads itself, directly or through other meta values, fails the build.
+
 `skip_count(<node>)` is how often the node was eligible when the game listed or drew from one of its pools, but wasn't taken. The game resets it when the node is taken, so a storylet that keeps being passed over can raise its own chances:
 
 ```
@@ -200,7 +228,7 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 - A bare name is a `node`, `pool` or `slot`, and `<`, `>`, `<=` and `>=` can't compare them. A name that is both a node and a pool or slot takes the type the expression needs.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

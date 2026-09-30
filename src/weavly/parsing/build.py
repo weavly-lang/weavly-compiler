@@ -107,13 +107,17 @@ def _report_string_error(error: InvalidStringError, file: Path) -> None:
 
 
 def _env(declarations: list[dict]) -> dict[str, list]:
-    env: dict[str, list] = {"declarations": [], "pools": [], "slots": []}
+    env: dict[str, list] = {"declarations": [], "pools": [], "slots": [], "meta_keys": []}
     for declaration in declarations:
-        name_list = _NAME_LISTS.get(declaration.get("kind"))
-        if name_list is None:
+        kind = declaration.get("kind")
+        if kind is None:
             env["declarations"].append(declaration)
+        elif kind == "meta":
+            env["meta_keys"].append(
+                {key: value for key, value in declaration.items() if key != "kind"}
+            )
         else:
-            env[name_list].append(declaration["name"])
+            env[_NAME_LISTS[kind]].append(declaration["name"])
     return env
 
 

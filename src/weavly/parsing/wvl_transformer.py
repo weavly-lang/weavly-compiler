@@ -106,6 +106,22 @@ class WvlTransformer(Transformer):
     def slot_declaration(self, name: str) -> dict[str, str]:
         return {"kind": "slot", "name": name}
 
+    def meta_declaration(self, name: str, default: tuple[str, Any]) -> dict[str, Any]:
+        value_type, value = default
+        return {"kind": "meta", "type": value_type, "name": name, "value": value}
+
+    def number_default(self, value: float | None) -> tuple[str, float]:
+        return ("number", 0.0 if value is None else value)
+
+    def string_default(self, value: str | None) -> tuple[str, str]:
+        return ("string", "" if value is None else value)
+
+    def flag_default(self, value: bool | None) -> tuple[str, bool]:
+        return ("flag", bool(value))
+
+    def name_default(self, value_type: str, value: str) -> tuple[str, str]:
+        return (value_type, value)
+
     def node_start(self, id: str) -> str:
         return id
 
@@ -367,6 +383,9 @@ class WvlTransformer(Transformer):
 
     def node_call(self, function: str, node: str) -> dict[str, str]:
         return {"call": function, "node": node}
+
+    def meta_call(self, node: str, key: str) -> dict[str, str]:
+        return {"call": "meta", "node": node, "key": key}
 
     def call(self, function: str, arguments: list | None) -> dict[str, Any]:
         return {"call": function, "args": arguments or []}

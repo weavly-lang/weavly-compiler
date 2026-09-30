@@ -4,7 +4,7 @@ from importlib import resources
 from lark import Lark, Token, Tree
 
 from .text import expand_text
-from .type_checker import NODE_FUNCTIONS
+from .type_checker import META_FUNCTION, NODE_FUNCTIONS
 from .wvl_transformer import WvlTransformer
 
 GRAMMAR_FILE = "wvl-grammar.lark"
@@ -35,22 +35,27 @@ def compile_source(text: str) -> dict:
 
 
 def _resolve_node_calls(tree: Tree) -> None:
-    """Turn node function calls on a name, or without one for the enclosing node, into node calls."""
+    """Turn node function and meta() calls on names into node and meta calls, filling in the
+    enclosing node when it's left out."""
     for node in tree.find_data("node"):
         node_id = node.children[0].children[0]
         for call in node.find_data("call"):
             function, arguments = call.children
-            if function not in NODE_FUNCTIONS:
+            names = _names(arguments)
+            if names is None:
                 continue
-            if arguments is None:
-                target = Token.new_borrow_pos("ID", node_id, function)
-            elif len(arguments.children) == 1 and _is_name(arguments.children[0]):
-                target = arguments.children[0].children[0]
-            else:
-                continue
-            call.data = "node_call"
-            call.children = [function, target]
+            current = Token.new_borrow_pos("ID", node_id, function)
+            if function in NODE_FUNCTIONS and len(names) <= 1:
+                call.data = "node_call"
+                call.children = [function, *(names or [current])]
+            elif function == META_FUNCTION and len(names) in (1, 2):
+                call.data = "meta_call"
+                call.children = names if len(names) == 2 else [current, *names]
 
 
-def _is_name(item: Tree | Token) -> bool:
-    return isinstance(item, Tree) and item.data == "name"
+def _names(arguments: Tree | None) -> list[Token] | None:
+    """Return the names `arguments` consists of, or None if any argument isn't a name."""
+    items = [] if arguments is None else arguments.children
+    if not all(isinstance(item, Tree) and item.data == "name" for item in items):
+        return None
+    return [item.children[0] for item in items]
