@@ -289,6 +289,17 @@ Every variable a script uses must be declared, in expressions, as the target of 
 
 Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions and commands, calls and commands with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, offered nodes without a `label`, invalid `pool(...)` options, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
+A build that succeeds reports warnings for things that can't have an effect, in the same format with `warning:`, and still exits with code 0:
+
+```
+src/city.wvl:2:6: warning: pool 'harbor' has no nodes
+```
+
+- a `var`, `extern var`, `func` or `command` no `.wvl` file uses
+- a meta key no node writes and no `meta()` reads
+- a pool no node joins, and a slot fewer than two nodes use
+- `priority`, `weight` or `slot` on a node in no pool
+
 ## Development
 
 ```bash

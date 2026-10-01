@@ -14,6 +14,7 @@ from .type_checker import (
     check_types,
     source_location,
 )
+from .usage import find_warnings
 
 Error = tuple[Location, str]
 # (node id, meta key)
@@ -89,6 +90,10 @@ class ProjectChecks:
         for file, tree in self._trees:
             self.errors.extend(check_types(tree, file, collected, self._node_ids))
         return self.errors
+
+    def warnings(self) -> list[Error]:
+        """Return warnings about declarations and meta keys that can't have an effect."""
+        return find_warnings(self._trees)
 
     def _record_unique(
         self, tree: Tree, file: Path, kinds: dict[str, str], seen: dict[str, Location]

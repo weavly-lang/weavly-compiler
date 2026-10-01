@@ -94,3 +94,12 @@ label: "Take a quick aside"
 @endmeta
 A quick aside before we start.
 @endnode
+
+@node cave_gold
+@meta
+pool: cave_outcome
+slot: treasure
+label: "Grab the gold"
+@endmeta
+Gold glitters in the dark.
+@endnode
