@@ -235,13 +235,13 @@ Every option is a node. An `@options` block offers nodes in three ways, and they
 @option [$has_key] "Open the door"
     The door creaks open.
 @option "Leave" -> road
-@option node hack_terminal
+@option node(hack_terminal)
 @option pool(camp_actions, limit: 3)
 @endoptions
 ```
 
 - **Inline options** are anonymous nodes: the text becomes their `label` and `[condition]` their `when`. They have no id, no `@meta` block and no visit count, and argument-less `visited()`, `visit_count()`, `skip_count()` and `meta()` inside them mean the enclosing node.
-- **`@option node <id>`** offers a node. It needs a `label`.
+- **`@option node(<id>)`** offers one node. It needs a `label`.
 - **`@option pool(...)`** offers the nodes the game selects from one or more pools, like listing a pool, at the place it's written. Every node in those pools needs a `label`. After the pools come optional parameters: `limit`, a number expression (default: no limit); `shuffle`, a flag expression that randomizes ties (default `true`); and `locked`, which says what happens to locked nodes: `show` them and count them toward `limit` (default), show them as `extra` that don't count, or `hide` them.
 
 Choosing an option runs its node like a `@detour`, so the enclosing node continues after `@endoptions` unless the option's node uses `@jump`. Each item has a `type`:

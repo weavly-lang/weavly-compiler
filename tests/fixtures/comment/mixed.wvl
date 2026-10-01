@@ -8,7 +8,7 @@
 
     # comment-only line, blank line above
     @options
-        @option node shop   # inline after node option
+        @option node(shop)   # inline after node option
         # comment before option
         @option "Go" -> end
     @endoptions

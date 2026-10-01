@@ -717,9 +717,9 @@ OPTION_NODES = (
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@options\n@option node gone\n@endoptions", "3:14: error: option target 'gone' matches no node"),
+        ("@options\n@option node(gone)\n@endoptions", "3:14: error: option target 'gone' matches no node"),
         (
-            "@options\n@option node plain\n@endoptions",
+            "@options\n@option node(plain)\n@endoptions",
             "3:14: error: node 'plain' needs a label to be offered as an option",
         ),
         ("@options\n@option pool(cavee)\n@endoptions", "3:14: error: pool 'cavee' isn't declared"),
@@ -813,7 +813,7 @@ def test_options_as_nodes_build(tmp_path):
         "@node start\n"
         "@options\n"
         '@option [visited()] "Leave" -> start\n'
-        "@option node hack_terminal\n"
+        "@option node(hack_terminal)\n"
         "@option pool(cave, limit: $score, shuffle: not $has_key, locked: hide)\n"
         "@endoptions\n"
         "@endnode\n",

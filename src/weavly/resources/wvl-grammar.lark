@@ -129,7 +129,7 @@ elif_list: elif_+
 option_block: _OPTIONS _NEWLINE option_item+ _END_OPTIONS _NEWLINE
 ?option_item: option | node_option | pool_option
 option: _OPTION [_LBRACKET condition _RBRACKET] STRING action
-node_option: _OPTION _NODE_TYPE ID _NEWLINE
+node_option: _OPTION _NODE_TYPE "(" ID ")" _NEWLINE
 pool_option: _OPTION _POOL_TYPE "(" pool_argument ("," pool_argument)* ")" _NEWLINE
 ?pool_argument: ID -> pool_name
     | ID _COLON expression -> pool_parameter

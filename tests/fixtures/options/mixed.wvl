@@ -2,7 +2,7 @@
     @options
         @option "Rest" -> camp
         @option pool(camp_actions, limit: 2)
-        @option node hack_terminal
+        @option node(hack_terminal)
         @option [$tired] "Sleep"
             You sleep.
     @endoptions

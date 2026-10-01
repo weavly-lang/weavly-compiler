@@ -27,7 +27,7 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 @option "Roll the dice" -> random_node
 @option "Explore the cave": @draw cave_outcome
 @option [ $has_key ] "Use key on door \{{visit_count(choices)}}" -> end
-@option node aside
+@option node(aside)
 @option pool(cave_outcome, limit: 1, locked: extra)
 @endoptions
 @endnode
