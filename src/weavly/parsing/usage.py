@@ -6,7 +6,11 @@ from .type_checker import Location, source_location
 
 # declaration rule -> what warnings call it.
 _DECLARATIONS = {
-    "extern_declaration": "extern variable",
+    "number_declaration": "variable",
+    "string_declaration": "variable",
+    "flag_declaration": "variable",
+    "name_declaration": "variable",
+    "extern_declaration": "variable",
     "function_declaration": "function",
     "command_declaration": "command",
     "meta_declaration": "meta key",
@@ -14,7 +18,7 @@ _DECLARATIONS = {
     "slot_declaration": "slot",
 }
 # rule -> the kind of declaration its leading name uses.
-_USES = {"variable": "extern variable", "call": "function", "command": "command"}
+_USES = {"variable": "variable", "call": "function", "command": "command"}
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
 
 

@@ -23,7 +23,8 @@ def _build_warnings(tmp_path, capsys, source):
 @pytest.mark.parametrize(
     "source, expected",
     [
-        ("@env\nextern var day: number\n@endenv\n", "2:12: warning: extern variable 'day' is never used"),
+        ("@env\nvar gold: number\n@endenv\n", "2:5: warning: variable 'gold' is never used"),
+        ("@env\nextern var day: number\n@endenv\n", "2:12: warning: variable 'day' is never used"),
         ("@env\nfunc trust(): number\n@endenv\n", "2:6: warning: function 'trust' is never used"),
         ("@env\ncommand shake()\n@endenv\n", "2:9: warning: command 'shake' is never used"),
         (
@@ -52,7 +53,7 @@ def _build_warnings(tmp_path, capsys, source):
             "6:1: warning: slot has no effect on a node in no pool",
         ),
     ],
-    ids=["extern_variable", "function", "command", "meta_key", "empty_pool", "empty_slot",
+    ids=["variable", "extern_variable", "function", "command", "meta_key", "empty_pool", "empty_slot",
          "slot_with_one_node", "priority", "weight", "slot_key"],
 )
 def test_warnings(tmp_path, capsys, source, expected):
@@ -69,12 +70,14 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "meta art: string\n"
         "pool city\n"
         "slot bob\n"
-        "var unused: number\n"
+        "var gold: number\n"
+        "var name: string\n"
         "@endenv\n"
         "@node a\n"
         "@meta\npool: city\nslot: bob\npriority: 1\nweight: 2\ncost: 3\n@endmeta\n"
         "@shake\n"
-        "Day {$day}, trust {trust()}, art {meta(art)}.\n"
+        "@increase $gold\n"
+        "$name: Day {$day}, trust {trust()}, art {meta(art)}.\n"
         "@endnode\n"
         "@node b\n"
         "@meta\npool: city\nslot: bob\n@endmeta\n"

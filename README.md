@@ -295,12 +295,10 @@ A build that succeeds reports warnings for things that can't have an effect, in 
 src/city.wvl:2:6: warning: pool 'harbor' has no nodes
 ```
 
-- an `extern var`, `func` or `command` no `.wvl` file uses
+- a `var`, `extern var`, `func` or `command` no `.wvl` file uses
 - a meta key no node writes and no `meta()` reads
 - a pool no node joins, and a slot fewer than two nodes use
 - `priority`, `weight` or `slot` on a node in no pool
-
-A `var` no `.wvl` file uses isn't reported, since the game can read and write it from GDScript.
 
 ## Development
 
