@@ -21,11 +21,11 @@ Fixture-based snapshots in `tests/fixtures/<feature>/<case>.wvl` + sibling `<cas
 1. Create `tests/fixtures/<feature>/` with a `.wvl` file (minimal source for the feature)
 2. Add a sibling `.json` with the exact expected output
 
-Source that must fail to parse goes in `tests/fixtures/<feature>/invalid/<case>.wvl`, with no `.json`; `test_wvl.py` expects a syntax error for every file there. Errors found after parsing (undeclared variables, type errors, unknown functions, bad node targets) aren't syntax errors, so test them through `build_all_files` in `tests/test_type_checker.py` or `tests/test_env_merge.py`.
+Source that must fail to parse goes in `tests/fixtures/<feature>/invalid/<case>.wvl`, with no `.json`; `test_wvl.py` expects a syntax error for every file there. Errors found after parsing (undeclared variables, type errors, unknown functions, bad node targets) aren't syntax errors, so test them through `build_all_files` in `tests/test_type_checker.py` or `tests/test_env_merge.py`. Warnings are tested in `tests/test_warnings.py`.
 
 ## Pipeline
 
-[build.py](src/weavly/parsing/build.py) runs the build: [parser.py](src/weavly/parsing/parser.py) parses each file (expanding `{}` in text via `text.py` and resolving argument-less node calls), [wvl_transformer.py](src/weavly/parsing/wvl_transformer.py) turns the tree into the JSON output, and [checks.py](src/weavly/parsing/checks.py) runs the project-wide checks (duplicate names, node references, meta values that read themselves, then `type_checker.py`, which also checks function calls and commands against their declarations) before `build/` is replaced.
+[build.py](src/weavly/parsing/build.py) runs the build: [parser.py](src/weavly/parsing/parser.py) parses each file (expanding `{}` in text via `text.py` and resolving argument-less node calls), [wvl_transformer.py](src/weavly/parsing/wvl_transformer.py) turns the tree into the JSON output, and [checks.py](src/weavly/parsing/checks.py) runs the project-wide checks (duplicate names, node references, meta values that read themselves, then `type_checker.py`, which also checks function calls and commands against their declarations) before `build/` is replaced. After a successful build, [usage.py](src/weavly/parsing/usage.py) finds warnings (unused declarations, keys without effect), printed but never failing the build.
 
 ## Adding a new statement type
 

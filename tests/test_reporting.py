@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from weavly.reporting import report_error
+from weavly.reporting import report_error, report_warning
 
 
 @pytest.mark.parametrize(
@@ -24,3 +24,11 @@ def test_report_error_format(capsys, kwargs, expected):
     out, err = capsys.readouterr()
     assert out == ""
     assert err == expected
+
+
+def test_report_warning_format(capsys):
+    report_warning("unused", Path("src/a.wvl"), 3, 7)
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert err == "src/a.wvl:3:7: warning: unused\n"

@@ -7,7 +7,7 @@ import typer
 from lark import Tree
 from lark.exceptions import UnexpectedInput, VisitError
 
-from ..reporting import report_error
+from ..reporting import report_error, report_warning
 from .checks import ProjectChecks
 from .parser import create_parser, parse
 from .syntax_errors import describe_syntax_error, terminal_names
@@ -72,6 +72,8 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     file_count = len(outputs)
     outputs.append((Path(ENV_BUILD_FILE), _env(declarations)))
     _replace_build_dir(build_dir, outputs, pretty)
+    for (file, line, column), message in sorted(checks.warnings()):
+        report_warning(message, file, line, column)
     return file_count
 
 
