@@ -31,9 +31,20 @@ weavly --version         # installed compiler version
 The build writes:
 
 - `build/<path>.wvl.json` for each source file, containing its nodes and a `source` field with the path relative to `src/` (for example `"chapter1/intro.wvl"`). Nodes, statements, match and random cases and option items carry the 1-based `line` they start on, so runtime errors can point back to the `.wvl` source.
-- `build/env.json` with every `@env` variable declaration in the project in `declarations`, the names of all pools and slots in `pools` and `slots`, and custom meta keys in `meta_keys`
+- `build/env.json` with every `@env` variable declaration in the project in `declarations`, the names of all pools and slots in `pools` and `slots`, custom meta keys in `meta_keys`, and functions and commands in `functions` and `commands`
 
-Commands take comma-separated expressions as arguments and are written with them in `args`, for the game to evaluate when the command runs:
+The game provides functions and commands, declared in `@env`. A function asks the game for a value, and a command tells it to do something:
+
+```
+@env
+func trust(from: string, to: string): number
+func pick_region(): pool
+command play_sound(name: string, volume: number)
+command fade_out()
+@endenv
+```
+
+Parameters and results take any variable type, and every parameter has a name. A function call works wherever an expression does and is written as `{"call": "trust", "args": [...]}`. A command is a statement that takes comma-separated expressions as arguments, written with them in `args` for the game to evaluate when the command runs:
 
 ```
 @play_sound "door", $volume * 0.5
@@ -43,7 +54,7 @@ Commands take comma-separated expressions as arguments and are written with them
 {"type": "command", "line": 1, "id": "play_sound", "args": ["door", {"op": "*", "left": {"variable": "volume"}, "right": 0.5}]}
 ```
 
-Arguments are checked like any other expression. Command names aren't declared, so the build doesn't check them or how many arguments they get.
+Calls and commands must be declared and get exactly their parameters, each of its type. `env.json` lists them as `{"name": "trust", "params": [{"name": "from", "type": "string"}, {"name": "to", "type": "string"}], "returns": "number"}`, commands without `returns`. A function can't take the name of a built-in function, and a command can't take the name of a statement such as `jump`. `{}` in a command's string argument is plain text.
 
 Line, character line, option, hint and continue text can hold any expression inside `{}`:
 
@@ -223,12 +234,12 @@ Every variable a script uses must be declared, in expressions, as the target of 
 - Comparisons need both sides of the same type.
 - Conditions (`@if`, `@elif`, `@when`, option, hint and case conditions) must be flags.
 - `@set` must match the variable's type, `@increase` and `@decrease` need a number variable, `@setflag` and `@clearflag` a flag variable, and a character line's `$name` a string variable.
-- `visited()` is a flag, `visit_count()`, `skip_count()` and the other built-in functions are numbers, and built-in function arguments are numbers.
+- `visited()` is a flag, `visit_count()`, `skip_count()` and the other built-in functions are numbers, and built-in function arguments are numbers. Declared functions and commands check each argument against its parameter, and a function call has its declared result type.
 - Expressions inside `{}` in text can be of any type.
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 - A bare name is a `node`, `pool` or `slot`, and `<`, `>`, `<=` and `>=` can't compare them. A name that is both a node and a pool or slot takes the type the expression needs.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions, function calls with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions and commands, calls and commands with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

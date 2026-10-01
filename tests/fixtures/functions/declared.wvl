@@ -1,0 +1,7 @@
+@node start
+@if trust("anna", "ben") > 3 and times_seen(start) < day()
+    @unlock pick_region()
+@endif
+Trust: {trust("anna", "ben")}.
+@fade_out
+@endnode

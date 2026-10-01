@@ -22,6 +22,8 @@ ENV_BUILD_FILE = "env.json"
 
 # declaration kind -> env.json list of names.
 _NAME_LISTS = {"pool": "pools", "slot": "slots"}
+# declaration kind -> env.json list of declarations.
+_DECLARATION_LISTS = {"meta": "meta_keys", "function": "functions", "command": "commands"}
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
@@ -107,17 +109,24 @@ def _report_string_error(error: InvalidStringError, file: Path) -> None:
 
 
 def _env(declarations: list[dict]) -> dict[str, list]:
-    env: dict[str, list] = {"declarations": [], "pools": [], "slots": [], "meta_keys": []}
+    env: dict[str, list] = {
+        "declarations": [],
+        "pools": [],
+        "slots": [],
+        "meta_keys": [],
+        "functions": [],
+        "commands": [],
+    }
     for declaration in declarations:
         kind = declaration.get("kind")
         if kind is None:
             env["declarations"].append(declaration)
-        elif kind == "meta":
-            env["meta_keys"].append(
+        elif kind in _NAME_LISTS:
+            env[_NAME_LISTS[kind]].append(declaration["name"])
+        else:
+            env[_DECLARATION_LISTS[kind]].append(
                 {key: value for key, value in declaration.items() if key != "kind"}
             )
-        else:
-            env[_NAME_LISTS[kind]].append(declaration["name"])
     return env
 
 

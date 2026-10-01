@@ -14,6 +14,10 @@ ENV = (
     "pool cave\n"
     "pool hall\n"
     "slot treasure\n"
+    "command play_sound(name: string, volume: number)\n"
+    "command shake(strength: number, times: number, seen: flag)\n"
+    "command log(message: string, name: string, score: number, has_key: flag, seen: flag)\n"
+    "command spawn(target: node)\n"
     "@endenv\n"
 )
 
@@ -336,7 +340,7 @@ def test_draw_from_pools_without_members_builds(tmp_path):
     }
 
 
-def test_command_arguments_of_any_type_build(tmp_path):
+def test_command_arguments_build(tmp_path):
     src = tmp_path / "src"
     _write(src / "globals.wvl", ENV)
     _write(
@@ -372,7 +376,7 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
         ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' can't compare pools"),
         ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
         ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a flag, got a pool"),
-        ("@spawn wolf", "2:8: error: 'wolf' isn't a node, pool or slot"),
+        ("@spawn wolf", "2:8: error: 'wolf' matches no node"),
         ("You have {score} gold.", "2:11: error: 'score' is a variable, write $score"),
         (
             "@increase $region",
@@ -432,6 +436,7 @@ def test_name_variables_build(tmp_path):
         "var quest: node = cave\n"
         "var partner: slot = treasure\n"
         "extern var home: pool\n"
+        "command unlock(target: pool, partner: slot)\n"
         "@endenv\n\n"
         "@node cave\n"
         "@if $region == cave and cave == $quest and $home != $region and visited(cave)\n"
@@ -456,6 +461,10 @@ def test_name_variables_build(tmp_path):
         "pools": ["cave"],
         "slots": ["treasure"],
         "meta_keys": [],
+        "functions": [],
+        "commands": [{"name": "unlock", "params": [
+            {"name": "target", "type": "pool"}, {"name": "partner", "type": "slot"},
+        ]}],
     }
 
 
@@ -584,3 +593,118 @@ def test_meta_keys_build(tmp_path):
         {"type": "string", "name": "art", "value": ""},
         {"type": "pool", "name": "home", "value": "cave"},
     ]
+
+
+FUNCTION_ENV = ENV + (
+    "@env\n"
+    "func trust(from: string, to: string): number\n"
+    "func has_item(item: string): flag\n"
+    "func pick_region(): pool\n"
+    "func times_seen(target: node): number\n"
+    "@endenv\n"
+)
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ('@set $score = trust("anna")', "2:15: error: trust() takes 2 arguments, got 1"),
+        (
+            '@set $score = trust("anna", 1)',
+            "2:29: error: trust() argument 'to' needs a string, got a number",
+        ),
+        ('@set $score = has_item("key")', "2:15: error: @set $score needs a number, got a flag"),
+        (
+            '@set $score = trsut("a", "b")',
+            "2:15: error: unknown function 'trsut', did you mean 'trust'?",
+        ),
+        (
+            "@if pick_region() == treasure\n    Hi.\n@endif",
+            "2:5: error: '==' needs both sides of the same type, got a pool and a slot",
+        ),
+        ("@set $score = times_seen(gone)", "2:26: error: 'gone' matches no node"),
+        ("@set $score = times_seen(cave)", "2:26: error: 'cave' is a pool, not a node"),
+        (
+            '@set $score = play_sound("a", 1)',
+            "2:15: error: 'play_sound' is a command and has no value",
+        ),
+        ('@trust "a", "b"', "2:2: error: 'trust' is a function and can't be a statement"),
+        (
+            '@play_sond "door", 1',
+            "2:2: error: unknown command 'play_sond', did you mean 'play_sound'?",
+        ),
+        ('@play_sound "door"', "2:2: error: @play_sound takes 2 arguments, got 1"),
+        (
+            '@play_sound "door", "loud"',
+            "2:21: error: @play_sound argument 'volume' needs a number, got a string",
+        ),
+        ("@set $score = $trust", "2:15: error: 'trust' is a function, not a variable"),
+    ],
+    ids=["too_few", "argument_type", "result_type", "unknown_function", "name_result",
+         "missing_node", "pool_as_node", "command_as_value", "function_as_statement",
+         "unknown_command", "command_too_few", "command_argument_type",
+         "function_as_variable"],
+)
+def test_function_and_command_errors(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", FUNCTION_ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+@pytest.mark.parametrize(
+    "declaration, expected",
+    [
+        ("func min(a: number, b: number): number", "2:6: error: 'min' is a built-in function"),
+        ("func meta(): number", "2:6: error: 'meta' is a built-in function"),
+        ("command jump(target: node)", "2:9: error: 'jump' is a statement keyword"),
+        ("command score()", "2:9: error: duplicate command 'score', first declared at"),
+    ],
+    ids=["built_in_function", "meta", "keyword", "duplicate"],
+)
+def test_function_and_command_declaration_errors(tmp_path, capsys, declaration, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "z.wvl", f"@env\n{declaration}\n@endenv\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("z.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert len(errors) == 1
+    assert errors[0].startswith(expected)
+
+
+def test_functions_and_commands_build(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", FUNCTION_ENV + "@env\ncommand fade_out()\n@endenv\n")
+    _write(
+        src / "a.wvl",
+        "@node start\n"
+        "@meta\n"
+        "pool: cave\n"
+        'when: trust("anna", "ben") > 3 and has_item("lantern")\n'
+        "weight: times_seen(start)\n"
+        "@endmeta\n"
+        '@if pick_region() == cave and not has_item("key")\n'
+        '    @play_sound "fire", trust("anna", "ben") / 10\n'
+        "@endif\n"
+        'Trust: {trust("anna", $name)}.\n'
+        "@fade_out\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
+    assert env["functions"][0] == {
+        "name": "trust",
+        "params": [{"name": "from", "type": "string"}, {"name": "to", "type": "string"}],
+        "returns": "number",
+    }
+    assert env["commands"][-1] == {"name": "fade_out", "params": []}

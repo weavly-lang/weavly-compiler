@@ -1,14 +1,15 @@
 from collections.abc import Collection
-from difflib import get_close_matches
+from functools import cache
 from pathlib import Path
 
 from lark import Token, Tree
+from lark.lexer import PatternStr
 
+from .parser import create_parser
 from .type_checker import (
-    META_FUNCTION,
+    BUILT_IN_FUNCTIONS,
     META_KEYS,
-    NODE_FUNCTIONS,
-    NUMBER_FUNCTIONS,
+    Declarations,
     Location,
     check_types,
     source_location,
@@ -28,6 +29,8 @@ _DECLARATION_KINDS = {
     "pool_declaration": "pool",
     "slot_declaration": "slot",
     "meta_declaration": "meta key",
+    "function_declaration": "function",
+    "command_declaration": "command",
 }
 _NODE_KINDS = {"node_start": "node id"}
 # rule -> what its target is called in errors.
@@ -55,9 +58,9 @@ class ProjectChecks:
             (_TARGET_KINDS[rule], target, location)
             for rule, target, location in _id_locations(tree, _TARGET_KINDS, file)
         )
-        self._check_calls(tree, file)
+        self._record_call_targets(tree, file)
         self._check_number_ranges(tree, file)
-        self._check_meta_declarations(tree, file)
+        self._check_declared_names(tree, file)
         self._record_meta_values(tree, file)
         self._trees.append((file, tree))
 
@@ -69,22 +72,9 @@ class ProjectChecks:
             if target not in self._node_ids
         )
         self.errors.extend(_meta_cycle_errors(self._meta_values))
-        variables: dict[str, str] = {}
-        kinds: dict[str, str] = {}
-        meta_keys: dict[str, str] = {}
-        for declaration in declarations:
-            name, kind = declaration["name"], declaration.get("kind")
-            if kind is None:
-                variables.setdefault(name, declaration["type"])
-            elif kind == "meta":
-                kinds.setdefault(name, "meta key")
-                meta_keys.setdefault(name, declaration["type"])
-            else:
-                kinds.setdefault(name, kind)
+        collected = Declarations.collect(declarations)
         for file, tree in self._trees:
-            self.errors.extend(
-                check_types(tree, file, variables, kinds, meta_keys, self._node_ids)
-            )
+            self.errors.extend(check_types(tree, file, collected, self._node_ids))
         return self.errors
 
     def _record_unique(
@@ -104,7 +94,7 @@ class ProjectChecks:
                 )
             )
 
-    def _check_calls(self, tree: Tree, file: Path) -> None:
+    def _record_call_targets(self, tree: Tree, file: Path) -> None:
         for call in tree.find_data("node_call"):
             function, target = call.children
             self._node_references.append(
@@ -114,20 +104,6 @@ class ProjectChecks:
         for call in tree.find_data("meta_call"):
             target = call.children[0]
             self._node_references.append(("meta", str(target), source_location(file, target)))
-
-        for call in tree.find_data("call"):
-            function, arguments = call.children
-            if function in NODE_FUNCTIONS:
-                message = f"{function}() takes a node id, or none for the current node"
-            elif function == META_FUNCTION:
-                message = "meta() takes a meta key, or a node id and a meta key"
-            elif function in NUMBER_FUNCTIONS:
-                count = 0 if arguments is None else len(arguments.children)
-                message = _argument_count_error(function, count)
-            else:
-                message = _unknown_function(function)
-            if message:
-                self._error(file, function, message)
 
     def _check_number_ranges(self, tree: Tree, file: Path) -> None:
         for declaration in tree.find_data("number_declaration"):
@@ -147,11 +123,17 @@ class ProjectChecks:
             elif maximum is not None and value > maximum:
                 self._error(file, name, f"number '{name}' has {default} above its max {maximum:g}")
 
-    def _check_meta_declarations(self, tree: Tree, file: Path) -> None:
-        for declaration in tree.find_data("meta_declaration"):
-            name = declaration.children[0]
-            if name in META_KEYS:
-                self._error(file, name, f"'{name}' is a built-in meta key")
+    def _check_declared_names(self, tree: Tree, file: Path) -> None:
+        reserved = (
+            ("meta_declaration", META_KEYS, "a built-in meta key"),
+            ("function_declaration", BUILT_IN_FUNCTIONS, "a built-in function"),
+            ("command_declaration", _statement_keywords(), "a statement keyword"),
+        )
+        for rule, names, what in reserved:
+            for declaration in tree.find_data(rule):
+                name = declaration.children[0]
+                if name in names:
+                    self._error(file, name, f"'{name}' is {what}")
 
     def _record_meta_values(self, tree: Tree, file: Path) -> None:
         for node in tree.find_data("node"):
@@ -182,22 +164,14 @@ def _id_locations(
     return locations
 
 
-def _argument_count_error(function: str, count: int) -> str | None:
-    minimum, maximum = NUMBER_FUNCTIONS[function]
-    if count >= minimum and (maximum is None or count <= maximum):
-        return None
-    expected = f"at least {minimum}" if maximum is None else str(minimum)
-    noun = "argument" if expected == "1" else "arguments"
-    return f"{function}() takes {expected} {noun}, got {count}"
-
-
-def _unknown_function(function: str) -> str:
-    message = f"unknown function '{function}'"
-    functions = [*NODE_FUNCTIONS, *NUMBER_FUNCTIONS, META_FUNCTION]
-    matches = get_close_matches(function, functions, n=1)
-    if matches:
-        message += f", did you mean '{matches[0]}'?"
-    return message
+@cache
+def _statement_keywords() -> frozenset[str]:
+    """Return the names after `@` that start a statement or block, not a command."""
+    return frozenset(
+        terminal.pattern.value[1:]
+        for terminal in create_parser().terminals
+        if isinstance(terminal.pattern, PatternStr) and terminal.pattern.value.startswith("@")
+    )
 
 
 def _meta_cycle_errors(values: dict[MetaRef, tuple[Location, list[MetaRef]]]) -> list[Error]:

@@ -1,4 +1,5 @@
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
+from dataclasses import dataclass, field
 from difflib import get_close_matches
 from pathlib import Path
 
@@ -29,6 +30,7 @@ NUMBER_FUNCTIONS = {
 }
 
 META_FUNCTION = "meta"
+BUILT_IN_FUNCTIONS = frozenset({*NODE_FUNCTIONS, *NUMBER_FUNCTIONS, META_FUNCTION})
 
 # built-in key -> type of its value.
 META_KEYS = {
@@ -46,6 +48,8 @@ _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLA
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
 _LOGIC = {"and_": "and", "or_": "or"}
 _EQUALITY = frozenset({"==", "!="})
+# declaration kind -> how errors name it, where that differs.
+_KIND_NAMES = {"meta": "meta key"}
 
 
 def source_location(file: Path, item: Tree | Token) -> Location:
@@ -54,32 +58,52 @@ def source_location(file: Path, item: Tree | Token) -> Location:
     return (file, item.meta.line, item.meta.column)
 
 
+@dataclass
+class Declarations:
+    """The project's declarations by name, first declaration wins."""
+
+    # name -> type
+    variables: dict[str, str] = field(default_factory=dict)
+    # every other declared name -> its kind
+    kinds: dict[str, str] = field(default_factory=dict)
+    # custom key -> type
+    meta_keys: dict[str, str] = field(default_factory=dict)
+    functions: dict[str, dict] = field(default_factory=dict)
+    commands: dict[str, dict] = field(default_factory=dict)
+
+    @classmethod
+    def collect(cls, declarations: list[dict]) -> "Declarations":
+        collected = cls()
+        for declaration in declarations:
+            name, kind = declaration["name"], declaration.get("kind")
+            if kind is None:
+                collected.variables.setdefault(name, declaration["type"])
+                continue
+            collected.kinds.setdefault(name, _KIND_NAMES.get(kind, kind))
+            if kind == "meta":
+                collected.meta_keys.setdefault(name, declaration["type"])
+            elif kind == "function":
+                collected.functions.setdefault(name, declaration)
+            elif kind == "command":
+                collected.commands.setdefault(name, declaration)
+        return collected
+
+
 def check_types(
-    tree: Tree,
-    file: Path,
-    variables: dict[str, str],
-    kinds: dict[str, str],
-    meta_keys: dict[str, str],
-    nodes: Collection[str],
+    tree: Tree, file: Path, declarations: Declarations, nodes: Collection[str]
 ) -> list[tuple[Location, str]]:
-    """Check `tree` against variables (name -> type), other declarations (name -> kind),
-    custom meta keys (name -> type) and nodes."""
-    return _TypeChecker(file, variables, kinds, meta_keys, nodes).check(tree)
+    """Check `tree` against the project's declarations and node ids."""
+    return _TypeChecker(file, declarations, nodes).check(tree)
 
 
 class _TypeChecker:
-    def __init__(
-        self,
-        file: Path,
-        variables: dict[str, str],
-        kinds: dict[str, str],
-        meta_keys: dict[str, str],
-        nodes: Collection[str],
-    ) -> None:
+    def __init__(self, file: Path, declarations: Declarations, nodes: Collection[str]) -> None:
         self.file = file
-        self.variables = variables
-        self.kinds = kinds
-        self.meta_keys = META_KEYS | meta_keys
+        self.variables = declarations.variables
+        self.kinds = declarations.kinds
+        self.meta_keys = META_KEYS | declarations.meta_keys
+        self.functions = declarations.functions
+        self.commands = declarations.commands
         self.nodes = nodes
         self.errors: list[tuple[Location, str]] = []
 
@@ -128,9 +152,17 @@ class _TypeChecker:
             self._expect_name(pool, POOL)
 
     def _check_command(self, tree: Tree) -> None:
-        arguments = tree.children[1]
-        for argument in arguments.children if arguments is not None else []:
+        name, arguments = tree.children
+        declaration = self.commands.get(str(name))
+        if declaration is not None:
+            self._expect_arguments(name, f"@{name}", declaration["params"], _items(arguments))
+            return
+        for argument in _items(arguments):
             self._infer(argument)
+        if name in self.functions:
+            self._error(name, f"'{name}' is a function and can't be a statement")
+        else:
+            self._error(name, _unknown("command", str(name), self.commands))
 
     def _check_condition(self, tree: Tree) -> None:
         self._expect(tree.children[0], FLAG, "condition")
@@ -152,7 +184,7 @@ class _TypeChecker:
         key, *values = tree.children
         expected = self.meta_keys.get(str(key))
         if expected is None:
-            self._error(key, self._unknown_meta_key(str(key)))
+            self._error(key, _unknown("meta key", str(key), self.meta_keys))
             return
 
         if key in ("pool", "slot"):
@@ -235,13 +267,46 @@ class _TypeChecker:
 
     def _infer_call(self, node: Tree) -> str | None:
         function, arguments = node.children
-        is_number_function = function in NUMBER_FUNCTIONS
-        for argument in arguments.children if arguments is not None else []:
-            if is_number_function:
-                self._expect(argument, NUMBER, f"{function}()")
+        name = str(function)
+        if name in NUMBER_FUNCTIONS:
+            message = _count_error(f"{name}()", len(_items(arguments)), *NUMBER_FUNCTIONS[name])
+            if message:
+                self._error(function, message)
+            for argument in _items(arguments):
+                self._expect(argument, NUMBER, f"{name}()")
+            return NUMBER
+
+        declaration = self.functions.get(name)
+        if declaration is not None:
+            self._expect_arguments(function, f"{name}()", declaration["params"], _items(arguments))
+            return declaration["returns"]
+
+        for argument in _items(arguments):
+            self._infer(argument)
+        if name in NODE_FUNCTIONS:
+            message = f"{name}() takes a node id, or none for the current node"
+        elif name == META_FUNCTION:
+            message = "meta() takes a meta key, or a node id and a meta key"
+        elif name in self.commands:
+            message = f"'{name}' is a command and has no value"
+        else:
+            message = _unknown("function", name, [*BUILT_IN_FUNCTIONS, *self.functions])
+        self._error(function, message)
+        return None
+
+    def _expect_arguments(
+        self, where: Token, label: str, params: list[dict], arguments: list
+    ) -> None:
+        message = _count_error(label, len(arguments), len(params), len(params))
+        if message:
+            self._error(where, message)
+        for param, argument in zip(params, arguments):
+            if param["type"] in NAME_TYPES and _is_name(argument):
+                self._expect_name(argument, param["type"])
             else:
-                self._infer(argument)
-        return NUMBER if is_number_function else None
+                self._expect(argument, param["type"], f"{label} argument '{param['name']}'")
+        for argument in arguments[len(params) :]:
+            self._infer(argument)
 
     def _infer_meta_call(self, tree: Tree) -> str | None:
         key = tree.children[1]
@@ -250,7 +315,7 @@ class _TypeChecker:
             return None
         value_type = self.meta_keys.get(str(key))
         if value_type is None:
-            self._error(key, self._unknown_meta_key(str(key)))
+            self._error(key, _unknown("meta key", str(key), self.meta_keys))
         return value_type
 
     # =====================
@@ -277,6 +342,8 @@ class _TypeChecker:
             self._error(tree, f"'{name}' is a variable, write ${name}")
         elif name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
             self._error(tree, f"'{name}' is a meta key, write meta({name})")
+        elif name in self.kinds:
+            self._error(tree, f"'{name}' is a {self.kinds[name]}, not a node, pool or slot")
         else:
             self._error(tree, f"'{name}' isn't a node, pool or slot")
         return None
@@ -295,13 +362,6 @@ class _TypeChecker:
             self._error(item, f"'{name}' matches no node")
         else:
             self._error(item, f"{expected} '{name}' isn't declared")
-
-    def _unknown_meta_key(self, key: str) -> str:
-        message = f"unknown meta key '{key}'"
-        matches = get_close_matches(key, self.meta_keys, n=1)
-        if matches:
-            message += f", did you mean '{matches[0]}'?"
-        return message
 
     def _name_types(self, name: str) -> list[str]:
         kind = self.kinds.get(name)
@@ -330,3 +390,23 @@ class _TypeChecker:
 
 def _is_name(value: Tree | Token) -> bool:
     return isinstance(value, Tree) and value.data == "name"
+
+
+def _items(arguments: Tree | None) -> list:
+    return [] if arguments is None else arguments.children
+
+
+def _count_error(label: str, count: int, minimum: int, maximum: int | None) -> str | None:
+    if count >= minimum and (maximum is None or count <= maximum):
+        return None
+    expected = f"at least {minimum}" if maximum is None else str(minimum)
+    noun = "argument" if expected == "1" else "arguments"
+    return f"{label} takes {expected} {noun}, got {count}"
+
+
+def _unknown(kind: str, name: str, known: Iterable[str]) -> str:
+    message = f"unknown {kind} '{name}'"
+    matches = get_close_matches(name, list(known), n=1)
+    if matches:
+        message += f", did you mean '{matches[0]}'?"
+    return message

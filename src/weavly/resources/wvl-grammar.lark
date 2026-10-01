@@ -18,6 +18,8 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | pool_declaration
     | slot_declaration
     | meta_declaration
+    | function_declaration
+    | command_declaration
 
 number_declaration: _VAR ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
 string_declaration: _VAR ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
@@ -31,6 +33,10 @@ meta_declaration: _META_KEY ID _COLON meta_default _NEWLINE
     | _STRING_TYPE ["=" STRING] -> string_default
     | _FLAG_TYPE ["=" bool_literal] -> flag_default
     | name_type "=" ID -> name_default
+function_declaration: _FUNC ID "(" [parameters] ")" _COLON (value_type | name_type) _NEWLINE
+command_declaration: _COMMAND_KEY ID "(" [parameters] ")" _NEWLINE
+parameters: parameter ("," parameter)*
+parameter: ID _COLON (value_type | name_type)
 !value_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
 !name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE
 ?bool_literal: TRUE
@@ -217,6 +223,8 @@ _NODE_TYPE: "node"
 _POOL_TYPE: "pool"
 _SLOT_TYPE: "slot"
 _META_KEY: "meta"
+_FUNC: "func"
+_COMMAND_KEY: "command"
 
 _META: "@meta"
 _ENDMETA: "@endmeta"

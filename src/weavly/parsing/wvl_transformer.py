@@ -122,6 +122,20 @@ class WvlTransformer(Transformer):
     def name_default(self, value_type: str, value: str) -> tuple[str, str]:
         return (value_type, value)
 
+    def function_declaration(
+        self, name: str, parameters: list | None, returns: str
+    ) -> dict[str, Any]:
+        return {"kind": "function", "name": name, "params": parameters or [], "returns": returns}
+
+    def command_declaration(self, name: str, parameters: list | None) -> dict[str, Any]:
+        return {"kind": "command", "name": name, "params": parameters or []}
+
+    def parameters(self, *parameters) -> list:
+        return list(parameters)
+
+    def parameter(self, name: str, value_type: str) -> dict[str, str]:
+        return {"name": name, "type": value_type}
+
     def node_start(self, id: str) -> str:
         return id
 
