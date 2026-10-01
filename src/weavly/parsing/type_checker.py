@@ -14,6 +14,8 @@ NODE = "node"
 POOL = "pool"
 SLOT = "slot"
 NAME_TYPES = (NODE, POOL, SLOT)
+# Quoted text with {} expressions, only in label keys.
+TEXT = "text"
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER, "skip_count": NUMBER}
@@ -40,9 +42,18 @@ META_KEYS = {
     "priority": NUMBER,
     "weight": NUMBER,
     "once": FLAG,
+    "label": TEXT,
+    "available": FLAG,
+    "label_unavailable": TEXT,
+    "label_teaser": TEXT,
 }
-# Built-in keys meta() can't read: lists, or not written to the output.
-_UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once"})
+TEXT_META_KEYS = frozenset(key for key, value_type in META_KEYS.items() if value_type == TEXT)
+# Built-in keys meta() can't read: lists, text, or not written to the output.
+_UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once", *TEXT_META_KEYS})
+
+# pool() option parameter -> type of its value.
+POOL_PARAMETERS = {"limit": NUMBER, "shuffle": FLAG, "locked": "mode"}
+_LOCKED_MODES = ("show", "extra", "hide")
 
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
@@ -202,8 +213,37 @@ class _TypeChecker:
         if key == "once":
             if not isinstance(value, Token) or value.type not in ("TRUE", "FALSE"):
                 self._error(value, "once needs true or false")
+        elif expected == TEXT:
+            if not isinstance(value, Tree) or value.data != "text":
+                self._error(value, f"{key} needs quoted text")
         else:
             self._expect(value, expected, str(key))
+
+    def _check_pool_option(self, tree: Tree) -> None:
+        pools = 0
+        parameters: set[str] = set()
+        for argument in tree.children:
+            if argument.data == "pool_name":
+                pool = argument.children[0]
+                if parameters:
+                    self._error(pool, "pool() takes its pools before any parameter")
+                self._expect_name(pool, POOL)
+                pools += 1
+                continue
+
+            name, value = argument.children
+            if name in parameters:
+                self._error(name, f"duplicate pool() parameter '{name}'")
+            parameters.add(str(name))
+            if name == "locked":
+                if not _is_name(value) or value.children[0] not in _LOCKED_MODES:
+                    self._error(value, "locked needs show, extra or hide")
+            elif name in POOL_PARAMETERS:
+                self._expect(value, POOL_PARAMETERS[name], str(name))
+            else:
+                self._error(name, _unknown("pool() parameter", str(name), POOL_PARAMETERS))
+        if pools == 0:
+            self._error(tree, "pool() needs at least one pool")
 
     def _check_character_line(self, tree: Tree) -> None:
         self._expect_variable(tree.children[0], STRING, "character name")

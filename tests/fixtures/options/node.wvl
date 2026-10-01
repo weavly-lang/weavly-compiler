@@ -1,0 +1,5 @@
+@node camp
+    @options
+        @option node(hack_terminal)
+    @endoptions
+@endnode

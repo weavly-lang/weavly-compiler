@@ -294,26 +294,34 @@ class WvlTransformer(Transformer):
 
     @located
     def option(
-        self,
-        meta: Any,
-        condition: Any | None,
-        text: list,
-        body: list,
-        hint: bool = False,
+        self, meta: Any, condition: Any | None, text: list, body: list
     ) -> dict[str, Any]:
-        if condition is None:
-            condition = True
-        return {
-            "line": meta.line,
-            "condition": condition,
-            "text": text,
-            "body": body,
-            "hint": hint,
-        }
+        option_meta = {"label": {"line": meta.line, "value": text}}
+        if condition is not None:
+            option_meta["when"] = {"line": meta.line, "value": condition}
+        return {"type": "inline", "line": meta.line, "meta": option_meta, "body": body}
 
     @located
-    def hint_option(self, meta: Any, condition: Any | None, text: list) -> dict[str, Any]:
-        return self.option(meta, condition, text, [], hint=True)
+    def node_option(self, meta: Any, id: str) -> dict[str, Any]:
+        return {"type": "node", "line": meta.line, "id": id}
+
+    @located
+    def pool_option(self, meta: Any, *arguments: str | tuple) -> dict[str, Any]:
+        parameters = dict(argument for argument in arguments if isinstance(argument, tuple))
+        return {
+            "type": "pool",
+            "line": meta.line,
+            "pools": [argument for argument in arguments if isinstance(argument, str)],
+            "limit": parameters.get("limit"),
+            "shuffle": parameters.get("shuffle", True),
+            "locked": parameters.get("locked", "show"),
+        }
+
+    def pool_name(self, name: str) -> str:
+        return name
+
+    def pool_parameter(self, name: str, value: Any) -> tuple[str, Any]:
+        return (name, value)
 
     # =====================
     # Random Block

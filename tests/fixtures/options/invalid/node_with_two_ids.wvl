@@ -1,0 +1,5 @@
+@node a
+    @options
+        @option node(a, b)
+    @endoptions
+@endnode

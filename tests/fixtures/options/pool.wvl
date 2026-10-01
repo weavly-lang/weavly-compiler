@@ -1,0 +1,6 @@
+@node camp
+    @options
+        @option pool(camp_actions)
+        @option pool(camp_actions, city_actions, limit: 1 + $level, shuffle: not $tutorial, locked: extra)
+    @endoptions
+@endnode

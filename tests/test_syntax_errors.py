@@ -31,7 +31,7 @@ def _build_errors(tmp_path, capsys, source):
                 "a.wvl:3:9: error: unexpected 'Go'",
                 "  3 | @option Go -> a",
                 "    |         ^",
-                "  expected one of: '[', a quoted string",
+                "  expected one of: '[', 'node', 'pool', a quoted string",
             ],
         ),
         (

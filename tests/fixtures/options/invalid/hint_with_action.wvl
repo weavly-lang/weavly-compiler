@@ -1,6 +1,0 @@
-@node start
-    @options
-        @hint "Hint text" -> end
-        @option "Go" -> end
-    @endoptions
-@endnode

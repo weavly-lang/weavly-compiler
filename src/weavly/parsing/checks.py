@@ -34,7 +34,12 @@ _DECLARATION_KINDS = {
 }
 _NODE_KINDS = {"node_start": "node id"}
 # rule -> what its target is called in errors.
-_TARGET_KINDS = {"jump": "jump", "inline_jump": "jump", "detour": "detour"}
+_TARGET_KINDS = {
+    "jump": "jump",
+    "inline_jump": "jump",
+    "detour": "detour",
+    "node_option": "option",
+}
 
 
 class ProjectChecks:
@@ -50,6 +55,12 @@ class ProjectChecks:
         self._node_references: list[tuple[str, str, Location]] = []
         # meta value -> location of its key and the meta values it reads.
         self._meta_values: dict[MetaRef, tuple[Location, list[MetaRef]]] = {}
+        # node ids with a label, and pool -> the node ids that join it.
+        self._labelled: set[str] = set()
+        self._pool_members: dict[str, list[str]] = {}
+        # (node id or pool, location) of every node and pool option.
+        self._offered_nodes: list[tuple[str, Location]] = []
+        self._offered_pools: list[tuple[str, Location]] = []
 
     def add_file(self, file: Path, tree: Tree) -> None:
         self._record_unique(tree, file, _DECLARATION_KINDS, self._declared)
@@ -62,6 +73,7 @@ class ProjectChecks:
         self._check_number_ranges(tree, file)
         self._check_declared_names(tree, file)
         self._record_meta_values(tree, file)
+        self._record_options(tree, file)
         self._trees.append((file, tree))
 
     def finish(self, declarations: list[dict]) -> list[Error]:
@@ -72,6 +84,7 @@ class ProjectChecks:
             if target not in self._node_ids
         )
         self.errors.extend(_meta_cycle_errors(self._meta_values))
+        self._check_option_labels()
         collected = Declarations.collect(declarations)
         for file, tree in self._trees:
             self.errors.extend(check_types(tree, file, collected, self._node_ids))
@@ -147,6 +160,44 @@ class ProjectChecks:
                 self._meta_values.setdefault(
                     (node_id, str(key)), (source_location(file, key), reads)
                 )
+
+    def _record_options(self, tree: Tree, file: Path) -> None:
+        for node in tree.find_data("node"):
+            node_id = str(node.children[0].children[0])
+            for entry in node.find_data("meta_entry"):
+                key, *values = entry.children
+                if key == "label":
+                    self._labelled.add(node_id)
+                elif key == "pool":
+                    for value in values:
+                        if isinstance(value, Tree) and value.data == "name":
+                            pool = str(value.children[0])
+                            self._pool_members.setdefault(pool, []).append(node_id)
+
+        for option in tree.find_data("node_option"):
+            target = option.children[0]
+            self._offered_nodes.append((str(target), source_location(file, target)))
+        for option in tree.find_data("pool_option"):
+            for argument in option.children:
+                if argument.data == "pool_name":
+                    pool = argument.children[0]
+                    self._offered_pools.append((str(pool), source_location(file, pool)))
+
+    def _check_option_labels(self) -> None:
+        self.errors.extend(
+            (location, f"node '{target}' needs a label to be offered as an option")
+            for target, location in self._offered_nodes
+            if target in self._node_ids and target not in self._labelled
+        )
+        for pool, location in self._offered_pools:
+            self.errors.extend(
+                (
+                    location,
+                    f"node '{member}' in pool '{pool}' needs a label to be offered as an option",
+                )
+                for member in self._pool_members.get(pool, [])
+                if member not in self._labelled
+            )
 
     def _error(self, file: Path, item: Tree | Token, message: str) -> None:
         self.errors.append((source_location(file, item), message))

@@ -5,6 +5,7 @@ from typing import NamedTuple
 from lark import Lark, Token, Tree
 from lark.exceptions import UnexpectedInput
 
+from .type_checker import TEXT_META_KEYS
 from .wvl_transformer import InvalidStringError
 
 _TEXT_RULES = frozenset(
@@ -13,7 +14,6 @@ _TEXT_RULES = frozenset(
         "character_line",
         "named_character_line",
         "option",
-        "hint_option",
         "continue_",
     }
 )
@@ -43,13 +43,17 @@ class UnclosedInterpolationError(UnexpectedInput):
 def expand_text(tree: Tree, parser: Lark) -> None:
     """Replace each text token with a `text` tree of plain strings and interpolations."""
     for subtree in tree.iter_subtrees():
-        if subtree.data in _TEXT_RULES:
+        if subtree.data in _TEXT_RULES or _is_text_meta_entry(subtree):
             subtree.children = [
                 _text(child, parser)
                 if isinstance(child, Token) and child.type in _TEXT_TOKENS
                 else child
                 for child in subtree.children
             ]
+
+
+def _is_text_meta_entry(tree: Tree) -> bool:
+    return tree.data == "meta_entry" and tree.children[0] in TEXT_META_KEYS
 
 
 def _text(token: Token, parser: Lark) -> Tree:

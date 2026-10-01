@@ -34,7 +34,6 @@ _BLOCKS = {
 _OPENERS = {closer: opener for opener, closer in _BLOCKS.items()}
 _PARENTS = {
     "@option": "@options",
-    "@hint": "@options",
     "@case": "@random",
     "@when": "@match",
     "@elif": "@if",

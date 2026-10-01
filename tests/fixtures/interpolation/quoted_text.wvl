@@ -3,7 +3,7 @@
     $speaker: {$gold + 1} coins.
     @options
         @option "Pay {round($price)} gold" -> start
-        @hint "Needs {$gold} gold"
+        @option "Needs {$gold} gold" -> start
     @endoptions
     @continue "Onward, {$name}"
 @endnode
