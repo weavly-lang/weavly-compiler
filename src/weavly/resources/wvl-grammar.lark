@@ -127,9 +127,12 @@ elif_list: elif_+
 // =====================
 
 option_block: _OPTIONS _NEWLINE option_item+ _END_OPTIONS _NEWLINE
-?option_item: option | hint_option
+?option_item: option | node_option | pool_option
 option: _OPTION [_LBRACKET condition _RBRACKET] STRING action
-hint_option: _HINT_OPTION [_LBRACKET condition _RBRACKET] STRING _NEWLINE
+node_option: _OPTION _NODE_TYPE ID _NEWLINE
+pool_option: _OPTION _POOL_TYPE "(" pool_argument ("," pool_argument)* ")" _NEWLINE
+?pool_argument: ID -> pool_name
+    | ID _COLON expression -> pool_parameter
 
 // =====================
 // Random Block
@@ -238,7 +241,7 @@ _JUMP: "@jump"
 _DETOUR: "@detour"
 _DRAW: "@draw"
 _FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|jump|detour|draw|finish|if|elif|else|endif|options|option|hint|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
+_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|jump|detour|draw|finish|if|elif|else|endif|options|option|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
 _CONTINUE: "@continue"
 
 _IF: "@if"
@@ -249,7 +252,6 @@ _ENDIF: "@endif"
 _OPTIONS: "@options"
 _END_OPTIONS: "@endoptions"
 _OPTION: "@option"
-_HINT_OPTION: "@hint"
 
 _RANDOM: "@random"
 _CASE: "@case"

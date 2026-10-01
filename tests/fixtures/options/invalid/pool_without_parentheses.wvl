@@ -1,0 +1,5 @@
+@node a
+    @options
+        @option pool camp
+    @endoptions
+@endnode

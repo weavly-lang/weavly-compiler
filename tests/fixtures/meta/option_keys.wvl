@@ -1,0 +1,11 @@
+@node hack_terminal
+@meta
+pool: camp_actions
+label: "Do some hacking (-{meta(energy_cost)} energy)"
+label_unavailable: "Do some hacking (needs {meta(energy_cost)} energy)"
+label_teaser: "A terminal blinks in the dark"
+when: $found_terminal
+available: $energy >= meta(energy_cost)
+@endmeta
+You crack the terminal.
+@endnode

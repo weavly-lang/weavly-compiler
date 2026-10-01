@@ -56,7 +56,7 @@ Parameters and results take any variable type, and every parameter has a name. A
 
 Calls and commands must be declared and get exactly their parameters, each of its type. `env.json` lists them as `{"name": "trust", "params": [{"name": "from", "type": "string"}, {"name": "to", "type": "string"}], "returns": "number"}`, commands without `returns`. A function can't take the name of a built-in function, and a command can't take the name of a statement such as `jump`. `{}` in a command's string argument is plain text.
 
-Line, character line, option, hint and continue text can hold any expression inside `{}`:
+Line, character line, option and continue text, and the label meta keys, can hold any expression inside `{}`:
 
 ```
 The room costs {$base_price * $markup} gold.
@@ -171,7 +171,7 @@ art: "camp_fire"
 
 Built-in key names can't be declared, and custom keys share names with variables, pools and slots.
 
-`meta(<key>)` reads a key of the current node, and `meta(<node>, <key>)` reads one of another node. The build writes the current node's id when it's left out: `{"call": "meta", "node": "rest_at_camp", "key": "cost"}`. The game evaluates the value when it's read, and uses the default for a node that doesn't write the key. `meta()` reads custom keys and `when`, `priority` and `weight`. A meta value that reads itself, directly or through other meta values, fails the build.
+`meta(<key>)` reads a key of the current node, and `meta(<node>, <key>)` reads one of another node. The build writes the current node's id when it's left out: `{"call": "meta", "node": "rest_at_camp", "key": "cost"}`. The game evaluates the value when it's read, and uses the default for a node that doesn't write the key. `meta()` reads custom keys and `when`, `priority`, `weight` and `available`. A meta value that reads itself, directly or through other meta values, fails the build.
 
 `skip_count(<node>)` is how often the node was eligible when the game listed or drew from one of its pools, but wasn't taken. The game resets it when the node is taken, so a storylet that keeps being passed over can raise its own chances:
 
@@ -228,18 +228,66 @@ Nothing but dripping water.
 @endnode
 ```
 
+Every option is a node. An `@options` block offers nodes in three ways, and they're shown in the written order:
+
+```
+@options
+@option [$has_key] "Open the door"
+    The door creaks open.
+@option "Leave" -> road
+@option node hack_terminal
+@option pool(camp_actions, limit: 3)
+@endoptions
+```
+
+- **Inline options** are anonymous nodes: the text becomes their `label` and `[condition]` their `when`. They have no id, no `@meta` block and no visit count, and argument-less `visited()`, `visit_count()`, `skip_count()` and `meta()` inside them mean the enclosing node.
+- **`@option node <id>`** offers a node. It needs a `label`.
+- **`@option pool(...)`** offers the nodes the game selects from one or more pools, like listing a pool, at the place it's written. Every node in those pools needs a `label`. After the pools come optional parameters: `limit`, a number expression (default: no limit); `shuffle`, a flag expression that randomizes ties (default `true`); and `locked`, which says what happens to locked nodes: `show` them and count them toward `limit` (default), show them as `extra` that don't count, or `hide` them.
+
+Choosing an option runs its node like a `@detour`, so the enclosing node continues after `@endoptions` unless the option's node uses `@jump`. Each item has a `type`:
+
+```json
+{"type": "inline", "line": 2, "meta": {"label": {"line": 2, "value": ["Open the door"]}, "when": {"line": 2, "value": {"variable": "has_key"}}}, "body": [...]}
+{"type": "node", "line": 5, "id": "hack_terminal"}
+{"type": "pool", "line": 6, "pools": ["camp_actions"], "limit": 3.0, "shuffle": true, "locked": "show"}
+```
+
+The build writes every pool parameter, with `null` for no limit. Any node can carry the option keys in `@meta`:
+
+```
+@node hack_terminal
+@meta
+pool: camp_actions
+label: "Do some hacking (-{meta(energy_cost)} energy)"
+label_unavailable: "Do some hacking (needs {meta(energy_cost)} energy)"
+label_teaser: "A terminal blinks in the dark"
+when: $found_terminal
+available: $energy >= meta(energy_cost)
+@endmeta
+@set $energy = $energy - meta(energy_cost)
+You crack the terminal.
+@endnode
+```
+
+- `label`: the option text. The label keys are quoted text with `{}` expressions, written as segment lists like line text.
+- `available`: a flag expression, whether a shown option can be chosen.
+- `label_unavailable`: the text shown, locked, when `available` is false.
+- `label_teaser`: the text shown, locked, when `when` is false.
+
+An option with `when` or `available` false is shown locked only if it has the label for that state, otherwise it's hidden. While options are shown, the game updates their state and text when game state changes, and a chosen option's meta values are kept from the moment it was chosen.
+
 Every variable a script uses must be declared, in expressions, as the target of `@set`, `@increase`, `@decrease`, `@setflag` and `@clearflag`, as a character line's `$name`, and in expressions inside `{}` in text. The build also checks types:
 
 - `+ - * /`, unary `-` and random weights need numbers; `and`, `or` and `not` need flags.
 - Comparisons need both sides of the same type.
-- Conditions (`@if`, `@elif`, `@when`, option, hint and case conditions) must be flags.
+- Conditions (`@if`, `@elif`, `@when`, option and case conditions) must be flags.
 - `@set` must match the variable's type, `@increase` and `@decrease` need a number variable, `@setflag` and `@clearflag` a flag variable, and a character line's `$name` a string variable.
 - `visited()` is a flag, `visit_count()`, `skip_count()` and the other built-in functions are numbers, and built-in function arguments are numbers. Declared functions and commands check each argument against its parameter, and a function call has its declared result type.
 - Expressions inside `{}` in text can be of any type.
 - `when` must be a flag, `priority` and `weight` numbers, and `once` `true` or `false`. Pools and slots can't be used as `$name`.
 - A bare name is a `node`, `pool` or `slot`, and `<`, `>`, `<=` and `>=` can't compare them. A name that is both a node and a pool or slot takes the type the expression needs.
 
-Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions and commands, calls and commands with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
+Syntax errors, duplicate declarations, number declarations whose min, max or default don't fit together, duplicate node ids, unknown functions and commands, calls and commands with the wrong number of arguments, `@jump`, `@detour`, `visited()`, `visit_count()` and `skip_count()` targets with no matching node, undeclared variables, pools and slots, bare names that aren't a node, pool or slot, unknown or duplicate `@meta` keys, offered nodes without a `label`, invalid `pool(...)` options, `meta()` calls on unknown keys or missing nodes, meta values that read themselves, and type errors fail the build with exit code 1. A failed build leaves the previous `build/` untouched.
 
 ## Development
 

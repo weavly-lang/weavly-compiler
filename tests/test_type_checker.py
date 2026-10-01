@@ -53,14 +53,13 @@ def _build_errors(tmp_path, capsys, body):
         (">Guide: Hi {$scroe}.", "2:13"),
         ("$name: Hi {$scroe}.", "2:12"),
         ('@options\n@option "Pay {$scroe}" -> start\n@endoptions', "3:15"),
-        ('@options\n@hint "Need {$scroe}"\n@endoptions', "3:14"),
         ('@continue "Onward, {$scroe}"', "2:21"),
         ("Costs {$score + $scroe}.", "2:17"),
         ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
     ],
     ids=["expression", "set", "increase", "decrease", "setflag", "clearflag",
          "character_name", "narration_text", "named_character_text", "character_text",
-         "option_text", "hint_text", "continue_text", "text_expression",
+         "option_text", "continue_text", "text_expression",
          "text_after_escapes"],
 )
 def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
@@ -127,11 +126,10 @@ def test_type_errors(tmp_path, capsys, body, expected):
         ("@if true\n    Hi.\n@elif $reputation\n    Ho.\n@endif", "4:7"),
         ("@match\n@when $score: Hi.\n@endmatch", "3:7"),
         ('@options\n@option [$score] "A" -> start\n@endoptions', "3:10"),
-        ('@options\n@hint [$score] "A"\n@endoptions', "3:8"),
         ("@random\n@case [$score] 1: Hi.\n@endrandom", "3:8"),
         ("@if visit_count(start)\n    Hi.\n@endif", "2:5"),
     ],
-    ids=["if", "elif", "when", "option", "hint", "case", "function"],
+    ids=["if", "elif", "when", "option", "case", "function"],
 )
 def test_conditions_must_be_flags(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
@@ -708,3 +706,122 @@ def test_functions_and_commands_build(tmp_path):
         "returns": "number",
     }
     assert env["commands"][-1] == {"name": "fade_out", "params": []}
+
+
+OPTION_NODES = (
+    "@node offered\n@meta\npool: cave\nlabel: \"Offered\"\n@endmeta\n@endnode\n"
+    "@node plain\nHi.\n@endnode\n"
+)
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ("@options\n@option node gone\n@endoptions", "3:14: error: option target 'gone' matches no node"),
+        (
+            "@options\n@option node plain\n@endoptions",
+            "3:14: error: node 'plain' needs a label to be offered as an option",
+        ),
+        ("@options\n@option pool(cavee)\n@endoptions", "3:14: error: pool 'cavee' isn't declared"),
+        ("@options\n@option pool(limit: 3)\n@endoptions", "3:1: error: pool() needs at least one pool"),
+        (
+            "@options\n@option pool(cave, limit: 3, hall)\n@endoptions",
+            "3:30: error: pool() takes its pools before any parameter",
+        ),
+        (
+            '@options\n@option pool(cave, limit: "3")\n@endoptions',
+            "3:27: error: limit needs a number, got a string",
+        ),
+        (
+            "@options\n@option pool(cave, shuffle: 1)\n@endoptions",
+            "3:29: error: shuffle needs a flag, got a number",
+        ),
+        (
+            "@options\n@option pool(cave, locked: maybe)\n@endoptions",
+            "3:28: error: locked needs show, extra or hide",
+        ),
+        (
+            "@options\n@option pool(cave, limt: 3)\n@endoptions",
+            "3:20: error: unknown pool() parameter 'limt', did you mean 'limit'?",
+        ),
+        (
+            "@options\n@option pool(cave, limit: 1, limit: 2)\n@endoptions",
+            "3:30: error: duplicate pool() parameter 'limit'",
+        ),
+        ("@meta\nlabel: $name\n@endmeta", "3:8: error: label needs quoted text"),
+        ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a flag, got a number"),
+        ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
+        ("@set $score = meta(label)", "2:20: error: meta() can't read label"),
+        ("@if meta(available)\n    Hi.\n@endif", None),
+    ],
+    ids=["missing_node", "node_without_label", "undeclared_pool", "no_pool", "pool_after_parameter",
+         "limit_type", "shuffle_type", "locked_mode", "unknown_parameter", "duplicate_parameter",
+         "label_expression", "available_type", "label_interpolation", "read_label",
+         "read_available"],
+)
+def test_option_errors(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+    _write(src / "b.wvl", OPTION_NODES)
+
+    if expected is None:
+        build_all_files(src, tmp_path / "build", pretty=False)
+        return
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+def test_pool_options_need_a_label_on_every_member(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "b.wvl", OPTION_NODES + "@node bare\n@meta\npool: cave\n@endmeta\n@endnode\n")
+    _write(
+        src / "a.wvl",
+        "@node start\n@options\n@option pool(hall, cave)\n@endoptions\n@endnode\n",
+    )
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [
+        "3:20: error: node 'bare' in pool 'cave' needs a label to be offered as an option"
+    ]
+
+
+def test_options_as_nodes_build(tmp_path):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV + "@env\nmeta energy_cost: number = 1\n@endenv\n")
+    _write(
+        src / "a.wvl",
+        "@node hack_terminal\n"
+        "@meta\n"
+        "pool: cave\n"
+        'label: "Do some hacking (-{meta(energy_cost)} energy)"\n'
+        'label_unavailable: "Do some hacking (needs {meta(energy_cost)} energy)"\n'
+        'label_teaser: "A terminal blinks"\n'
+        "when: $has_key\n"
+        "available: $score >= meta(energy_cost)\n"
+        "energy_cost: 2\n"
+        "@endmeta\n"
+        "@set $score = $score - meta(energy_cost)\n"
+        "@endnode\n\n"
+        "@node start\n"
+        "@options\n"
+        '@option [visited()] "Leave" -> start\n'
+        "@option node hack_terminal\n"
+        "@option pool(cave, limit: $score, shuffle: not $has_key, locked: hide)\n"
+        "@endoptions\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    items = data["nodes"][1]["body"][0]["items"]
+    assert [item["type"] for item in items] == ["inline", "node", "pool"]
+    assert items[0]["meta"]["when"]["value"] == {"call": "visited", "node": "start"}
