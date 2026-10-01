@@ -51,8 +51,8 @@ TEXT_META_KEYS = frozenset(key for key, value_type in META_KEYS.items() if value
 # Built-in keys meta() can't read: lists, text, or not written to the output.
 _UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once", *TEXT_META_KEYS})
 
-# pool() option parameter -> type of its value.
-POOL_PARAMETERS = {"limit": NUMBER, "shuffle": FLAG, "locked": "mode"}
+# pool() option parameter -> type of its value, besides `locked`, which takes a mode.
+_POOL_PARAMETERS = {"limit": NUMBER, "shuffle": FLAG}
 _LOCKED_MODES = ("show", "extra", "hide")
 
 _LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
@@ -129,11 +129,7 @@ class _TypeChecker:
     # Statements
     # =====================
 
-    def _check_name_declaration(self, tree: Tree) -> None:
-        _, name_type, value = tree.children
-        self._expect_name(value, str(name_type.children[0]))
-
-    def _check_name_default(self, tree: Tree) -> None:
+    def _check_name_value(self, tree: Tree) -> None:
         name_type, value = tree.children
         self._expect_name(value, str(name_type.children[0]))
 
@@ -238,10 +234,11 @@ class _TypeChecker:
             if name == "locked":
                 if not _is_name(value) or value.children[0] not in _LOCKED_MODES:
                     self._error(value, "locked needs show, extra or hide")
-            elif name in POOL_PARAMETERS:
-                self._expect(value, POOL_PARAMETERS[name], str(name))
+            elif name in _POOL_PARAMETERS:
+                self._expect(value, _POOL_PARAMETERS[name], str(name))
             else:
-                self._error(name, _unknown("pool() parameter", str(name), POOL_PARAMETERS))
+                known = [*_POOL_PARAMETERS, "locked"]
+                self._error(name, _unknown("pool() parameter", str(name), known))
         if pools == 0:
             self._error(tree, "pool() needs at least one pool")
 
@@ -294,8 +291,8 @@ class _TypeChecker:
                     f"'{operator}' needs both sides of the same type, "
                     f"got a {left_type} and a {right_type}",
                 )
-            elif left_type in NAME_TYPES and operator not in _EQUALITY:
-                self._error(node, f"'{operator}' can't compare {left_type}s")
+            elif left_type and left_type != NUMBER and operator not in _EQUALITY:
+                self._error(node, f"'{operator}' needs a number, got a {left_type}")
             return FLAG
         if rule == "node_call":
             return NODE_FUNCTIONS.get(str(node.children[0]))

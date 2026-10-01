@@ -67,29 +67,12 @@ class WvlTransformer(Transformer):
     def env_block(self, *declarations) -> list:
         return list(declarations)
 
-    def string_declaration(self, name: str, value: str | None = None) -> dict[str, str]:
-        if value is None:
-            value = ""
-        return {"type": "string", "name": name, "value": str(value)}
-
-    def number_declaration(
-        self,
-        name: str,
-        minimum: float | None,
-        maximum: float | None,
-        value: float | None,
-    ) -> dict[str, Any]:
-        if value is None:
-            value = 0.0
-        return {"type": "number", "name": name, "value": value, "min": minimum, "max": maximum}
-
-    def flag_declaration(self, name: str, value: bool | None = None) -> dict[str, Any]:
-        if value is None:
-            value = False
-        return {"type": "flag", "name": name, "value": bool(value)}
-
-    def name_declaration(self, name: str, value_type: str, value: str) -> dict[str, str]:
-        return {"type": value_type, "name": name, "value": value}
+    def var_declaration(self, name: str, typed: dict[str, Any]) -> dict[str, Any]:
+        declaration = {"type": typed["type"], "name": name, "value": typed["value"]}
+        if typed["type"] == "number":
+            declaration["min"] = typed.get("min")
+            declaration["max"] = typed.get("max")
+        return declaration
 
     def extern_declaration(self, name: str, value_type: str) -> dict[str, Any]:
         return {"type": value_type, "name": name, "extern": True}
@@ -106,21 +89,25 @@ class WvlTransformer(Transformer):
     def slot_declaration(self, name: str) -> dict[str, str]:
         return {"kind": "slot", "name": name}
 
-    def meta_declaration(self, name: str, default: tuple[str, Any]) -> dict[str, Any]:
-        value_type, value = default
-        return {"kind": "meta", "type": value_type, "name": name, "value": value}
+    def meta_declaration(self, name: str, typed: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "meta", "type": typed["type"], "name": name, "value": typed["value"]}
 
-    def number_default(self, value: float | None) -> tuple[str, float]:
-        return ("number", 0.0 if value is None else value)
+    def number_value(self, value: float | None) -> dict[str, Any]:
+        return {"type": "number", "value": 0.0 if value is None else value}
 
-    def string_default(self, value: str | None) -> tuple[str, str]:
-        return ("string", "" if value is None else value)
+    def string_value(self, value: str | None) -> dict[str, Any]:
+        return {"type": "string", "value": "" if value is None else value}
 
-    def flag_default(self, value: bool | None) -> tuple[str, bool]:
-        return ("flag", bool(value))
+    def flag_value(self, value: bool | None) -> dict[str, Any]:
+        return {"type": "flag", "value": bool(value)}
 
-    def name_default(self, value_type: str, value: str) -> tuple[str, str]:
-        return (value_type, value)
+    def name_value(self, value_type: str, value: str) -> dict[str, Any]:
+        return {"type": value_type, "value": value}
+
+    def number_range(
+        self, minimum: float | None, maximum: float | None, value: float | None
+    ) -> dict[str, Any]:
+        return {**self.number_value(value), "min": minimum, "max": maximum}
 
     def function_declaration(
         self, name: str, parameters: list | None, returns: str

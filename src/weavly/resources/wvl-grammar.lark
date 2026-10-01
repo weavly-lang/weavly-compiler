@@ -10,10 +10,7 @@ start: _NEWLINE* (env_block | node)*
 
 env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
 
-?declaration: number_declaration
-    | string_declaration
-    | flag_declaration
-    | name_declaration
+?declaration: var_declaration
     | extern_declaration
     | pool_declaration
     | slot_declaration
@@ -21,18 +18,16 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | function_declaration
     | command_declaration
 
-number_declaration: _VAR ID _COLON _NUMBER_TYPE ["(" [signed_number] "," [signed_number] ")"] ["=" signed_number] _NEWLINE
-string_declaration: _VAR ID _COLON _STRING_TYPE ["=" STRING] _NEWLINE
-flag_declaration: _VAR ID _COLON _FLAG_TYPE ["=" bool_literal] _NEWLINE
-name_declaration: _VAR ID _COLON name_type "=" ID _NEWLINE
+var_declaration: _VAR ID _COLON (typed_value | number_range) _NEWLINE
 extern_declaration: _EXTERN _VAR ID _COLON (value_type | name_type) _NEWLINE
 pool_declaration: _POOL_TYPE ID _NEWLINE
 slot_declaration: _SLOT_TYPE ID _NEWLINE
-meta_declaration: _META_KEY ID _COLON meta_default _NEWLINE
-?meta_default: _NUMBER_TYPE ["=" signed_number] -> number_default
-    | _STRING_TYPE ["=" STRING] -> string_default
-    | _FLAG_TYPE ["=" bool_literal] -> flag_default
-    | name_type "=" ID -> name_default
+meta_declaration: _META_KEY ID _COLON typed_value _NEWLINE
+?typed_value: _NUMBER_TYPE ["=" signed_number] -> number_value
+    | _STRING_TYPE ["=" STRING] -> string_value
+    | _FLAG_TYPE ["=" bool_literal] -> flag_value
+    | name_type "=" ID -> name_value
+number_range: _NUMBER_TYPE "(" [signed_number] "," [signed_number] ")" ["=" signed_number]
 function_declaration: _FUNC ID "(" [parameters] ")" _COLON (value_type | name_type) _NEWLINE
 command_declaration: _COMMAND_KEY ID "(" [parameters] ")" _NEWLINE
 parameters: parameter ("," parameter)*
