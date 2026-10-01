@@ -61,6 +61,9 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 @if $reputation > 100
     Everyone knows you.
 @endif
+@if luck() > 5
+    Lucky you.
+@endif
 @fade_out
 @finish
 @endnode
