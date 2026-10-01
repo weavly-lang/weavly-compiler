@@ -109,11 +109,13 @@ def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
             '@options\n@option "Is {$score == \\"x\\"}" -> start\n@endoptions',
             "3:14: error: '==' needs both sides of the same type, got a number and a string",
         ),
+        ("@set $has_key = $has_key < true", "2:17: error: '<' needs a number, got a flag"),
+        ('@set $has_key = $name >= "b"', "2:17: error: '>=' needs a number, got a string"),
     ],
     ids=["set", "set_function", "add", "mul", "neg", "div_node_function", "and", "or",
          "not", "compare_eq", "compare_lt", "function_argument", "function_arguments",
          "increase", "decrease", "setflag", "clearflag", "character_name", "text",
-         "option_text"],
+         "option_text", "order_flags", "order_strings"],
 )
 def test_type_errors(tmp_path, capsys, body, expected):
     assert _build_errors(tmp_path, capsys, body) == [expected]
@@ -371,7 +373,7 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
             "@if $region == treasure\n    Hi.\n@endif",
             "2:5: error: '==' needs both sides of the same type, got a pool and a slot",
         ),
-        ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' can't compare pools"),
+        ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a pool"),
         ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
         ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a flag, got a pool"),
         ("@spawn wolf", "2:8: error: 'wolf' matches no node"),
@@ -662,8 +664,14 @@ def test_function_and_command_errors(tmp_path, capsys, body, expected):
         ("func meta(): number", "2:6: error: 'meta' is a built-in function"),
         ("command jump(target: node)", "2:9: error: 'jump' is a statement keyword"),
         ("command score()", "2:9: error: duplicate command 'score', first declared at"),
+        (
+            "func f(a: number, a: number): number",
+            "2:19: error: duplicate parameter 'a'",
+        ),
+        ("command c(a: number, a: string)", "2:22: error: duplicate parameter 'a'"),
     ],
-    ids=["built_in_function", "meta", "keyword", "duplicate"],
+    ids=["built_in_function", "meta", "keyword", "duplicate", "function_parameter",
+         "command_parameter"],
 )
 def test_function_and_command_declaration_errors(tmp_path, capsys, declaration, expected):
     src = tmp_path / "src"
@@ -753,11 +761,12 @@ OPTION_NODES = (
         ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
         ("@set $score = meta(label)", "2:20: error: meta() can't read label"),
         ("@if meta(available)\n    Hi.\n@endif", None),
+        ('@meta\nlabel: "a", "b"\n@endmeta', "3:13: error: label takes a single value, got 2"),
     ],
     ids=["missing_node", "node_without_label", "undeclared_pool", "no_pool", "pool_after_parameter",
          "limit_type", "shuffle_type", "locked_mode", "unknown_parameter", "duplicate_parameter",
          "label_expression", "available_type", "label_interpolation", "read_label",
-         "read_available"],
+         "read_available", "label_several_values"],
 )
 def test_option_errors(tmp_path, capsys, body, expected):
     src = tmp_path / "src"
@@ -778,7 +787,7 @@ def test_option_errors(tmp_path, capsys, body, expected):
 def test_pool_options_need_a_label_on_every_member(tmp_path, capsys):
     src = tmp_path / "src"
     _write(src / "globals.wvl", ENV)
-    _write(src / "b.wvl", OPTION_NODES + "@node bare\n@meta\npool: cave\n@endmeta\n@endnode\n")
+    _write(src / "b.wvl", OPTION_NODES + "@node bare\n@meta\npool: cave, cave\n@endmeta\n@endnode\n")
     _write(
         src / "a.wvl",
         "@node start\n@options\n@option pool(hall, cave)\n@endoptions\n@endnode\n",

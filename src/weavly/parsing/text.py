@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 from lark import Lark, Token, Tree
 from lark.exceptions import UnexpectedInput
+from lark.tree import Meta
 
 from .type_checker import TEXT_META_KEYS
 from .wvl_transformer import InvalidStringError
@@ -76,7 +77,11 @@ def _text(token: Token, parser: Lark) -> Tree:
         i = end + 1
     if plain:
         segments.append("".join(plain))
-    return Tree("text", segments)
+    meta = Meta()
+    meta.empty = False
+    meta.line, meta.column = token.line, token.column
+    meta.end_line, meta.end_column = token.end_line, token.end_column
+    return Tree("text", segments, meta)
 
 
 def _chars(token: Token) -> list[_Char]:

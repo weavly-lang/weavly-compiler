@@ -2,21 +2,9 @@ from pathlib import Path
 
 from lark import Token, Tree
 
+from .checks import DECLARATION_KINDS, entry_names, node_meta
 from .type_checker import Location, source_location
 
-# declaration rule -> what warnings call it.
-_DECLARATIONS = {
-    "number_declaration": "variable",
-    "string_declaration": "variable",
-    "flag_declaration": "variable",
-    "name_declaration": "variable",
-    "extern_declaration": "variable",
-    "function_declaration": "function",
-    "command_declaration": "command",
-    "meta_declaration": "meta key",
-    "pool_declaration": "pool",
-    "slot_declaration": "slot",
-}
 # rule -> the kind of declaration its leading name uses.
 _USES = {"variable": "variable", "call": "function", "command": "command"}
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
@@ -25,28 +13,25 @@ _POOL_ONLY_KEYS = ("priority", "weight", "slot")
 def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
     """Return warnings for declarations and meta keys that can't have an effect."""
     declared: list[tuple[str, Token, Path]] = []
-    used: dict[str, set[str]] = {kind: set() for kind in _DECLARATIONS.values()}
+    used: dict[str, set[str]] = {kind: set() for kind in DECLARATION_KINDS.values()}
     # "pool" or "slot" -> name -> the node ids that join it.
     members: dict[str, dict[str, set[str]]] = {"pool": {}, "slot": {}}
     warnings: list[tuple[Location, str]] = []
 
     for file, tree in trees:
         for subtree in tree.iter_subtrees_topdown():
-            if subtree.data in _DECLARATIONS:
-                declared.append((_DECLARATIONS[subtree.data], subtree.children[0], file))
+            if subtree.data in DECLARATION_KINDS:
+                declared.append((DECLARATION_KINDS[subtree.data], subtree.children[0], file))
             elif subtree.data in _USES:
                 used[_USES[subtree.data]].add(str(subtree.children[0]))
             elif subtree.data == "meta_call":
                 used["meta key"].add(str(subtree.children[1]))
 
-        for node in tree.find_data("node"):
-            node_id = str(node.children[0].children[0])
-            entries = {str(entry.children[0]): entry for entry in node.find_data("meta_entry")}
+        for node_id, entries in node_meta(tree):
             used["meta key"].update(entries)
-            for kind in members:
-                for value in entries[kind].children[1:] if kind in entries else []:
-                    if isinstance(value, Tree) and value.data == "name":
-                        members[kind].setdefault(str(value.children[0]), set()).add(node_id)
+            for kind, names in members.items():
+                for name in entry_names(entries.get(kind)):
+                    names.setdefault(name, set()).add(node_id)
             if "pool" in entries:
                 continue
             for key in _POOL_ONLY_KEYS:

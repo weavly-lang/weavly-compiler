@@ -11,6 +11,7 @@ from ..reporting import report_error, report_warning
 from .checks import ProjectChecks
 from .parser import create_parser, parse
 from .syntax_errors import describe_syntax_error, terminal_names
+from .usage import find_warnings
 from .wvl_transformer import InvalidStringError, WvlTransformer
 
 ENCODING = "utf-8"
@@ -72,7 +73,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     file_count = len(outputs)
     outputs.append((Path(ENV_BUILD_FILE), _env(declarations)))
     _replace_build_dir(build_dir, outputs, pretty)
-    for (file, line, column), message in sorted(checks.warnings()):
+    for (file, line, column), message in sorted(find_warnings(checks.trees)):
         report_warning(message, file, line, column)
     return file_count
 

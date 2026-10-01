@@ -2,70 +2,15 @@
 
 ## Workflow
 
-All work happens on issue branches and lands on `main` via squash-merged PRs. Every change should trace back to a GitHub issue.
+Every change starts from a GitHub issue and lands on `main` as one squashed commit.
 
-### 1. Create the branch from the issue
+1. `gh issue develop <number> --checkout` creates and links the `<number>-<slug>` branch.
+2. Commit freely. Commits are squashed on merge.
+3. Rebase on `main` before merging (`git rebase origin/main`, `git push --force-with-lease`). Branch protection requires it.
+4. `gh pr create --title "<sentence, usually the issue title>" --body "Closes #<number>"`. The title becomes the commit message on `main`.
+5. Squash and merge.
 
-```bash
-gh issue develop <number> --checkout
-```
-
-This creates a branch named `<number>-<slugified-issue-title>` (e.g. `3-add-github-actions-ci-lint-test-smoke-build`), links it to the issue on GitHub, and checks it out locally.
-
-### 2. Commit freely while working
-
-Intermediate commits are squashed away on merge, so they don't need to follow any convention. Use whatever helps you work (`wip`, `fix typo`, `add fixture`).
-
-### 3. Rebase before opening (or if main moved ahead)
-
-```bash
-git fetch origin
-git rebase origin/main
-git push --force-with-lease
-```
-
-This keeps history linear — no merge commits. GitHub will also block the merge button if your branch is behind `main`, so you'll need to do this before merging even if you skipped it at PR creation time.
-
-### 4. Open the PR
-
-```bash
-gh pr create --title "<human-readable sentence>" --body "Closes #<number>"
-```
-
-- **Title** is a real sentence — usually identical to the issue title. It becomes the squash commit message on `main`.
-- **Body** must include `Closes #<number>` so the issue auto-closes when the PR merges.
-
-### 5. Squash merge
-
-Use **Squash and merge** in the GitHub UI. The result on `main` looks like:
-
-```
-Add GitHub Actions CI: lint, test, smoke build (#7)
-```
-
-The `(#7)` is added automatically by GitHub.
-
-## Repo settings (one-time)
-
-Under Settings → General → Pull Requests:
-
-- Allow **squash merging** only (disable merge commits and rebase merging)
-- Enable **"Default to PR title for squash merge commits"**
-- Enable **"Automatically delete head branches"**
-
-Under Settings → Branches → Add protection rule for `main`:
-
-- Enable **"Require linear history"** — blocks merge commits at the GitHub level
-- Enable **"Require branches to be up to date before merging"** — PR must be rebased on current `main` before the merge button activates
-
-These make the workflow above just work without manual fiddling.
-
-For releases (see [Releasing](#releasing)):
-
-- On PyPI, under Account → Publishing, add a trusted publisher: project `weavly`, owner `weavly-lang`, repository `weavly-compiler`, workflow `release.yml`, environment `pypi`
-- Under Settings → Environments, create `pypi` and add yourself as a required reviewer
-
-## Local checks before opening a PR
+## Checks
 
 ```bash
 ruff check src/ tests/
@@ -73,21 +18,31 @@ isort --check src/ tests/
 pytest
 ```
 
-CI runs the same checks — running them locally first saves a round-trip.
+CI also runs `weavly build` in `ci-smoke/` and fails if `ci-smoke/build/` changes. When the output changes, rebuild it and commit the result. When the language changes, extend `ci-smoke/src/` to cover it.
+
+## Tests
+
+- Output snapshots: `tests/fixtures/<feature>/<case>.wvl` with the expected `<case>.json` next to it. `tests/test_wvl.py` finds them automatically.
+- Source that must fail to parse: `tests/fixtures/<feature>/invalid/<case>.wvl`, without a `.json`.
+- Errors found after parsing (undeclared names, types, references): tests through `build_all_files`, in `tests/test_type_checker.py` or `tests/test_env_merge.py`. Warnings: `tests/test_warnings.py`.
+
+## Changing the language or the output
+
+- While Weavly is at 0.x there's no backward compatibility. Change things cleanly, without fallbacks for the old form, and label the issue `breaking`.
+- A new rule needs a `WvlTransformer` method (`__default__` raises for any rule without one). Every node, statement, case and option item carries `"line"`.
+- The [Godot addon](https://github.com/weavly-lang/weavly-godot-addon) reads the output, so output changes need a matching addon issue.
 
 ## Releasing
 
 1. Bump `version` in `pyproject.toml` in a PR and merge it.
-2. Tag the merge commit on `main` and push the tag:
+2. Tag the merge commit and push the tag: `git tag v<version>` and `git push origin v<version>`.
+3. The [release workflow](.github/workflows/release.yml) checks the tag against `pyproject.toml`, runs lint and tests and builds the package.
+4. Approve the `pypi` deployment. It publishes to PyPI and creates a GitHub release.
 
-   ```bash
-   git checkout main
-   git pull
-   git tag v<version>
-   git push origin v<version>
-   ```
+A version can be uploaded to PyPI only once. Yank a broken release and publish a new patch version.
 
-3. The [release workflow](.github/workflows/release.yml) checks that the tag matches `pyproject.toml`, runs lint and tests, and builds the package.
-4. Approve the `pypi` deployment in the workflow run. It publishes to PyPI, then creates a GitHub Release with the built files and generated notes.
+## Repository settings
 
-A version can only be uploaded to PyPI once. If a release is broken, yank it on PyPI and publish a new patch version.
+- Pull requests: squash merging only, "Default to PR title for squash merge commits" and "Automatically delete head branches".
+- `main` protection: "Require linear history" and "Require branches to be up to date before merging".
+- Releases: a PyPI trusted publisher (project `weavly`, owner `weavly-lang`, repository `weavly-compiler`, workflow `release.yml`, environment `pypi`), and a `pypi` environment with a required reviewer.
