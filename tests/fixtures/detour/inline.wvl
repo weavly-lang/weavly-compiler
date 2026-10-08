@@ -3,6 +3,5 @@
         @option "Rest": @detour rest
     @endoptions
     @if $tired: @detour rest
-    @endif
     @continue "Onward": @detour rest
 @endnode

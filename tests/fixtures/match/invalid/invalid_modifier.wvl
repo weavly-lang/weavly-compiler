@@ -1,5 +1,5 @@
 @node start
     @match random
-        @when $flag -> end
+        @when $flag: @jump end
     @endmatch
 @endnode

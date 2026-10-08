@@ -1,6 +1,6 @@
 @node start
     @match
-        @when $x and not $y -> end
+        @when $x and not $y: @jump end
     @endmatch
 @endnode
 

@@ -2,5 +2,5 @@
 var score: number = 0
 extern var reputation: number
 extern var player_name: string
-extern var met_king: flag
+extern var met_king: bool
 @endenv

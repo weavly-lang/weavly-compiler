@@ -21,7 +21,7 @@ def test_declarations_merge_into_single_env_json(tmp_path):
     )
     _write(
         src / "scenes" / "witch.wvl",
-        "@env\nvar brave: flag = true\n@endenv\n\n@node witch\nThe witch cackles.\n@endnode\n",
+        "@env\nvar brave: bool = true\n@endenv\n\n@node witch\nThe witch cackles.\n@endnode\n",
     )
 
     build_all_files(src, build, pretty=False)
@@ -122,7 +122,7 @@ def test_unresolved_jump_and_detour_targets_are_errors(tmp_path, capsys):
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        "@node start\n@jump missing\n@continue \"Go\" -> nowhere\n@jump finale\n"
+        "@node start\n@jump missing\n@continue \"Go\": @jump nowhere\n@jump finale\n"
         "@detour lost\n@detour finale\n@endnode\n",
     )
     _write(src / "b.wvl", "@node finale\nThe end.\n@endnode\n")
@@ -133,7 +133,7 @@ def test_unresolved_jump_and_detour_targets_are_errors(tmp_path, capsys):
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
     assert "a.wvl:2:7: error: jump target 'missing' matches no node" in err
-    assert "a.wvl:3:19: error: jump target 'nowhere' matches no node" in err
+    assert "a.wvl:3:23: error: jump target 'nowhere' matches no node" in err
     assert "a.wvl:5:9: error: detour target 'lost' matches no node" in err
     assert "finale" not in err
 
@@ -177,7 +177,7 @@ def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
     errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
     assert errors == [
         "8:24: error: skip_count target 'strat' matches no node",
-        "9:7: error: when needs a flag, got a number",
+        "9:7: error: when needs a bool, got a number",
         "11:5: error: skip_count() takes a node id, or none for the current node",
     ]
 
@@ -296,7 +296,7 @@ def test_node_functions_without_argument_are_type_checked(tmp_path, capsys):
     with pytest.raises(typer.Exit):
         build_all_files(src, tmp_path / "build", pretty=False)
 
-    assert "a.wvl:2:5: error: condition needs a flag, got a number" in capsys.readouterr().err
+    assert "a.wvl:2:5: error: condition needs a bool, got a number" in capsys.readouterr().err
 
 
 def test_all_validation_errors_are_reported_together(tmp_path, capsys):
@@ -397,7 +397,7 @@ def test_env_json_lists_are_empty_without_pools_or_slots(tmp_path):
         ("pool cave", "pool cave", "pool"),
         ("var cave: number = 0", "pool cave", "pool"),
         ("pool cave", "slot cave", "slot"),
-        ("slot cave", "var cave: flag", "variable"),
+        ("slot cave", "var cave: bool", "variable"),
     ],
     ids=["pool_twice", "variable_then_pool", "pool_then_slot", "slot_then_variable"],
 )

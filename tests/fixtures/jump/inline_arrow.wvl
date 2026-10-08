@@ -1,9 +1,0 @@
-@node start
-    @if $done -> end
-    @endif
-    @finish
-@endnode
-
-@node end
-    @finish
-@endnode

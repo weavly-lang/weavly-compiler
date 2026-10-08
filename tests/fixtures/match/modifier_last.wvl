@@ -1,7 +1,7 @@
 @node start
     @match last
-        @when $flag_a -> node_a
-        @when $flag_b -> node_b
+        @when $flag_a: @jump node_a
+        @when $flag_b: @jump node_b
     @endmatch
 @endnode
 

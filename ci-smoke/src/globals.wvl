@@ -1,7 +1,7 @@
 @env
 var score: number = 0
 var player_name: string = "Hero"
-var has_key: flag = false
+var has_key: bool = false
 extern var reputation: number
 var region: pool = cave_outcome
 var last_scene: node = start

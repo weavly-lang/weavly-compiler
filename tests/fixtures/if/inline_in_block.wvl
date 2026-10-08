@@ -1,0 +1,12 @@
+@node start
+    @if $a
+        @if $b: @jump end
+        Still here.
+    @else
+        @if $c: Bye.
+    @endif
+@endnode
+
+@node end
+    @finish
+@endnode

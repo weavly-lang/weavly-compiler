@@ -2,7 +2,7 @@
     @match all           # evaluate every branch
         # first branch
         @when $done: @jump end
-        @when $other -> end  # inline branch
+        @when $other: @jump end  # inline branch
         # trailing comment before endmatch
     @endmatch
 @endnode

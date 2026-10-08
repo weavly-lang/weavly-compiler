@@ -9,7 +9,7 @@ Location = tuple[Path, int, int]
 
 NUMBER = "number"
 STRING = "string"
-FLAG = "flag"
+BOOL = "bool"
 NODE = "node"
 POOL = "pool"
 SLOT = "slot"
@@ -18,7 +18,7 @@ NAME_TYPES = (NODE, POOL, SLOT)
 TEXT = "text"
 
 # name -> result type.
-NODE_FUNCTIONS = {"visited": FLAG, "visit_count": NUMBER, "skip_count": NUMBER}
+NODE_FUNCTIONS = {"visited": BOOL, "visit_count": NUMBER, "skip_count": NUMBER}
 # name -> (min, max) argument count, max None for no limit.
 NUMBER_FUNCTIONS = {
     "random": (2, 2),
@@ -37,12 +37,12 @@ BUILT_IN_FUNCTIONS = frozenset({*NODE_FUNCTIONS, *NUMBER_FUNCTIONS})
 META_KEYS = {
     "pool": POOL,
     "slot": SLOT,
-    "when": FLAG,
+    "when": BOOL,
     "priority": NUMBER,
     "weight": NUMBER,
-    "once": FLAG,
+    "once": BOOL,
     "label": TEXT,
-    "available": FLAG,
+    "available": BOOL,
     "label_unavailable": TEXT,
     "label_teaser": TEXT,
 }
@@ -51,10 +51,10 @@ TEXT_META_KEYS = frozenset(key for key, value_type in META_KEYS.items() if value
 _UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once", *TEXT_META_KEYS})
 
 # pool() option parameter -> type of its value, besides `locked`, which takes a mode.
-_POOL_PARAMETERS = {"limit": NUMBER, "shuffle": FLAG}
+_POOL_PARAMETERS = {"limit": NUMBER, "shuffle": BOOL}
 _LOCKED_MODES = ("show", "extra", "hide")
 
-_LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": FLAG, "FALSE": FLAG}
+_LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": BOOL, "FALSE": BOOL}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
 _LOGIC = {"and_": "and", "or_": "or"}
 _EQUALITY = frozenset({"==", "!="})
@@ -138,16 +138,16 @@ class _TypeChecker:
             )
 
     def _check_increase(self, tree: Tree) -> None:
-        self._expect_variable(tree.children[0], NUMBER, "@increase")
+        self._check_change(tree, "@increase")
 
     def _check_decrease(self, tree: Tree) -> None:
-        self._expect_variable(tree.children[0], NUMBER, "@decrease")
+        self._check_change(tree, "@decrease")
 
-    def _check_setflag(self, tree: Tree) -> None:
-        self._expect_variable(tree.children[0], FLAG, "@setflag")
-
-    def _check_clearflag(self, tree: Tree) -> None:
-        self._expect_variable(tree.children[0], FLAG, "@clearflag")
+    def _check_change(self, tree: Tree, statement: str) -> None:
+        variable, amount = tree.children
+        self._expect_variable(variable, NUMBER, statement)
+        if amount is not None:
+            self._expect(amount, NUMBER, f"{statement} amount")
 
     def _check_draw(self, tree: Tree) -> None:
         for pool in tree.children:
@@ -167,7 +167,7 @@ class _TypeChecker:
             self._error(name, _unknown("function", str(name), self.functions))
 
     def _check_condition(self, tree: Tree) -> None:
-        self._expect(tree.children[0], FLAG, "condition")
+        self._expect(tree.children[0], BOOL, "condition")
 
     def _check_case(self, tree: Tree) -> None:
         weight = tree.children[1]
@@ -269,11 +269,11 @@ class _TypeChecker:
             return NUMBER
         if rule in _LOGIC:
             for operand in node.children:
-                self._expect(operand, FLAG, f"'{_LOGIC[rule]}'")
-            return FLAG
+                self._expect(operand, BOOL, f"'{_LOGIC[rule]}'")
+            return BOOL
         if rule == "not_":
-            self._expect(node.children[0], FLAG, "'not'")
-            return FLAG
+            self._expect(node.children[0], BOOL, "'not'")
+            return BOOL
         if rule == "compare":
             left, operator, right = node.children
             left_type = None if _is_name(left) else self._infer(left)
@@ -288,7 +288,7 @@ class _TypeChecker:
                 )
             elif left_type and left_type != NUMBER and operator not in _EQUALITY:
                 self._error(node, f"'{operator}' needs a number, got a {left_type}")
-            return FLAG
+            return BOOL
         if rule == "node_call":
             return NODE_FUNCTIONS.get(str(node.children[0]))
         if rule == "meta_call":

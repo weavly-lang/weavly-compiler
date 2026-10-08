@@ -1,6 +1,5 @@
 @node start
     @if $done: @jump end
-    @endif
 @endnode
 
 @node end

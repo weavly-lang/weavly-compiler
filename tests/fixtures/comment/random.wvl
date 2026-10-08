@@ -1,7 +1,7 @@
 @node start
     @random              # pick one outcome
         # first outcome
-        @case 3 -> end   # heavy weight
+        @case 3: @jump end   # heavy weight
         @case 1: @jump end
         # trailing comment before endrandom
     @endrandom

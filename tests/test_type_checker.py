@@ -9,14 +9,14 @@ ENV = (
     "@env\n"
     "var score: number = 0\n"
     'var name: string = "Hero"\n'
-    "var has_key: flag = false\n"
+    "var has_key: bool = false\n"
     "extern var reputation: number\n"
     "pool cave\n"
     "pool hall\n"
     "slot treasure\n"
     "func play_sound(name: string, volume: number)\n"
-    "func shake(strength: number, times: number, seen: flag)\n"
-    "func log(message: string, name: string, score: number, has_key: flag, seen: flag)\n"
+    "func shake(strength: number, times: number, seen: bool)\n"
+    "func log(message: string, name: string, score: number, has_key: bool, seen: bool)\n"
     "func spawn(target: node)\n"
     "@endenv\n"
 )
@@ -46,18 +46,17 @@ def _build_errors(tmp_path, capsys, body):
         ("@set $scroe = 1", "2:6"),
         ("@increase $scroe", "2:11"),
         ("@decrease $scroe 2", "2:11"),
-        ("@setflag $scroe", "2:10"),
-        ("@clearflag $scroe", "2:12"),
+        ("@increase $score $scroe", "2:18"),
         ("$scroe: Hi.", "2:1"),
         ("Hello {$scroe}.", "2:8"),
         (">Guide: Hi {$scroe}.", "2:13"),
         ("$name: Hi {$scroe}.", "2:12"),
-        ('@options\n@option "Pay {$scroe}" -> start\n@endoptions', "3:15"),
+        ('@options\n@option "Pay {$scroe}": @jump start\n@endoptions', "3:15"),
         ('@continue "Onward, {$scroe}"', "2:21"),
         ("Costs {$score + $scroe}.", "2:17"),
         ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
     ],
-    ids=["expression", "set", "increase", "decrease", "setflag", "clearflag",
+    ids=["expression", "set", "increase", "decrease", "increase_amount",
          "character_name", "narration_text", "named_character_text", "character_text",
          "option_text", "continue_text", "text_expression",
          "text_after_escapes"],
@@ -74,48 +73,48 @@ def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
         ('@set $score = "high"', "2:15: error: @set $score needs a number, got a string"),
         (
             "@set $has_key = visit_count(start)",
-            "2:17: error: @set $has_key needs a flag, got a number",
+            "2:17: error: @set $has_key needs a bool, got a number",
         ),
         ("@set $score = $name + 1", "2:15: error: '+' needs a number, got a string"),
-        ("@set $score = 2 * $has_key", "2:19: error: '*' needs a number, got a flag"),
-        ("@set $score = -$has_key", "2:16: error: '-' needs a number, got a flag"),
-        ("@set $score = visited(start) / 2", "2:15: error: '/' needs a number, got a flag"),
-        ("@set $has_key = $score and true", "2:17: error: 'and' needs a flag, got a number"),
-        ("@set $has_key = true or $name", "2:25: error: 'or' needs a flag, got a string"),
-        ("@set $has_key = not $name", "2:21: error: 'not' needs a flag, got a string"),
+        ("@set $score = 2 * $has_key", "2:19: error: '*' needs a number, got a bool"),
+        ("@set $score = -$has_key", "2:16: error: '-' needs a number, got a bool"),
+        ("@set $score = visited(start) / 2", "2:15: error: '/' needs a number, got a bool"),
+        ("@set $has_key = $score and true", "2:17: error: 'and' needs a bool, got a number"),
+        ("@set $has_key = true or $name", "2:25: error: 'or' needs a bool, got a string"),
+        ("@set $has_key = not $name", "2:21: error: 'not' needs a bool, got a string"),
         (
             '@set $has_key = $score == "x"',
             "2:17: error: '==' needs both sides of the same type, got a number and a string",
         ),
         (
             "@set $has_key = $has_key < 1",
-            "2:17: error: '<' needs both sides of the same type, got a flag and a number",
+            "2:17: error: '<' needs both sides of the same type, got a bool and a number",
         ),
         ("@set $score = round($name)", "2:21: error: round() needs a number, got a string"),
-        ("@set $score = min(1, $has_key)", "2:22: error: min() needs a number, got a flag"),
+        ("@set $score = min(1, $has_key)", "2:22: error: min() needs a number, got a bool"),
         ("@increase $name", "2:11: error: @increase needs a number variable, 'name' is a string"),
         (
             "@decrease $has_key",
-            "2:11: error: @decrease needs a number variable, 'has_key' is a flag",
+            "2:11: error: @decrease needs a number variable, 'has_key' is a bool",
         ),
-        ("@setflag $score", "2:10: error: @setflag needs a flag variable, 'score' is a number"),
-        ("@clearflag $name", "2:12: error: @clearflag needs a flag variable, 'name' is a string"),
+        ('@increase $score "a lot"', "2:18: error: @increase amount needs a number, got a string"),
+        ("@decrease $score $has_key", "2:18: error: @decrease amount needs a number, got a bool"),
         (
             "$score: Hi.",
             "2:1: error: character name needs a string variable, 'score' is a number",
         ),
         ("Costs {$name * 2}.", "2:8: error: '*' needs a number, got a string"),
         (
-            '@options\n@option "Is {$score == \\"x\\"}" -> start\n@endoptions',
+            '@options\n@option "Is {$score == \\"x\\"}": @jump start\n@endoptions',
             "3:14: error: '==' needs both sides of the same type, got a number and a string",
         ),
-        ("@set $has_key = $has_key < true", "2:17: error: '<' needs a number, got a flag"),
+        ("@set $has_key = $has_key < true", "2:17: error: '<' needs a number, got a bool"),
         ('@set $has_key = $name >= "b"', "2:17: error: '>=' needs a number, got a string"),
     ],
     ids=["set", "set_function", "add", "mul", "neg", "div_node_function", "and", "or",
          "not", "compare_eq", "compare_lt", "function_argument", "function_arguments",
-         "increase", "decrease", "setflag", "clearflag", "character_name", "text",
-         "option_text", "order_flags", "order_strings"],
+         "increase", "decrease", "increase_amount", "decrease_amount", "character_name",
+         "text", "option_text", "order_bools", "order_strings"],
 )
 def test_type_errors(tmp_path, capsys, body, expected):
     assert _build_errors(tmp_path, capsys, body) == [expected]
@@ -127,23 +126,23 @@ def test_type_errors(tmp_path, capsys, body, expected):
         ("@if $score\n    Hi.\n@endif", "2:5"),
         ("@if true\n    Hi.\n@elif $reputation\n    Ho.\n@endif", "4:7"),
         ("@match\n@when $score: Hi.\n@endmatch", "3:7"),
-        ('@options\n@option [$score] "A" -> start\n@endoptions', "3:10"),
+        ('@options\n@option [$score] "A": @jump start\n@endoptions', "3:10"),
         ("@random\n@case [$score] 1: Hi.\n@endrandom", "3:8"),
         ("@if visit_count(start)\n    Hi.\n@endif", "2:5"),
     ],
     ids=["if", "elif", "when", "option", "case", "function"],
 )
-def test_conditions_must_be_flags(tmp_path, capsys, body, expected):
+def test_conditions_must_be_bools(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
 
     assert len(errors) == 1
-    assert errors[0].startswith(f"{expected}: error: condition needs a flag, got a ")
+    assert errors[0].startswith(f"{expected}: error: condition needs a bool, got a ")
 
 
 def test_random_weight_must_be_a_number(tmp_path, capsys):
     errors = _build_errors(tmp_path, capsys, "@random\n@case $has_key: Hi.\n@endrandom")
 
-    assert errors == ["3:7: error: random weight needs a number, got a flag"]
+    assert errors == ["3:7: error: random weight needs a number, got a bool"]
 
 
 def test_undeclared_variable_does_not_cascade(tmp_path, capsys):
@@ -159,7 +158,7 @@ def test_every_type_error_is_reported(tmp_path, capsys):
 
     assert errors == [
         "2:15: error: @set $score needs a number, got a string",
-        "3:5: error: condition needs a flag, got a string",
+        "3:5: error: condition needs a bool, got a string",
         "4:9: error: variable 'gold' isn't declared",
     ]
 
@@ -173,7 +172,7 @@ def test_well_typed_script_builds(tmp_path):
         "$name: Hello {$name}, you have {$score} points and {$reputation} reputation.\n"
         "@set $score = clamp($score + $reputation * 2, 0, 100)\n"
         "@increase $reputation\n"
-        "@setflag $has_key\n"
+        "@set $has_key = true\n"
         '@if visited(start) and $name == "Hero" and $has_key != false\n'
         "    @set $has_key = $score >= visit_count(start) or not $has_key\n"
         "@endif\n"
@@ -252,8 +251,8 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
             "3:1: error: unknown meta key 'pools', did you mean 'pool'?",
         ),
         ("@meta\npool: cave\npool: hall\n@endmeta", "4:1: error: duplicate meta key 'pool'"),
-        ("@meta\nwhen: $score\n@endmeta", "3:7: error: when needs a flag, got a number"),
-        ("@meta\nweight: $has_key\n@endmeta", "3:9: error: weight needs a number, got a flag"),
+        ("@meta\nwhen: $score\n@endmeta", "3:7: error: when needs a bool, got a number"),
+        ("@meta\nweight: $has_key\n@endmeta", "3:9: error: weight needs a number, got a bool"),
         ("@meta\npriority: $name\n@endmeta", "3:11: error: priority needs a number, got a string"),
         (
             "@meta\npriority: cave\n@endmeta",
@@ -375,7 +374,7 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
         ),
         ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a pool"),
         ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
-        ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a flag, got a pool"),
+        ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a bool, got a pool"),
         ("@do spawn(wolf)", "2:11: error: 'wolf' matches no node"),
         ("You have {score} gold.", "2:11: error: 'score' is a variable, write $score"),
         (
@@ -594,7 +593,7 @@ def test_meta_keys_build(tmp_path):
 FUNCTION_ENV = ENV + (
     "@env\n"
     "func trust(from: string, to: string): number\n"
-    "func has_item(item: string): flag\n"
+    "func has_item(item: string): bool\n"
     "func pick_region(): pool\n"
     "func times_seen(target: node): number\n"
     "@endenv\n"
@@ -609,7 +608,7 @@ FUNCTION_ENV = ENV + (
             '@set $score = trust("anna", 1)',
             "2:29: error: trust() argument 'to' needs a string, got a number",
         ),
-        ('@set $score = has_item("key")', "2:15: error: @set $score needs a number, got a flag"),
+        ('@set $score = has_item("key")', "2:15: error: @set $score needs a number, got a bool"),
         (
             '@set $score = trsut("a", "b")',
             "2:15: error: unknown function 'trsut', did you mean 'trust'?",
@@ -734,7 +733,7 @@ OPTION_NODES = (
         ),
         (
             "@options\n@option pool(cave, shuffle: 1)\n@endoptions",
-            "3:29: error: shuffle needs a flag, got a number",
+            "3:29: error: shuffle needs a bool, got a number",
         ),
         (
             "@options\n@option pool(cave, locked: maybe)\n@endoptions",
@@ -749,7 +748,7 @@ OPTION_NODES = (
             "3:30: error: duplicate pool() parameter 'limit'",
         ),
         ("@meta\nlabel: $name\n@endmeta", "3:8: error: label needs quoted text"),
-        ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a flag, got a number"),
+        ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a bool, got a number"),
         ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
         ("@set $score = .label", "2:16: error: meta key 'label' can't be read"),
         ("@if .available\n    Hi.\n@endif", None),
@@ -813,7 +812,7 @@ def test_options_as_nodes_build(tmp_path):
         "@endnode\n\n"
         "@node start\n"
         "@options\n"
-        '@option [visited()] "Leave" -> start\n'
+        '@option [visited()] "Leave": @jump start\n'
         "@option node(hack_terminal)\n"
         "@option pool(cave, limit: $score, shuffle: not $has_key, locked: hide)\n"
         "@endoptions\n"

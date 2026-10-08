@@ -1,5 +1,5 @@
 @env
 var hp: number
 var name: string
-var brave: flag
+var brave: bool
 @endenv

@@ -1,6 +1,5 @@
 @node start
 @if $scared: @do shake(2)
-@endif
 @options
 @option "Knock": @do play_sound("knock", 0.8)
 @endoptions

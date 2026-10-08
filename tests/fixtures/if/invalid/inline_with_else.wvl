@@ -1,0 +1,6 @@
+@node start
+    @if $a: @jump end
+    @else
+        @jump end
+    @endif
+@endnode

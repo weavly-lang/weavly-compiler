@@ -1,6 +1,6 @@
 @node start
     @options
-        @option "Greet {$name == \"Bob\"}" -> start
-        @option "\{not a value} \"quoted\"" -> start
+        @option "Greet {$name == \"Bob\"}": @jump start
+        @option "\{not a value} \"quoted\"": @jump start
     @endoptions
 @endnode

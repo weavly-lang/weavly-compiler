@@ -98,8 +98,8 @@ class WvlTransformer(Transformer):
     def string_value(self, value: str | None) -> dict[str, Any]:
         return {"type": "string", "value": "" if value is None else value}
 
-    def flag_value(self, value: bool | None) -> dict[str, Any]:
-        return {"type": "flag", "value": bool(value)}
+    def bool_value(self, value: bool | None) -> dict[str, Any]:
+        return {"type": "bool", "value": bool(value)}
 
     def name_value(self, value_type: str, value: str) -> dict[str, Any]:
         return {"type": value_type, "value": value}
@@ -142,10 +142,6 @@ class WvlTransformer(Transformer):
 
     def body(self, *statements) -> list:
         return list(statements)
-
-    @located
-    def inline_jump(self, meta: Any, id: str) -> dict[str, Any]:
-        return self.jump(meta, id)
 
     def action(self, statement_or_body: dict | list) -> list:
         if isinstance(statement_or_body, list):
@@ -193,26 +189,18 @@ class WvlTransformer(Transformer):
         }
 
     @located
-    def increase(self, meta: Any, var: dict, amount: float | None) -> dict[str, Any]:
+    def increase(self, meta: Any, var: dict, amount: Any) -> dict[str, Any]:
         return self._change(meta, var, "+", amount)
 
     @located
-    def decrease(self, meta: Any, var: dict, amount: float | None) -> dict[str, Any]:
+    def decrease(self, meta: Any, var: dict, amount: Any) -> dict[str, Any]:
         return self._change(meta, var, "-", amount)
 
-    def _change(self, meta: Any, var: dict, op: str, amount: float | None) -> dict[str, Any]:
+    def _change(self, meta: Any, var: dict, op: str, amount: Any) -> dict[str, Any]:
         if amount is None:
             amount = 1.0
         expression = {"op": op, "left": {"variable": var["variable"]}, "right": amount}
         return self.set(meta, var, expression)
-
-    @located
-    def setflag(self, meta: Any, var: dict) -> dict[str, Any]:
-        return self.set(meta, var, True)
-
-    @located
-    def clearflag(self, meta: Any, var: dict) -> dict[str, Any]:
-        return self.set(meta, var, False)
 
     @located
     def jump(self, meta: Any, id: str) -> dict[str, Any]:
@@ -255,6 +243,10 @@ class WvlTransformer(Transformer):
         if else_ is not None:
             cases.append(else_)
         return {"type": "match", "line": meta.line, "modifier": "first", "cases": cases}
+
+    @located
+    def inline_if(self, meta: Any, condition: Any, statement: dict) -> dict[str, Any]:
+        return self.if_block(meta, self.if_(meta, condition, [statement]), None, None)
 
     @located
     def if_(self, meta: Any, condition: Any, body: list) -> dict[str, Any]:

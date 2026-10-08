@@ -1,0 +1,4 @@
+@node start
+    @if $a: @jump end
+    @elif $b: @jump end
+@endnode

@@ -1,7 +1,7 @@
 @node start
     @random
-    @case -1 -> start
-    @case $w-1 -> start
-    @case 2 -> start
+    @case -1: @jump start
+    @case $w-1: @jump start
+    @case 2: @jump start
     @endrandom
 @endnode
