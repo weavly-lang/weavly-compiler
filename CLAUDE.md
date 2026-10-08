@@ -25,7 +25,7 @@ Source that must fail to parse goes in `tests/fixtures/<feature>/invalid/<case>.
 
 ## Pipeline
 
-[build.py](src/weavly/parsing/build.py) runs the build: [parser.py](src/weavly/parsing/parser.py) parses each file (expanding `{}` in text via `text.py` and resolving argument-less node calls), [wvl_transformer.py](src/weavly/parsing/wvl_transformer.py) turns the tree into the JSON output, and [checks.py](src/weavly/parsing/checks.py) runs the project-wide checks (duplicate names, node references, meta values that read themselves, then `type_checker.py`, which also checks function calls against their declarations) before `build/` is replaced. After a successful build, [usage.py](src/weavly/parsing/usage.py) finds warnings (unused declarations, keys without effect), printed but never failing the build.
+[build.py](src/weavly/parsing/build.py) runs the build: [parser.py](src/weavly/parsing/parser.py) parses each file (expanding `{}` in lines and quoted strings via `text.py` and resolving argument-less node calls), [wvl_transformer.py](src/weavly/parsing/wvl_transformer.py) turns the tree into the JSON output, and [checks.py](src/weavly/parsing/checks.py) runs the project-wide checks (duplicate names, node references, meta values that read themselves, then `type_checker.py`, which also checks function calls against their declarations) before `build/` is replaced. After a successful build, [usage.py](src/weavly/parsing/usage.py) finds warnings (unused declarations, keys without effect), printed but never failing the build.
 
 ## Adding a new statement type
 

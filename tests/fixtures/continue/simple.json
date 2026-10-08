@@ -1,1 +1,1 @@
-{"nodes": [{"id": "start", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"type": "inline", "line": 2, "meta": {"label": {"line": 2, "value": ["Next"]}}, "body": []}]}]}]}
+{"nodes": [{"id": "start", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"type": "inline", "line": 2, "meta": {"label": {"line": 2, "value": "Next"}}, "body": []}]}]}]}

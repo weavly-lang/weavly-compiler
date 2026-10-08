@@ -1,1 +1,1 @@
-{"nodes": [{"id": "a", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"type": "inline", "line": 2, "meta": {"label": {"line": 2, "value": ["{not code} ", {"variable": "gold"}]}}, "body": []}]}]}]}
+{"nodes": [{"id": "a", "line": 1, "body": [{"type": "option", "line": 2, "items": [{"type": "inline", "line": 2, "meta": {"label": {"line": 2, "value": {"text": ["{not code} ", {"variable": "gold"}]}}}, "body": []}]}]}]}

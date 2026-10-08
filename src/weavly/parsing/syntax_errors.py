@@ -5,7 +5,7 @@ from lark import Lark, Token
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 from lark.lexer import PatternStr
 
-from .text import UnclosedInterpolationError
+from .text import BraceInDefaultError, UnclosedInterpolationError
 
 END = "$END"
 
@@ -80,6 +80,9 @@ def describe_syntax_error(
     elif isinstance(error, UnclosedInterpolationError):
         message = "unclosed '{' in text"
         hint = "close it with '}' or write '\\{' for a literal brace"
+    elif isinstance(error, BraceInDefaultError):
+        message = "unexpected '{' in a default"
+        hint = "defaults are constants, write '\\{' for a literal brace"
     else:
         return "syntax error", error.column, details
 

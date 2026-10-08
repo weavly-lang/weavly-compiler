@@ -2,7 +2,7 @@
 Welcome to the smoke test.
 >Guide: Let the test begin.
 @detour aside
-@do play_sound("chime.ogg", clamp($score / 10, 0, 1))
+@do play_sound("chime_{$score}.ogg", clamp($score / 10, 0, 1))
 @set $score = 10
 @increase $score 5
 @decrease $score 2

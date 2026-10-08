@@ -5,14 +5,15 @@ from pathlib import Path
 
 import typer
 from lark import Tree
-from lark.exceptions import UnexpectedInput, VisitError
+from lark.exceptions import UnexpectedInput
 
 from ..reporting import report_error, report_warning
 from .checks import ProjectChecks
 from .parser import create_parser, parse
 from .syntax_errors import describe_syntax_error, terminal_names
+from .text import InvalidStringError
 from .usage import find_warnings
-from .wvl_transformer import InvalidStringError, WvlTransformer
+from .wvl_transformer import WvlTransformer
 
 ENCODING = "utf-8"
 SOURCE_ENCODING = "utf-8-sig"
@@ -97,10 +98,6 @@ def _compile_file(
         report_error(message, file, e.line, column, details)
     except InvalidStringError as e:
         _report_string_error(e, file)
-    except VisitError as e:
-        if not isinstance(e.orig_exc, InvalidStringError):
-            raise
-        _report_string_error(e.orig_exc, file)
     return None
 
 
