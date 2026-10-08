@@ -9,6 +9,6 @@ pool cave_outcome
 slot treasure
 meta reward: number = 1
 func luck(): number
-command play_sound(file: string, volume: number)
-command fade_out()
+func play_sound(file: string, volume: number)
+func fade_out()
 @endenv

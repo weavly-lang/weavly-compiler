@@ -1,11 +1,8 @@
 from collections.abc import Collection, Iterator
-from functools import cache
 from pathlib import Path
 
 from lark import Token, Tree
-from lark.lexer import PatternStr
 
-from .parser import create_parser
 from .type_checker import (
     BUILT_IN_FUNCTIONS,
     META_KEYS,
@@ -27,7 +24,6 @@ DECLARATION_KINDS = {
     "slot_declaration": "slot",
     "meta_declaration": "meta key",
     "function_declaration": "function",
-    "command_declaration": "command",
 }
 _NODE_KINDS = {"node_start": "node id"}
 # rule -> what its target is called in errors.
@@ -164,7 +160,6 @@ class ProjectChecks:
         reserved = (
             ("meta_declaration", META_KEYS, "a built-in meta key"),
             ("function_declaration", BUILT_IN_FUNCTIONS, "a built-in function"),
-            ("command_declaration", _statement_keywords(), "a statement keyword"),
         )
         for rule, names, what in reserved:
             for declaration in tree.find_data(rule):
@@ -231,16 +226,6 @@ def _id_locations(
             id_token = subtree.children[0]
             locations.append((subtree.data, str(id_token), source_location(file, id_token)))
     return locations
-
-
-@cache
-def _statement_keywords() -> frozenset[str]:
-    """Return the names after `@` that start a statement or block, not a command."""
-    return frozenset(
-        terminal.pattern.value[1:]
-        for terminal in create_parser().terminals
-        if isinstance(terminal.pattern, PatternStr) and terminal.pattern.value.startswith("@")
-    )
 
 
 def _meta_cycle_errors(values: dict[MetaRef, tuple[Location, list[MetaRef]]]) -> list[Error]:

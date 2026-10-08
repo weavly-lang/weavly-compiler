@@ -6,7 +6,7 @@ from .checks import DECLARATION_KINDS, entry_names, node_meta
 from .type_checker import Location, source_location
 
 # rule -> the kind of declaration its leading name uses.
-_USES = {"variable": "variable", "call": "function", "command": "command"}
+_USES = {"variable": "variable", "call": "function", "do": "function"}
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
 
 

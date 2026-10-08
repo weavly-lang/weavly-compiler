@@ -1,0 +1,3 @@
+@node start
+@do play_sound "footsteps.wav"
+@endnode

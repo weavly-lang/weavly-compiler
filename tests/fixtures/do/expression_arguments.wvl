@@ -1,0 +1,4 @@
+@node start
+@do play_sound("door", $volume * 0.5)
+@do shake(-1, ($a + $b) / 2, not $calm)
+@endnode

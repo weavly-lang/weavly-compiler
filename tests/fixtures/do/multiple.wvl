@@ -1,0 +1,5 @@
+@node start
+    @do fade_in()
+    @do play_music("theme.ogg")
+    @do fade_out()
+@endnode

@@ -1,11 +1,10 @@
 import pytest
 import typer
 from lark.exceptions import UnexpectedCharacters
-from lark.lexer import PatternStr
 
 from weavly.parsing import build_all_files
 from weavly.parsing.parser import create_parser
-from weavly.parsing.syntax_errors import PATTERN_NAMES, describe_syntax_error
+from weavly.parsing.syntax_errors import describe_syntax_error, terminal_names
 
 
 def _build_errors(tmp_path, capsys, source):
@@ -76,15 +75,32 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            "@node a\n@log: player entered the cave\n@endnode\n",
+            "@node a\n@shake(2)\n@endnode\n",
             [
-                "a.wvl:2:5: error: unexpected ':'",
-                '  hint: command arguments are expressions, like @log "player entered the cave"',
+                "a.wvl:2:1: error: unknown keyword '@shake'",
+                "  2 | @shake(2)",
+                "    | ^",
             ],
         ),
         (
-            "@node a\n@shake:\n@endnode\n",
-            ['  hint: command arguments are expressions, like @shake "text"'],
+            "@node a\n@if $x\nHi.\n  @endiff\n@endnode\n",
+            [
+                "a.wvl:4:3: error: unknown keyword '@endiff', did you mean '@endif'?",
+                "  4 |   @endiff",
+                "    |   ^",
+            ],
+        ),
+        (
+            "@node a\n@if $x: @sett $y = 1\n@endif\n@endnode\n",
+            ["a.wvl:2:9: error: unknown keyword '@sett', did you mean '@set'?"],
+        ),
+        (
+            "@node a\n@double(2)\n@endnode\n",
+            ["a.wvl:2:1: error: unknown keyword '@double', did you mean '@do'?"],
+        ),
+        (
+            "@node start\n@jumpstart\n@endnode\n",
+            ["a.wvl:2:1: error: unknown keyword '@jumpstart', did you mean '@jump'?"],
         ),
         (
             "@node a\nYou have {$gold gold.\n@endnode\n",
@@ -127,8 +143,11 @@ def _build_errors(tmp_path, capsys, source):
         "option_outside_options",
         "incomplete_set",
         "tab_indent",
-        "command_colon_text",
-        "command_colon",
+        "unknown_keyword",
+        "unknown_keyword_close_to_one",
+        "unknown_keyword_inline",
+        "keyword_prefix",
+        "keyword_prefix_before_name",
         "unclosed_interpolation",
         "empty_interpolation",
         "interpolation_after_escapes",
@@ -145,24 +164,20 @@ def test_syntax_error_output(tmp_path, capsys, source, expected):
     assert "_NEWLINE" not in err
 
 
-def test_every_pattern_terminal_has_a_readable_name():
-    parser = create_parser()
-    pattern_terminals = {
-        terminal.name
-        for terminal in parser.terminals
-        if not isinstance(terminal.pattern, PatternStr)
-    }
+def test_every_terminal_has_a_readable_name():
+    names = terminal_names(create_parser())
 
-    assert pattern_terminals - PATTERN_NAMES.keys() == set()
+    assert [name for name, readable in names.items() if readable == name] == []
 
 
 def test_unexpected_characters_lists_allowed_terminals():
     error = UnexpectedCharacters("x = ~", 4, 1, 5, allowed={"NUMBER", "STRING"})
     names = {"NUMBER": "a number", "STRING": "a quoted string"}
 
-    message, details = describe_syntax_error(error, "x = ~", names)
+    message, column, details = describe_syntax_error(error, "x = ~", names)
 
     assert message == "unexpected character '~'"
+    assert column == 5
     assert details == [
         "1 | x = ~",
         "  |     ^",

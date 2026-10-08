@@ -14,10 +14,10 @@ ENV = (
     "pool cave\n"
     "pool hall\n"
     "slot treasure\n"
-    "command play_sound(name: string, volume: number)\n"
-    "command shake(strength: number, times: number, seen: flag)\n"
-    "command log(message: string, name: string, score: number, has_key: flag, seen: flag)\n"
-    "command spawn(target: node)\n"
+    "func play_sound(name: string, volume: number)\n"
+    "func shake(strength: number, times: number, seen: flag)\n"
+    "func log(message: string, name: string, score: number, has_key: flag, seen: flag)\n"
+    "func spawn(target: node)\n"
     "@endenv\n"
 )
 
@@ -217,18 +217,18 @@ def test_extern_and_regular_declaration_with_same_name_is_an_error(tmp_path, cap
     )
 
 
-def test_command_arguments_are_checked(tmp_path, capsys):
+def test_do_arguments_are_checked(tmp_path, capsys):
     errors = _build_errors(
         tmp_path,
         capsys,
-        '@play_sound "door", $volume\n@shake $name + 1, clamp(1, 2), visited(gone)',
+        '@do play_sound("door", $volume)\n@do shake($name + 1, clamp(1, 2), visited(gone))',
     )
 
     assert errors == [
-        "2:21: error: variable 'volume' isn't declared",
-        "3:8: error: '+' needs a number, got a string",
-        "3:19: error: clamp() takes 3 arguments, got 2",
-        "3:40: error: visited target 'gone' matches no node",
+        "2:24: error: variable 'volume' isn't declared",
+        "3:11: error: '+' needs a number, got a string",
+        "3:22: error: clamp() takes 3 arguments, got 2",
+        "3:43: error: visited target 'gone' matches no node",
     ]
 
 
@@ -340,12 +340,12 @@ def test_draw_from_pools_without_members_builds(tmp_path):
     }
 
 
-def test_command_arguments_build(tmp_path):
+def test_do_arguments_build(tmp_path):
     src = tmp_path / "src"
     _write(src / "globals.wvl", ENV)
     _write(
         src / "a.wvl",
-        '@node start\n@log "{$name}", $name, $score * 2, $has_key, visited(start)\n@endnode\n',
+        '@node start\n@do log("{$name}", $name, $score * 2, $has_key, visited(start))\n@endnode\n',
     )
 
     build_all_files(src, tmp_path / "build", pretty=False)
@@ -376,7 +376,7 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
         ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a pool"),
         ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
         ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a flag, got a pool"),
-        ("@spawn wolf", "2:8: error: 'wolf' matches no node"),
+        ("@do spawn(wolf)", "2:11: error: 'wolf' matches no node"),
         ("You have {score} gold.", "2:11: error: 'score' is a variable, write $score"),
         (
             "@increase $region",
@@ -436,14 +436,14 @@ def test_name_variables_build(tmp_path):
         "var quest: node = cave\n"
         "var partner: slot = treasure\n"
         "extern var home: pool\n"
-        "command unlock(target: pool, partner: slot)\n"
+        "func unlock(target: pool, partner: slot)\n"
         "@endenv\n\n"
         "@node cave\n"
         "@if $region == cave and cave == $quest and $home != $region and visited(cave)\n"
         "    @set $region = cave\n"
         "    @set $quest = cave\n"
         "@endif\n"
-        "@unlock cave, $partner\n"
+        "@do unlock(cave, $partner)\n"
         "You reach {cave}.\n"
         "@endnode\n",
     )
@@ -461,8 +461,7 @@ def test_name_variables_build(tmp_path):
         "pools": ["cave"],
         "slots": ["treasure"],
         "meta_keys": [],
-        "functions": [],
-        "commands": [{"name": "unlock", "params": [
+        "functions": [{"name": "unlock", "params": [
             {"name": "target", "type": "pool"}, {"name": "partner", "type": "slot"},
         ]}],
     }
@@ -624,28 +623,24 @@ FUNCTION_ENV = ENV + (
         ),
         ("@set $score = times_seen(gone)", "2:26: error: 'gone' matches no node"),
         ("@set $score = times_seen(cave)", "2:26: error: 'cave' is a pool, not a node"),
+        ('@set $score = play_sound("a", 1)', "2:15: error: 'play_sound' returns no value"),
+        ("@do visited()", "2:5: error: 'visited' only returns a value"),
         (
-            '@set $score = play_sound("a", 1)',
-            "2:15: error: 'play_sound' is a command and has no value",
+            '@do play_sond("door", 1)',
+            "2:5: error: unknown function 'play_sond', did you mean 'play_sound'?",
         ),
-        ('@trust "a", "b"', "2:2: error: 'trust' is a function and can't be a statement"),
+        ('@do play_sound("door")', "2:5: error: play_sound() takes 2 arguments, got 1"),
         (
-            '@play_sond "door", 1',
-            "2:2: error: unknown command 'play_sond', did you mean 'play_sound'?",
-        ),
-        ('@play_sound "door"', "2:2: error: @play_sound takes 2 arguments, got 1"),
-        (
-            '@play_sound "door", "loud"',
-            "2:21: error: @play_sound argument 'volume' needs a number, got a string",
+            '@do play_sound("door", "loud")',
+            "2:24: error: play_sound() argument 'volume' needs a number, got a string",
         ),
         ("@set $score = $trust", "2:15: error: 'trust' is a function, not a variable"),
     ],
     ids=["too_few", "argument_type", "result_type", "unknown_function", "name_result",
-         "missing_node", "pool_as_node", "command_as_value", "function_as_statement",
-         "unknown_command", "command_too_few", "command_argument_type",
-         "function_as_variable"],
+         "missing_node", "pool_as_node", "no_result_as_value", "do_built_in",
+         "do_unknown", "do_too_few", "do_argument_type", "function_as_variable"],
 )
-def test_function_and_command_errors(tmp_path, capsys, body, expected):
+def test_function_errors(tmp_path, capsys, body, expected):
     src = tmp_path / "src"
     _write(src / "globals.wvl", FUNCTION_ENV)
     _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
@@ -662,18 +657,17 @@ def test_function_and_command_errors(tmp_path, capsys, body, expected):
     [
         ("func min(a: number, b: number): number", "2:6: error: 'min' is a built-in function"),
         ("func meta(): number", "2:6: error: 'meta' is a built-in function"),
-        ("command jump(target: node)", "2:9: error: 'jump' is a statement keyword"),
-        ("command score()", "2:9: error: duplicate command 'score', first declared at"),
+        ("func score()", "2:6: error: duplicate function 'score', first declared at"),
         (
             "func f(a: number, a: number): number",
             "2:19: error: duplicate parameter 'a'",
         ),
-        ("command c(a: number, a: string)", "2:22: error: duplicate parameter 'a'"),
+        ("func c(a: number, a: string)", "2:19: error: duplicate parameter 'a'"),
     ],
-    ids=["built_in_function", "meta", "keyword", "duplicate", "function_parameter",
-         "command_parameter"],
+    ids=["built_in_function", "meta", "duplicate", "function_parameter",
+         "no_result_parameter"],
 )
-def test_function_and_command_declaration_errors(tmp_path, capsys, declaration, expected):
+def test_function_declaration_errors(tmp_path, capsys, declaration, expected):
     src = tmp_path / "src"
     _write(src / "globals.wvl", ENV)
     _write(src / "z.wvl", f"@env\n{declaration}\n@endenv\n")
@@ -686,9 +680,9 @@ def test_function_and_command_declaration_errors(tmp_path, capsys, declaration, 
     assert errors[0].startswith(expected)
 
 
-def test_functions_and_commands_build(tmp_path):
+def test_functions_build(tmp_path):
     src = tmp_path / "src"
-    _write(src / "globals.wvl", FUNCTION_ENV + "@env\ncommand fade_out()\n@endenv\n")
+    _write(src / "globals.wvl", FUNCTION_ENV + "@env\nfunc fade_out()\n@endenv\n")
     _write(
         src / "a.wvl",
         "@node start\n"
@@ -698,22 +692,24 @@ def test_functions_and_commands_build(tmp_path):
         "weight: times_seen(start)\n"
         "@endmeta\n"
         '@if pick_region() == cave and not has_item("key")\n'
-        '    @play_sound "fire", trust("anna", "ben") / 10\n'
+        '    @do play_sound("fire", trust("anna", "ben") / 10)\n'
         "@endif\n"
         'Trust: {trust("anna", $name)}.\n'
-        "@fade_out\n"
+        '@do has_item("lantern")\n'
+        "@do fade_out()\n"
         "@endnode\n",
     )
 
     build_all_files(src, tmp_path / "build", pretty=False)
 
     env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
-    assert env["functions"][0] == {
+    assert {
         "name": "trust",
         "params": [{"name": "from", "type": "string"}, {"name": "to", "type": "string"}],
         "returns": "number",
-    }
-    assert env["commands"][-1] == {"name": "fade_out", "params": []}
+    } in env["functions"]
+    assert env["functions"][-1] == {"name": "fade_out", "params": []}
+    assert "commands" not in env
 
 
 OPTION_NODES = (

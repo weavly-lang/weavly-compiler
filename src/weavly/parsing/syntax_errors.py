@@ -1,4 +1,5 @@
 import re
+from difflib import get_close_matches
 
 from lark import Lark, Token
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
@@ -16,7 +17,6 @@ PATTERN_NAMES = {
     "CHARACTER_NAME": "a character name",
     "COMP_OP": "a comparison operator",
     "MATCH_MODIFIER": "'first', 'last' or 'all'",
-    "_COMMAND": "a @command",
     "_NEWLINE": "end of line",
     "COMMENT": "a comment",
     "WS_INLINE": "whitespace",
@@ -40,15 +40,19 @@ _PARENTS = {
     "@else": "@if",
 }
 _KEYWORD = re.compile(r"\s*(@\w+)")
-_COMMAND_START = re.compile(r"\s*@(\w+)\s*")
+_AT_WORD = re.compile(r"@\w+")
+_KEYWORD_PATTERN = re.compile(r"(@\w+)\\b")
 _MAX_TOKEN_LENGTH = 40
 
 
 def terminal_names(parser: Lark) -> dict[str, str]:
     names = {END: "end of file"}
     for terminal in parser.terminals:
+        keyword = _KEYWORD_PATTERN.fullmatch(terminal.pattern.value)
         if isinstance(terminal.pattern, PatternStr):
             names[terminal.name] = f"'{terminal.pattern.value}'"
+        elif keyword:
+            names[terminal.name] = f"'{keyword.group(1)}'"
         else:
             names[terminal.name] = PATTERN_NAMES.get(terminal.name, terminal.name)
     return names
@@ -56,15 +60,18 @@ def terminal_names(parser: Lark) -> dict[str, str]:
 
 def describe_syntax_error(
     error: UnexpectedInput, text: str, names: dict[str, str]
-) -> tuple[str, list[str]]:
+) -> tuple[str, int, list[str]]:
+    """Return the message, the column to report it at, and the lines that follow it."""
     lines = text.splitlines()
-    details = _excerpt(lines, error.line, error.column)
+    unknown = _unknown_keyword(lines, error.line, error.column, names)
+    if unknown:
+        message, column = unknown
+        return message, column, _excerpt(lines, error.line, column)
 
+    details = _excerpt(lines, error.line, error.column)
     if isinstance(error, UnexpectedToken):
         message = f"unexpected {_describe_token(error.token, names)}"
-        hint = _block_hint(error.token, lines, error.line) or _command_hint(
-            error.token, lines, error.line, names
-        )
+        hint = _block_hint(error.token, lines, error.line)
     elif isinstance(error, UnexpectedCharacters):
         message = f"unexpected character {error.char!r}"
         hint = None
@@ -72,7 +79,7 @@ def describe_syntax_error(
         message = "unclosed '{' in text"
         hint = "close it with '}' or write '\\{' for a literal brace"
     else:
-        return "syntax error", details
+        return "syntax error", error.column, details
 
     if hint:
         details.append(f"hint: {hint}")
@@ -84,7 +91,7 @@ def describe_syntax_error(
         )
         if expected:
             details.append(_expected(sorted({names.get(n, n) for n in expected})))
-    return message, details
+    return message, error.column, details
 
 
 def _describe_token(token: Token, names: dict[str, str]) -> str:
@@ -145,19 +152,21 @@ def _block_hint(token: Token, lines: list[str], line: int) -> str | None:
     return None
 
 
-def _command_hint(
-    token: Token, lines: list[str], line: int, names: dict[str, str]
-) -> str | None:
-    # The lexer can read the colon and the rest of the line as one TEXT token.
-    if not str(token.value).lstrip().startswith(":") or not 1 <= line <= len(lines):
+def _unknown_keyword(
+    lines: list[str], line: int, column: int, names: dict[str, str]
+) -> tuple[str, int] | None:
+    if not 1 <= line <= len(lines):
         return None
-    source = lines[line - 1]
-    match = _COMMAND_START.fullmatch(source[: token.column - 1])
-    if not match or f"'@{match.group(1)}'" in names.values():
-        return None
-    rest = source[token.column - 1 :].strip()[1:].strip()
-    example = rest.replace('"', '\\"') or "text"
-    return f'command arguments are expressions, like @{match.group(1)} "{example}"'
+    keywords = [name[1:-1] for name in names.values() if _AT_WORD.fullmatch(name[1:-1])]
+    for match in _AT_WORD.finditer(lines[line - 1]):
+        word = match.group()
+        if match.start() < column <= match.end() and word not in keywords:
+            message = f"unknown keyword '{word}'"
+            close = get_close_matches(word, keywords, n=1)
+            if close:
+                message += f", did you mean '{close[0]}'?"
+            return message, match.start() + 1
+    return None
 
 
 def _open_blocks(lines: list[str]) -> list[tuple[str, int]]:

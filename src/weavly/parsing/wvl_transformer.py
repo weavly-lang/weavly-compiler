@@ -110,12 +110,12 @@ class WvlTransformer(Transformer):
         return {**self.number_value(value), "min": minimum, "max": maximum}
 
     def function_declaration(
-        self, name: str, parameters: list | None, returns: str
+        self, name: str, parameters: list | None, returns: str | None
     ) -> dict[str, Any]:
-        return {"kind": "function", "name": name, "params": parameters or [], "returns": returns}
-
-    def command_declaration(self, name: str, parameters: list | None) -> dict[str, Any]:
-        return {"kind": "command", "name": name, "params": parameters or []}
+        declaration = {"kind": "function", "name": name, "params": parameters or []}
+        if returns is not None:
+            declaration["returns"] = returns
+        return declaration
 
     def parameters(self, *parameters) -> list:
         return list(parameters)
@@ -231,8 +231,8 @@ class WvlTransformer(Transformer):
         return {"type": "finish", "line": meta.line}
 
     @located
-    def command(self, meta: Any, id: str, arguments: list | None) -> dict[str, Any]:
-        return {"type": "command", "line": meta.line, "id": id, "args": arguments or []}
+    def do(self, meta: Any, id: str, arguments: list | None) -> dict[str, Any]:
+        return {"type": "do", "line": meta.line, "id": id, "args": arguments or []}
 
     @located
     def continue_(
