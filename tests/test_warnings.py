@@ -26,7 +26,7 @@ def _build_warnings(tmp_path, capsys, source):
         ("@env\nvar gold: number\n@endenv\n", "2:5: warning: variable 'gold' is never used"),
         ("@env\nextern var day: number\n@endenv\n", "2:12: warning: variable 'day' is never used"),
         ("@env\nfunc trust(): number\n@endenv\n", "2:6: warning: function 'trust' is never used"),
-        ("@env\ncommand shake()\n@endenv\n", "2:9: warning: command 'shake' is never used"),
+        ("@env\nfunc shake()\n@endenv\n", "2:6: warning: function 'shake' is never used"),
         (
             "@env\nmeta cost: number\n@endenv\n",
             "2:6: warning: meta key 'cost' is never written or read",
@@ -53,8 +53,8 @@ def _build_warnings(tmp_path, capsys, source):
             "6:1: warning: slot has no effect on a node in no pool",
         ),
     ],
-    ids=["variable", "extern_variable", "function", "command", "meta_key", "empty_pool", "empty_slot",
-         "slot_with_one_node", "priority", "weight", "slot_key"],
+    ids=["variable", "extern_variable", "function", "function_without_result", "meta_key",
+         "empty_pool", "empty_slot", "slot_with_one_node", "priority", "weight", "slot_key"],
 )
 def test_warnings(tmp_path, capsys, source, expected):
     assert expected in _build_warnings(tmp_path, capsys, source)
@@ -65,7 +65,7 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "@env\n"
         "extern var day: number\n"
         "func trust(): number\n"
-        "command shake()\n"
+        "func shake()\n"
         "meta cost: number\n"
         "meta art: string\n"
         "pool city\n"
@@ -75,7 +75,7 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "@endenv\n"
         "@node a\n"
         "@meta\npool: city\nslot: bob\npriority: 1\nweight: 2\ncost: 3\n@endmeta\n"
-        "@shake\n"
+        "@do shake()\n"
         "@increase $gold\n"
         "$name: Day {$day}, trust {trust()}, art {meta(art)}.\n"
         "@endnode\n"

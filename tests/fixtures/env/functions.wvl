@@ -3,7 +3,7 @@ func trust(from: string, to: string): number
 func day(): number
 func pick_region(): pool
 func times_seen(target: node): number
-command play_sound(name: string, volume: number)
-command fade_out()
-command unlock(target: pool)
+func play_sound(name: string, volume: number)
+func fade_out()
+func unlock(target: pool)
 @endenv

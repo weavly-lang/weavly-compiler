@@ -16,7 +16,6 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | slot_declaration
     | meta_declaration
     | function_declaration
-    | command_declaration
 
 var_declaration: _VAR ID _COLON (typed_value | number_range) _NEWLINE
 extern_declaration: _EXTERN _VAR ID _COLON (value_type | name_type) _NEWLINE
@@ -28,8 +27,7 @@ meta_declaration: _META_KEY ID _COLON typed_value _NEWLINE
     | _FLAG_TYPE ["=" bool_literal] -> flag_value
     | name_type "=" ID -> name_value
 number_range: _NUMBER_TYPE "(" [signed_number] "," [signed_number] ")" ["=" signed_number]
-function_declaration: _FUNC ID "(" [parameters] ")" _COLON (value_type | name_type) _NEWLINE
-command_declaration: _COMMAND_KEY ID "(" [parameters] ")" _NEWLINE
+function_declaration: _FUNC ID "(" [parameters] ")" [_COLON (value_type | name_type)] _NEWLINE
 parameters: parameter ("," parameter)*
 parameter: ID _COLON (value_type | name_type)
 !value_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
@@ -61,7 +59,7 @@ body: statement*
     | decrease
     | setflag
     | clearflag
-    | command
+    | do
     | jump
     | detour
     | draw
@@ -103,7 +101,7 @@ draw: _DRAW ID ("," ID)* _NEWLINE
 
 finish: _FINISH _NEWLINE
 
-command: _COMMAND ID [arguments] _NEWLINE
+do: _DO ID "(" [arguments] ")" _NEWLINE
 
 continue: _CONTINUE STRING (inline_action | _NEWLINE) -> continue_
 
@@ -207,11 +205,11 @@ COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
 TRUE: "true"
 FALSE: "false"
 
-_NODESTART: "@node"
-_NODEEND: "@endnode"
+_NODESTART: /@node\b/
+_NODEEND: /@endnode\b/
 
-_ENV: "@env"
-_ENDENV: "@endenv"
+_ENV: /@env\b/
+_ENDENV: /@endenv\b/
 _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
 _FLAG_TYPE: "flag"
@@ -222,40 +220,39 @@ _POOL_TYPE: "pool"
 _SLOT_TYPE: "slot"
 _META_KEY: "meta"
 _FUNC: "func"
-_COMMAND_KEY: "command"
 
-_META: "@meta"
-_ENDMETA: "@endmeta"
+_META: /@meta\b/
+_ENDMETA: /@endmeta\b/
 
-_SET: "@set"
-_INC: "@increase"
-_DEC: "@decrease"
-_SETFLAG: "@setflag"
-_CLEARFLAG: "@clearflag"
-_JUMP: "@jump"
-_DETOUR: "@detour"
-_DRAW: "@draw"
-_FINISH: "@finish"
-_COMMAND: /@(?!(node|endnode|env|endenv|set|increase|decrease|setflag|clearflag|jump|detour|draw|finish|if|elif|else|endif|options|option|endoptions|continue|random|case|endrandom|match|when|endmatch|meta|endmeta)\b)/
-_CONTINUE: "@continue"
+_SET: /@set\b/
+_INC: /@increase\b/
+_DEC: /@decrease\b/
+_SETFLAG: /@setflag\b/
+_CLEARFLAG: /@clearflag\b/
+_JUMP: /@jump\b/
+_DETOUR: /@detour\b/
+_DRAW: /@draw\b/
+_FINISH: /@finish\b/
+_DO: /@do\b/
+_CONTINUE: /@continue\b/
 
-_IF: "@if"
-_ELIF: "@elif"
-_ELSE: "@else"
-_ENDIF: "@endif"
+_IF: /@if\b/
+_ELIF: /@elif\b/
+_ELSE: /@else\b/
+_ENDIF: /@endif\b/
 
-_OPTIONS: "@options"
-_END_OPTIONS: "@endoptions"
-_OPTION: "@option"
+_OPTIONS: /@options\b/
+_END_OPTIONS: /@endoptions\b/
+_OPTION: /@option\b/
 
-_RANDOM: "@random"
-_CASE: "@case"
-_END_RANDOM: "@endrandom"
+_RANDOM: /@random\b/
+_CASE: /@case\b/
+_END_RANDOM: /@endrandom\b/
 
-_MATCH: "@match"
+_MATCH: /@match\b/
 MATCH_MODIFIER: "first" | "last" | "all"
-_WHEN: "@when"
-_END_MATCH: "@endmatch"
+_WHEN: /@when\b/
+_END_MATCH: /@endmatch\b/
 
 _NOT: "not"
 _AND: "and"

@@ -1,3 +1,3 @@
 @node start
-@shake 2 3
+    @do play_music()
 @endnode

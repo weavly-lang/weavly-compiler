@@ -1,0 +1,3 @@
+@node start
+@do unlock(camp, $region)
+@endnode

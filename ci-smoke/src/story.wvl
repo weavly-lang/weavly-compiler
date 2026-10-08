@@ -2,7 +2,7 @@
 Welcome to the smoke test.
 >Guide: Let the test begin.
 @detour aside
-@play_sound "chime.ogg", clamp($score / 10, 0, 1)
+@do play_sound("chime.ogg", clamp($score / 10, 0, 1))
 @set $score = 10
 @increase $score 5
 @decrease $score 2
@@ -66,7 +66,8 @@ $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} f
 @if luck() > 5
     Lucky you.
 @endif
-@fade_out
+@do luck()
+@do fade_out()
 @finish
 @endnode
 

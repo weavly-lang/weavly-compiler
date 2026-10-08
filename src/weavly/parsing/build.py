@@ -24,7 +24,7 @@ ENV_BUILD_FILE = "env.json"
 # declaration kind -> env.json list of names.
 _NAME_LISTS = {"pool": "pools", "slot": "slots"}
 # declaration kind -> env.json list of declarations.
-_DECLARATION_LISTS = {"meta": "meta_keys", "function": "functions", "command": "commands"}
+_DECLARATION_LISTS = {"meta": "meta_keys", "function": "functions"}
 
 
 def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
@@ -93,8 +93,8 @@ def _compile_file(
         tree = parse(text)
         return tree, transformer.transform(tree)
     except UnexpectedInput as e:
-        message, details = describe_syntax_error(e, text, names)
-        report_error(message, file, e.line, e.column, details)
+        message, column, details = describe_syntax_error(e, text, names)
+        report_error(message, file, e.line, column, details)
     except InvalidStringError as e:
         _report_string_error(e, file)
     except VisitError as e:
@@ -118,7 +118,6 @@ def _env(declarations: list[dict]) -> dict[str, list]:
         "slots": [],
         "meta_keys": [],
         "functions": [],
-        "commands": [],
     }
     for declaration in declarations:
         kind = declaration.get("kind")
