@@ -29,7 +29,6 @@ _NODE_KINDS = {"node_start": "node id"}
 # rule -> what its target is called in errors.
 _TARGET_KINDS = {
     "jump": "jump",
-    "inline_jump": "jump",
     "detour": "detour",
     "node_option": "option",
 }

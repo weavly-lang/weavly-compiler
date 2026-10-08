@@ -1,3 +1,0 @@
-@node start
-    @decrease $x "a lot"
-@endnode

@@ -1,5 +1,5 @@
 @node start
     @options
-        @option -> end
+        @option: @jump end
     @endoptions
 @endnode

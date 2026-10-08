@@ -1,5 +1,5 @@
 @node start
-    @continue "Proceed" -> next
+    @continue "Proceed": @jump next
 @endnode
 
 @node next

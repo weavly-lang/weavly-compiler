@@ -1,4 +1,4 @@
 @node start
     @options
-        @option "Go" -> end
+        @option "Go": @jump end
 @endnode

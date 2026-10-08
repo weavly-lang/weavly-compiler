@@ -3,8 +3,8 @@ meta cost: number = -1
 meta rarity: number
 meta art: string = "camp_fire"
 meta title: string
-meta secret: flag = true
-meta hidden: flag
+meta secret: bool = true
+meta hidden: bool
 meta home: pool = city
 meta next: node = start
 @endenv

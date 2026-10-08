@@ -2,8 +2,8 @@
     > Guide: Hello {$name}.
     $speaker: {$gold + 1} coins.
     @options
-        @option "Pay {round($price)} gold" -> start
-        @option "Needs {$gold} gold" -> start
+        @option "Pay {round($price)} gold": @jump start
+        @option "Needs {$gold} gold": @jump start
     @endoptions
     @continue "Onward, {$name}"
 @endnode

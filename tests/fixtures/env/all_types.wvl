@@ -1,5 +1,5 @@
 @env
 var hp: number(0, 100) = 50
 var name: string = "Hero"
-var brave: flag = true
+var brave: bool = true
 @endenv

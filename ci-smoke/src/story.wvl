@@ -8,8 +8,8 @@ Welcome to the smoke test.
 @decrease $score 2
 @set $score = clamp($score + random(1, 6), 0, 100)
 @set $score = round(max(min($score, 50), abs($score - 20)) / 2)
-@setflag $has_key
-@clearflag $has_key
+@set $has_key = true
+@set $has_key = false
 
 @if $score > 10
     @jump choices
@@ -24,9 +24,9 @@ Welcome to the smoke test.
 $player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} fame.
 
 @options
-@option "Roll the dice" -> random_node
+@option "Roll the dice": @jump random_node
 @option "Explore the cave": @draw cave_outcome
-@option [ $has_key ] "Use key on door \{{visit_count(choices)}}" -> end
+@option [ $has_key ] "Use key on door \{{visit_count(choices)}}": @jump end
 @option node(aside)
 @option pool(cave_outcome, limit: 1, locked: extra)
 @endoptions

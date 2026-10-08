@@ -42,6 +42,7 @@ _PARENTS = {
 }
 _KEYWORD = re.compile(r"\s*(@\w+)")
 _AT_WORD = re.compile(r"@\w+")
+_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 _KEYWORD_PATTERN = re.compile(r"(@\w+)\\b")
 _MAX_TOKEN_LENGTH = 40
 
@@ -177,8 +178,15 @@ def _open_blocks(lines: list[str]) -> list[tuple[str, int]]:
         if not match:
             continue
         keyword = match.group(1)
+        if keyword == "@if" and _has_inline_action(source):
+            continue
         if keyword in _BLOCKS:
             stack.append((keyword, number))
         elif keyword in _OPENERS and stack and stack[-1][0] == _OPENERS[keyword]:
             stack.pop()
     return stack
+
+
+def _has_inline_action(source: str) -> bool:
+    code = _STRING.sub('""', source).split("#", 1)[0]
+    return ":" in code

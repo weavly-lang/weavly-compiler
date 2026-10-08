@@ -1,4 +1,4 @@
 @node start
     @match
-        @when $flag -> end
+        @when $flag: @jump end
 @endnode

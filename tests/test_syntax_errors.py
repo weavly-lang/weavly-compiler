@@ -25,10 +25,10 @@ def _build_errors(tmp_path, capsys, source):
     "source, expected",
     [
         (
-            "@node a\n@options\n@option Go -> a\n@endoptions\n@endnode\n",
+            "@node a\n@options\n@option Go: @jump a\n@endoptions\n@endnode\n",
             [
                 "a.wvl:3:9: error: unexpected 'Go'",
-                "  3 | @option Go -> a",
+                "  3 | @option Go: @jump a",
                 "    |         ^",
                 "  expected one of: '[', 'node', 'pool', a quoted string",
             ],
@@ -55,7 +55,7 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            "@node a\n@option \"x\" -> a\n@endnode\n",
+            "@node a\n@option \"x\": @jump a\n@endnode\n",
             ["  hint: @option can only be used inside an @options block"],
         ),
         (
@@ -134,6 +134,25 @@ def _build_errors(tmp_path, capsys, source):
             "@env\nvar region: pool\n@endenv\n",
             ["a.wvl:2:17: error: unexpected end of line", "  expected '='"],
         ),
+        (
+            "@node a\n@if $x: @jump a\n@else\nHi.\n@endif\n@endnode\n",
+            [
+                "a.wvl:3:1: error: unexpected '@else'",
+                "  hint: @else can only be used inside an @if block",
+            ],
+        ),
+        (
+            "@node a\n@if $x: @jump a\n@endif\n@endnode\n",
+            ["  hint: there is no open @if block for @endif to close"],
+        ),
+        (
+            '@node a\n@if $x\n@if $n == "a:b" # c: d\nHi.\n@endif\n@endnode\n',
+            ["  hint: the @if block opened at line 2 must be closed with @endif first"],
+        ),
+        (
+            "@node a\n@increase $gold +5\n@endnode\n",
+            ["a.wvl:2:17: error: unexpected '+'"],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -154,6 +173,10 @@ def _build_errors(tmp_path, capsys, source):
         "meta_after_statement",
         "missing_endmeta",
         "name_type_without_default",
+        "else_after_inline_if",
+        "endif_after_inline_if",
+        "colon_in_string_and_comment",
+        "unary_plus_amount",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

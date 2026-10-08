@@ -5,7 +5,7 @@ var trailing: string = "say \""
 
 @node start
     @options
-        @option "Ask \"why?\"" -> start
+        @option "Ask \"why?\"": @jump start
     @endoptions
     @continue "\"Onward\""
 @endnode

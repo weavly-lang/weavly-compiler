@@ -24,13 +24,13 @@ slot_declaration: _SLOT_TYPE ID _NEWLINE
 meta_declaration: _META_KEY ID _COLON typed_value _NEWLINE
 ?typed_value: _NUMBER_TYPE ["=" signed_number] -> number_value
     | _STRING_TYPE ["=" STRING] -> string_value
-    | _FLAG_TYPE ["=" bool_literal] -> flag_value
+    | _BOOL_TYPE ["=" bool_literal] -> bool_value
     | name_type "=" ID -> name_value
 number_range: _NUMBER_TYPE "(" [signed_number] "," [signed_number] ")" ["=" signed_number]
 function_declaration: _FUNC ID "(" [parameters] ")" [_COLON (value_type | name_type)] _NEWLINE
 parameters: parameter ("," parameter)*
 parameter: ID _COLON (value_type | name_type)
-!value_type: _NUMBER_TYPE | _STRING_TYPE | _FLAG_TYPE
+!value_type: _NUMBER_TYPE | _STRING_TYPE | _BOOL_TYPE
 !name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE
 ?bool_literal: TRUE
     | FALSE
@@ -57,8 +57,6 @@ body: statement*
     | set
     | increase
     | decrease
-    | setflag
-    | clearflag
     | do
     | jump
     | detour
@@ -67,17 +65,14 @@ body: statement*
     | continue
 
 ?block_statement: if_block
+    | inline_if
     | option_block
     | random_block
     | match_block
 
-?inline_statement: _COLON line_statement
-
-inline_jump: _ARROW ID _NEWLINE
+?inline_action: _COLON line_statement
 
 action: inline_action | _NEWLINE body
-
-?inline_action: (inline_statement | inline_jump)
 
 // =====================
 // Lines / Statements
@@ -89,10 +84,8 @@ character_line: variable _COLON TEXT _NEWLINE
 blank_line: _NEWLINE
 
 set: _SET variable "=" expression _NEWLINE
-increase: _INC variable [signed_number] _NEWLINE
-decrease: _DEC variable [signed_number] _NEWLINE
-setflag: _SETFLAG variable _NEWLINE
-clearflag: _CLEARFLAG variable _NEWLINE
+increase: _INC variable [expression] _NEWLINE
+decrease: _DEC variable [expression] _NEWLINE
 
 jump: _JUMP ID _NEWLINE
 detour: _DETOUR ID _NEWLINE
@@ -110,7 +103,8 @@ continue: _CONTINUE STRING (inline_action | _NEWLINE) -> continue_
 // =====================
 
 if_block: if_ [elif_list] [else_] _ENDIF _NEWLINE
-if_: _IF condition action
+if_: _IF condition _NEWLINE body
+inline_if: _IF condition inline_action
 elif_: _ELIF condition action
 else_: _ELSE action
 elif_list: elif_+
@@ -215,7 +209,7 @@ _ENV: /@env\b/
 _ENDENV: /@endenv\b/
 _NUMBER_TYPE: "number"
 _STRING_TYPE: "string"
-_FLAG_TYPE: "flag"
+_BOOL_TYPE: "bool"
 _VAR: "var"
 _EXTERN: "extern"
 _NODE_TYPE: "node"
@@ -230,8 +224,6 @@ _ENDMETA: /@endmeta\b/
 _SET: /@set\b/
 _INC: /@increase\b/
 _DEC: /@decrease\b/
-_SETFLAG: /@setflag\b/
-_CLEARFLAG: /@clearflag\b/
 _JUMP: /@jump\b/
 _DETOUR: /@detour\b/
 _DRAW: /@draw\b/
@@ -266,7 +258,6 @@ _CHARACTER_MARKER: ">"
 _COLON: ":"
 _LBRACKET: "["
 _RBRACKET: "]"
-_ARROW: "->"
 _LBRACE: "{"
 _RBRACE: "}"
 
