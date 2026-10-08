@@ -31,8 +31,7 @@ NUMBER_FUNCTIONS = {
     "abs": (1, 1),
 }
 
-META_FUNCTION = "meta"
-BUILT_IN_FUNCTIONS = frozenset({*NODE_FUNCTIONS, *NUMBER_FUNCTIONS, META_FUNCTION})
+BUILT_IN_FUNCTIONS = frozenset({*NODE_FUNCTIONS, *NUMBER_FUNCTIONS})
 
 # built-in key -> type of its value.
 META_KEYS = {
@@ -48,7 +47,7 @@ META_KEYS = {
     "label_teaser": TEXT,
 }
 TEXT_META_KEYS = frozenset(key for key, value_type in META_KEYS.items() if value_type == TEXT)
-# Built-in keys meta() can't read: lists, text, or not written to the output.
+# Built-in keys that can't be read: lists, text, or not written to the output.
 _UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once", *TEXT_META_KEYS})
 
 # pool() option parameter -> type of its value, besides `locked`, which takes a mode.
@@ -320,8 +319,6 @@ class _TypeChecker:
             self._infer(argument)
         if name in NODE_FUNCTIONS:
             message = f"{name}() takes a node id, or none for the current node"
-        elif name == META_FUNCTION:
-            message = "meta() takes a meta key, or a node id and a meta key"
         else:
             message = _unknown("function", name, [*BUILT_IN_FUNCTIONS, *self.functions])
         self._error(function, message)
@@ -342,9 +339,10 @@ class _TypeChecker:
             self._infer(argument)
 
     def _infer_meta_call(self, tree: Tree) -> str | None:
-        key = tree.children[1]
+        node, key = tree.children
+        self._expect_name(node, NODE)
         if key in _UNREADABLE_META_KEYS:
-            self._error(key, f"meta() can't read {key}")
+            self._error(key, f"meta key '{key}' can't be read")
             return None
         value_type = self.meta_keys.get(str(key))
         if value_type is None:
@@ -374,7 +372,7 @@ class _TypeChecker:
         if name in self.variables:
             self._error(tree, f"'{name}' is a variable, write ${name}")
         elif name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
-            self._error(tree, f"'{name}' is a meta key, write meta({name})")
+            self._error(tree, f"'{name}' is a meta key, write .{name}")
         elif name in self.kinds:
             self._error(tree, f"'{name}' is a {self.kinds[name]}, not a node, pool or slot")
         else:

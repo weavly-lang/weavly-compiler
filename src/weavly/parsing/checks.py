@@ -108,10 +108,6 @@ class ProjectChecks:
                 (str(function), str(target), source_location(file, target))
             )
 
-        for call in tree.find_data("meta_call"):
-            target = call.children[0]
-            self._node_references.append(("meta", str(target), source_location(file, target)))
-
     def _record_node_meta(self, tree: Tree, file: Path) -> None:
         for node_id, entries in node_meta(tree):
             for key, entry in entries.items():

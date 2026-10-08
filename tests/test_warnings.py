@@ -77,7 +77,7 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "@meta\npool: city\nslot: bob\npriority: 1\nweight: 2\ncost: 3\n@endmeta\n"
         "@do shake()\n"
         "@increase $gold\n"
-        "$name: Day {$day}, trust {trust()}, art {meta(art)}.\n"
+        "$name: Day {$day}, trust {trust()}, art {.art}.\n"
         "@endnode\n"
         "@node b\n"
         "@meta\npool: city\nslot: bob\n@endmeta\n"

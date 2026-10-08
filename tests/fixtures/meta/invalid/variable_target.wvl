@@ -1,0 +1,3 @@
+@node a
+@set $x = $quest.cost
+@endnode

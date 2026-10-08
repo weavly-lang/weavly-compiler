@@ -80,12 +80,12 @@ priority: 1
 weight: 1 + skip_count()
 once: true
 reward: 2 + skip_count()
-label: "Open the chest ({meta(reward)} points)"
+label: "Open the chest ({.reward} points)"
 label_unavailable: "The chest is locked"
 available: $has_key
 @endmeta
 You find a chest.
-@set $score = $score + meta(reward)
+@set $score = $score + .reward
 @jump end
 @endnode
 

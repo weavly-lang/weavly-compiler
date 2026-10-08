@@ -4,7 +4,7 @@ from importlib import resources
 from lark import Lark, Token, Tree
 
 from .text import expand_text
-from .type_checker import META_FUNCTION, NODE_FUNCTIONS
+from .type_checker import NODE_FUNCTIONS
 from .wvl_transformer import WvlTransformer
 
 GRAMMAR_FILE = "wvl-grammar.lark"
@@ -35,22 +35,33 @@ def compile_source(text: str) -> dict:
 
 
 def _resolve_node_calls(tree: Tree) -> None:
-    """Turn node function and meta() calls on names into node and meta calls, filling in the
-    enclosing node when it's left out."""
+    """Turn node function calls on names and meta reads into node and meta calls, filling in
+    the enclosing node when it's left out."""
     for node in tree.find_data("node"):
         node_id = node.children[0].children[0]
         for call in node.find_data("call"):
             function, arguments = call.children
             names = _names(arguments)
-            if names is None:
-                continue
-            current = Token.new_borrow_pos("ID", node_id, function)
-            if function in NODE_FUNCTIONS and len(names) <= 1:
+            if function in NODE_FUNCTIONS and names is not None and len(names) <= 1:
+                current = Token.new_borrow_pos("ID", node_id, function)
                 call.data = "node_call"
                 call.children = [function, *(names or [current])]
-            elif function == META_FUNCTION and len(names) in (1, 2):
-                call.data = "meta_call"
-                call.children = names if len(names) == 2 else [current, *names]
+        for read in node.find_data("meta_read"):
+            token = read.children[0]
+            target, key = token.split(".")
+            read.data = "meta_call"
+            read.children = [
+                _part(token, target, 0) if target else Token.new_borrow_pos("ID", node_id, token),
+                _part(token, key, len(target) + 1),
+            ]
+
+
+def _part(token: Token, value: str, offset: int) -> Token:
+    """Return the part of `token` that starts `offset` characters into it as an ID."""
+    part = Token.new_borrow_pos("ID", value, token)
+    part.column += offset
+    part.end_column = part.column + len(value)
+    return part
 
 
 def _names(arguments: Tree | None) -> list[Token] | None:
