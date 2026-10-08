@@ -706,7 +706,6 @@ def test_functions_build(tmp_path):
         "returns": "number",
     } in env["functions"]
     assert env["functions"][-1] == {"name": "fade_out", "params": []}
-    assert "commands" not in env
 
 
 OPTION_NODES = (

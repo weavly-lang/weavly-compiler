@@ -135,12 +135,12 @@ class _TypeChecker:
             )
 
     def _check_increase(self, tree: Tree) -> None:
-        self._check_change(tree, "@increase")
+        self._expect_change(tree, "@increase")
 
     def _check_decrease(self, tree: Tree) -> None:
-        self._check_change(tree, "@decrease")
+        self._expect_change(tree, "@decrease")
 
-    def _check_change(self, tree: Tree, statement: str) -> None:
+    def _expect_change(self, tree: Tree, statement: str) -> None:
         variable, amount = tree.children
         self._expect_variable(variable, NUMBER, statement)
         if amount is not None:

@@ -184,7 +184,6 @@ interpolation: _LBRACE expression _RBRACE
 
 ?signed_number: NUMBER
     | "-" NUMBER -> negative_number
-    | "+" NUMBER
 
 ?literal: NUMBER
     | STRING
