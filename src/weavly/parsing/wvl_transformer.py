@@ -1,17 +1,9 @@
-import json
 from typing import Any
 
 from lark import Transformer, v_args
 from lark.visitors import Discard
 
 located = v_args(inline=True, meta=True)
-
-
-class InvalidStringError(ValueError):
-    def __init__(self, token: Any, reason: str) -> None:
-        super().__init__(reason)
-        self.token = token
-        self.reason = reason
 
 
 @v_args(inline=True)
@@ -224,7 +216,7 @@ class WvlTransformer(Transformer):
 
     @located
     def continue_(
-        self, meta: Any, text: list, statement: dict[str, Any] | None = None
+        self, meta: Any, text: Any, statement: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         body = [] if statement is None else [statement]
         return self.option_block(meta, self.option(meta, None, text, body))
@@ -273,7 +265,7 @@ class WvlTransformer(Transformer):
 
     @located
     def option(
-        self, meta: Any, condition: Any | None, text: list, body: list
+        self, meta: Any, condition: Any | None, text: Any, body: list
     ) -> dict[str, Any]:
         option_meta = {"label": {"line": meta.line, "value": text}}
         if condition is not None:
@@ -401,6 +393,12 @@ class WvlTransformer(Transformer):
     def text(self, *segments) -> list:
         return list(segments)
 
+    def string(self, *segments: str) -> str:
+        return "".join(segments)
+
+    def interpolated(self, *segments) -> dict[str, list]:
+        return {"text": list(segments)}
+
     def interpolation(self, expression: Any) -> Any:
         return expression
 
@@ -425,12 +423,6 @@ class WvlTransformer(Transformer):
 
     def NUMBER(self, token: Any) -> float:
         return float(token)
-
-    def STRING(self, token: Any) -> str:
-        try:
-            return json.loads(str(token), strict=False)
-        except json.JSONDecodeError as e:
-            raise InvalidStringError(token, e.msg) from e
 
     # =====================
     # Default for debugging

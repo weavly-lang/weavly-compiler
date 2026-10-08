@@ -1,0 +1,4 @@
+@env
+var template: string = "\{name}"
+meta art: string = "a \{b}"
+@endenv

@@ -55,11 +55,13 @@ def _build_errors(tmp_path, capsys, body):
         ('@continue "Onward, {$scroe}"', "2:21"),
         ("Costs {$score + $scroe}.", "2:17"),
         ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
+        ('@set $name = "Hi {$scroe}"', "2:19"),
+        ('@do play_sound("door_{\\"x{$scroe}\\"}", 1)', "2:27"),
     ],
     ids=["expression", "set", "increase", "decrease", "increase_amount",
          "character_name", "narration_text", "named_character_text", "character_text",
          "option_text", "continue_text", "text_expression",
-         "text_after_escapes"],
+         "text_after_escapes", "string_expression", "nested_string"],
 )
 def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
@@ -351,7 +353,7 @@ def test_do_arguments_build(tmp_path):
 
     data = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
     assert data["nodes"][0]["body"][0]["args"] == [
-        "{$name}",
+        {"text": [{"variable": "name"}]},
         {"variable": "name"},
         {"op": "*", "left": {"variable": "score"}, "right": 2.0},
         {"variable": "has_key"},
@@ -747,16 +749,16 @@ OPTION_NODES = (
             "@options\n@option pool(cave, limit: 1, limit: 2)\n@endoptions",
             "3:30: error: duplicate pool() parameter 'limit'",
         ),
-        ("@meta\nlabel: $name\n@endmeta", "3:8: error: label needs quoted text"),
+        ("@meta\nlabel: $score\n@endmeta", "3:8: error: label needs a string, got a number"),
         ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a bool, got a number"),
         ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
-        ("@set $score = .label", "2:16: error: meta key 'label' can't be read"),
+        ("@set $score = .label", "2:15: error: @set $score needs a number, got a string"),
         ("@if .available\n    Hi.\n@endif", None),
         ('@meta\nlabel: "a", "b"\n@endmeta', "3:13: error: label takes a single value, got 2"),
     ],
     ids=["missing_node", "node_without_label", "undeclared_pool", "no_pool", "pool_after_parameter",
          "limit_type", "shuffle_type", "locked_mode", "unknown_parameter", "duplicate_parameter",
-         "label_expression", "available_type", "label_interpolation", "read_label",
+         "label_type", "available_type", "label_interpolation", "read_label",
          "read_available", "label_several_values"],
 )
 def test_option_errors(tmp_path, capsys, body, expected):

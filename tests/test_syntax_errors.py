@@ -150,6 +150,17 @@ def _build_errors(tmp_path, capsys, source):
             ["  hint: the @if block opened at line 2 must be closed with @endif first"],
         ),
         (
+            '@env\nvar greeting: string = "Hi {name}"\n@endenv\n',
+            [
+                "a.wvl:2:28: error: unexpected '{' in a default",
+                "  hint: defaults are constants, write '\\{' for a literal brace",
+            ],
+        ),
+        (
+            '@node a\n@set $x = "Hi {$name"\n@endnode\n',
+            ["a.wvl:2:15: error: unclosed '{' in text"],
+        ),
+        (
             "@node a\n@increase $gold +5\n@endnode\n",
             ["a.wvl:2:17: error: unexpected '+'"],
         ),
@@ -176,6 +187,8 @@ def _build_errors(tmp_path, capsys, source):
         "else_after_inline_if",
         "endif_after_inline_if",
         "colon_in_string_and_comment",
+        "brace_in_default",
+        "unclosed_interpolation_in_string",
         "unary_plus_amount",
     ],
 )

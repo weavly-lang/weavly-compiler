@@ -14,8 +14,6 @@ NODE = "node"
 POOL = "pool"
 SLOT = "slot"
 NAME_TYPES = (NODE, POOL, SLOT)
-# Quoted text with {} expressions, only in label keys.
-TEXT = "text"
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": BOOL, "visit_count": NUMBER, "skip_count": NUMBER}
@@ -41,20 +39,19 @@ META_KEYS = {
     "priority": NUMBER,
     "weight": NUMBER,
     "once": BOOL,
-    "label": TEXT,
+    "label": STRING,
     "available": BOOL,
-    "label_unavailable": TEXT,
-    "label_teaser": TEXT,
+    "label_unavailable": STRING,
+    "label_teaser": STRING,
 }
-TEXT_META_KEYS = frozenset(key for key, value_type in META_KEYS.items() if value_type == TEXT)
-# Built-in keys that can't be read: lists, text, or not written to the output.
-_UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once", *TEXT_META_KEYS})
+# Built-in keys that can't be read: lists, or not written to the output.
+_UNREADABLE_META_KEYS = frozenset({"pool", "slot", "once"})
 
 # pool() option parameter -> type of its value, besides `locked`, which takes a mode.
 _POOL_PARAMETERS = {"limit": NUMBER, "shuffle": BOOL}
 _LOCKED_MODES = ("show", "extra", "hide")
 
-_LITERAL_TYPES = {"NUMBER": NUMBER, "STRING": STRING, "TRUE": BOOL, "FALSE": BOOL}
+_LITERAL_TYPES = {"NUMBER": NUMBER, "TRUE": BOOL, "FALSE": BOOL}
 _ARITHMETIC = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
 _LOGIC = {"and_": "and", "or_": "or"}
 _EQUALITY = frozenset({"==", "!="})
@@ -204,9 +201,6 @@ class _TypeChecker:
         if key == "once":
             if not isinstance(value, Token) or value.type not in ("TRUE", "FALSE"):
                 self._error(value, "once needs true or false")
-        elif expected == TEXT:
-            if not isinstance(value, Tree) or value.data != "text":
-                self._error(value, f"{key} needs quoted text")
         else:
             self._expect(value, expected, str(key))
 
@@ -256,6 +250,8 @@ class _TypeChecker:
             return _LITERAL_TYPES[node.type]
 
         rule = node.data
+        if rule in ("string", "interpolated"):
+            return STRING
         if rule == "variable":
             return self._variable(node)
         if rule == "name":

@@ -1,0 +1,13 @@
+@node shop
+@meta
+pool: market
+tag: "{.region}_night"
+label: $shop_name
+label_teaser: "Open until {$closing}"
+@endmeta
+@set $greeting = "Hi {$name}"
+@set $plain = "no braces, \{literal}"
+@do play_sound("door_{$floor}")
+@if $title == "Lord {$name == \"Bob\"}": Welcome.
+@set $quote = "a {\"b {$c}\"}"
+@endnode

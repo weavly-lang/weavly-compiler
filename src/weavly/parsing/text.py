@@ -6,19 +6,6 @@ from lark import Lark, Token, Tree
 from lark.exceptions import UnexpectedInput
 from lark.tree import Meta
 
-from .type_checker import TEXT_META_KEYS
-from .wvl_transformer import InvalidStringError
-
-_TEXT_RULES = frozenset(
-    {
-        "narration_line",
-        "character_line",
-        "named_character_line",
-        "option",
-        "continue_",
-    }
-)
-_TEXT_TOKENS = frozenset({"TEXT", "STRING"})
 _TEXT_UNIT = re.compile(r"\\\{|.", re.DOTALL)
 _QUOTED_UNIT = re.compile(
     r"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\.|.",
@@ -34,6 +21,13 @@ class _Char(NamedTuple):
     escaped: bool
 
 
+class InvalidStringError(ValueError):
+    def __init__(self, token: Token, reason: str) -> None:
+        super().__init__(reason)
+        self.token = token
+        self.reason = reason
+
+
 class UnclosedInterpolationError(UnexpectedInput):
     def __init__(self, line: int, column: int) -> None:
         super().__init__("unclosed '{' in text")
@@ -41,23 +35,26 @@ class UnclosedInterpolationError(UnexpectedInput):
         self.column = column
 
 
+class BraceInDefaultError(UnexpectedInput):
+    def __init__(self, line: int, column: int) -> None:
+        super().__init__("unexpected '{' in a default")
+        self.line = line
+        self.column = column
+
+
 def expand_text(tree: Tree, parser: Lark) -> None:
-    """Replace each text token with a `text` tree of plain strings and interpolations."""
+    """Replace each line's text with a `text` tree and each quoted string with a `string` or
+    `interpolated` tree, made of plain strings and interpolations."""
     for subtree in tree.iter_subtrees():
-        if subtree.data in _TEXT_RULES or _is_text_meta_entry(subtree):
-            subtree.children = [
-                _text(child, parser)
-                if isinstance(child, Token) and child.type in _TEXT_TOKENS
-                else child
-                for child in subtree.children
-            ]
+        subtree.children = [
+            _text(child, parser, subtree.data == "string_value")
+            if isinstance(child, Token) and child.type in ("TEXT", "STRING")
+            else child
+            for child in subtree.children
+        ]
 
 
-def _is_text_meta_entry(tree: Tree) -> bool:
-    return tree.data == "meta_entry" and tree.children[0] in TEXT_META_KEYS
-
-
-def _text(token: Token, parser: Lark) -> Tree:
+def _text(token: Token, parser: Lark, constant: bool) -> Tree:
     chars = _chars(token)
     segments: list[str | Tree] = []
     plain: list[str] = []
@@ -67,6 +64,8 @@ def _text(token: Token, parser: Lark) -> Tree:
             plain.append(chars[i].char)
             i += 1
             continue
+        if constant:
+            raise BraceInDefaultError(token.line, token.column + chars[i].offset)
         end = _closing_brace(chars, i)
         if end is None:
             raise UnclosedInterpolationError(token.line, token.column + chars[i].offset)
@@ -81,7 +80,11 @@ def _text(token: Token, parser: Lark) -> Tree:
     meta.empty = False
     meta.line, meta.column = token.line, token.column
     meta.end_line, meta.end_column = token.end_line, token.end_column
-    return Tree("text", segments, meta)
+    if token.type == "TEXT":
+        return Tree("text", segments, meta)
+    if all(isinstance(segment, str) for segment in segments):
+        return Tree("string", segments, meta)
+    return Tree("interpolated", segments, meta)
 
 
 def _chars(token: Token) -> list[_Char]:
@@ -134,9 +137,14 @@ def _interpolation(chars: list[_Char], token: Token, parser: Lark) -> Tree:
 
     try:
         tree = parser.parse("".join(char.char for char in chars), start="interpolation")
+        expand_text(tree, parser)
     except UnexpectedInput as e:
         e.line = token.line
         e.column = column(e.column)
+        raise
+    except InvalidStringError as e:
+        e.token.line = token.line
+        e.token.column = column(e.token.column)
         raise
 
     for subtree in tree.iter_subtrees():
