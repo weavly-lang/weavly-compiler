@@ -16,6 +16,7 @@ PATTERN_NAMES = {
     "TEXT": "text",
     "CHARACTER_NAME": "a character name",
     "COMP_OP": "a comparison operator",
+    "META_READ": "a meta value",
     "MATCH_MODIFIER": "'first', 'last' or 'all'",
     "_NEWLINE": "end of line",
     "COMMENT": "a comment",

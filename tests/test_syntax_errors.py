@@ -63,7 +63,7 @@ def _build_errors(tmp_path, capsys, source):
             [
                 "a.wvl:2:10: error: unexpected end of line",
                 "  expected one of: '$', '(', '-', 'false', 'not', 'true', "
-                "a name, a number, a quoted string",
+                "a meta value, a name, a number, a quoted string",
             ],
         ),
         (

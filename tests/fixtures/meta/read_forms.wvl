@@ -1,0 +1,9 @@
+@node shop
+@meta
+when: shop.priority > .5
+@endmeta
+@set $x = .5 + .cost * 2
+@options
+@option "Buy for {.cost}": @set $y = shop.when
+@endoptions
+@endnode

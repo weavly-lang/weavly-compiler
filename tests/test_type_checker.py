@@ -478,22 +478,19 @@ META_ENV = ENV + "@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool
         ("@meta\nhome: treasure\n@endmeta", "3:7: error: home needs a pool, got a slot"),
         ("@meta\nhome: cave, hall\n@endmeta", "3:13: error: home takes a single value, got 2"),
         (
-            "@set $score = meta(cots)",
-            "2:20: error: unknown meta key 'cots', did you mean 'cost'?",
+            "@set $score = .cots",
+            "2:16: error: unknown meta key 'cots', did you mean 'cost'?",
         ),
-        ("@set $score = meta(art)", "2:15: error: @set $score needs a number, got a string"),
-        ("@if meta(pool)\n    Hi.\n@endif", "2:10: error: meta() can't read pool"),
-        ("@set $score = meta(gone, cost)", "2:20: error: meta target 'gone' matches no node"),
-        (
-            "@set $score = meta($score)",
-            "2:15: error: meta() takes a meta key, or a node id and a meta key",
-        ),
+        ("@set $score = .art", "2:15: error: @set $score needs a number, got a string"),
+        ("@if .pool\n    Hi.\n@endif", "2:6: error: meta key 'pool' can't be read"),
+        ("@set $score = gone.cost", "2:15: error: 'gone' matches no node"),
+        ("@set $score = cave.cost", "2:15: error: 'cave' is a pool, not a node"),
         ("@set $score = $cost", "2:15: error: 'cost' is a meta key, not a variable"),
         ("@draw cost", "2:7: error: 'cost' is a meta key, not a pool"),
-        ("@set $score = cost", "2:15: error: 'cost' is a meta key, write meta(cost)"),
+        ("@set $score = cost", "2:15: error: 'cost' is a meta key, write .cost"),
     ],
     ids=["wrong_type", "unknown_key", "name_type", "several_values", "unknown_read",
-         "read_type", "unreadable", "missing_node", "not_a_name", "as_variable",
+         "read_type", "unreadable", "missing_node", "pool_target", "as_variable",
          "as_pool", "without_meta"],
 )
 def test_meta_key_errors(tmp_path, capsys, body, expected):
@@ -534,16 +531,16 @@ def test_meta_declaration_errors(tmp_path, capsys, declaration, expected):
     "nodes, expected",
     [
         (
-            "@node a\n@meta\ncost: meta(cost) + 1\n@endmeta\n@endnode\n",
+            "@node a\n@meta\ncost: .cost + 1\n@endmeta\n@endnode\n",
             ["3:1: error: meta key 'cost' reads itself: a.cost -> a.cost"],
         ),
         (
-            "@node a\n@meta\ncost: meta(weight)\nweight: meta(cost)\n@endmeta\n@endnode\n",
+            "@node a\n@meta\ncost: .weight\nweight: .cost\n@endmeta\n@endnode\n",
             ["3:1: error: meta key 'cost' reads itself: a.cost -> a.weight -> a.cost"],
         ),
         (
-            "@node a\n@meta\ncost: meta(b, cost)\n@endmeta\n@endnode\n"
-            "@node b\n@meta\ncost: 1 + meta(a, cost)\n@endmeta\n@endnode\n",
+            "@node a\n@meta\ncost: b.cost\n@endmeta\n@endnode\n"
+            "@node b\n@meta\ncost: 1 + a.cost\n@endmeta\n@endnode\n",
             ["3:1: error: meta key 'cost' reads itself: a.cost -> b.cost -> a.cost"],
         ),
     ],
@@ -572,14 +569,14 @@ def test_meta_keys_build(tmp_path):
         "cost: 1 + $score\n"
         'art: "fire_{$name}"\n'
         "home: hall\n"
-        "weight: meta(cost) + meta(other, cost)\n"
-        "when: meta(start, home) == hall and meta(priority) > 0\n"
+        "weight: .cost + other.cost\n"
+        "when: start.home == hall and .priority > 0\n"
         "@endmeta\n"
-        "Costs {meta(cost)}.\n"
+        "Costs {.cost}.\n"
         "@endnode\n"
         "@node other\n"
         "@meta\n"
-        "cost: meta(start, priority)\n"
+        "cost: start.priority\n"
         "@endmeta\n"
         "@endnode\n",
     )
@@ -656,7 +653,6 @@ def test_function_errors(tmp_path, capsys, body, expected):
     "declaration, expected",
     [
         ("func min(a: number, b: number): number", "2:6: error: 'min' is a built-in function"),
-        ("func meta(): number", "2:6: error: 'meta' is a built-in function"),
         ("func score()", "2:6: error: duplicate function 'score', first declared at"),
         (
             "func f(a: number, a: number): number",
@@ -664,7 +660,7 @@ def test_function_errors(tmp_path, capsys, body, expected):
         ),
         ("func c(a: number, a: string)", "2:19: error: duplicate parameter 'a'"),
     ],
-    ids=["built_in_function", "meta", "duplicate", "function_parameter",
+    ids=["built_in_function", "duplicate", "function_parameter",
          "no_result_parameter"],
 )
 def test_function_declaration_errors(tmp_path, capsys, declaration, expected):
@@ -755,8 +751,8 @@ OPTION_NODES = (
         ("@meta\nlabel: $name\n@endmeta", "3:8: error: label needs quoted text"),
         ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a flag, got a number"),
         ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
-        ("@set $score = meta(label)", "2:20: error: meta() can't read label"),
-        ("@if meta(available)\n    Hi.\n@endif", None),
+        ("@set $score = .label", "2:16: error: meta key 'label' can't be read"),
+        ("@if .available\n    Hi.\n@endif", None),
         ('@meta\nlabel: "a", "b"\n@endmeta', "3:13: error: label takes a single value, got 2"),
     ],
     ids=["missing_node", "node_without_label", "undeclared_pool", "no_pool", "pool_after_parameter",
@@ -806,14 +802,14 @@ def test_options_as_nodes_build(tmp_path):
         "@node hack_terminal\n"
         "@meta\n"
         "pool: cave\n"
-        'label: "Do some hacking (-{meta(energy_cost)} energy)"\n'
-        'label_unavailable: "Do some hacking (needs {meta(energy_cost)} energy)"\n'
+        'label: "Do some hacking (-{.energy_cost} energy)"\n'
+        'label_unavailable: "Do some hacking (needs {.energy_cost} energy)"\n'
         'label_teaser: "A terminal blinks"\n'
         "when: $has_key\n"
-        "available: $score >= meta(energy_cost)\n"
+        "available: $score >= .energy_cost\n"
         "energy_cost: 2\n"
         "@endmeta\n"
-        "@set $score = $score - meta(energy_cost)\n"
+        "@set $score = $score - .energy_cost\n"
         "@endnode\n\n"
         "@node start\n"
         "@options\n"

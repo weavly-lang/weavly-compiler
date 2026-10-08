@@ -177,11 +177,13 @@ condition: expression
 ?atom: literal
     | variable
     | call
+    | meta_read
     | ID -> name
     | "(" expression ")"
 
 variable: _VARIABLEMARKER ID
 call: ID "(" [arguments] ")"
+meta_read: META_READ
 arguments: expression ("," expression)*
 
 interpolation: _LBRACE expression _RBRACE
@@ -202,6 +204,7 @@ interpolation: _LBRACE expression _RBRACE
 TEXT: /(?![ \t]*[@#$>])[ \t]*\S[^\n]*/
 CHARACTER_NAME: /[A-Za-z0-9][A-Za-z0-9 ]*/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
+META_READ.2: /([A-Za-z_][A-Za-z0-9_]*)?\.[A-Za-z_][A-Za-z0-9_]*/
 TRUE: "true"
 FALSE: "false"
 
