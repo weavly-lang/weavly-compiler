@@ -10,10 +10,12 @@ ENV = (
     "var score: number = 0\n"
     'var name: string = "Hero"\n'
     "var has_key: bool = false\n"
+    "var hero: character = guide\n"
     "extern var reputation: number\n"
     "pool cave\n"
     "pool hall\n"
     "slot treasure\n"
+    "character guide\n"
     "func play_sound(name: string, volume: number)\n"
     "func shake(strength: number, times: number, seen: bool)\n"
     "func log(message: string, name: string, score: number, has_key: bool, seen: bool)\n"
@@ -49,19 +51,20 @@ def _build_errors(tmp_path, capsys, body):
         ("@increase $score $scroe", "2:18"),
         ("$scroe: Hi.", "2:1"),
         ("Hello {$scroe}.", "2:8"),
-        (">Guide: Hi {$scroe}.", "2:13"),
-        ("$name: Hi {$scroe}.", "2:12"),
+        ("guide: Hi {$scroe}.", "2:12"),
+        ("$hero: Hi {$scroe}.", "2:12"),
         ('@options\n@option "Pay {$scroe}": @jump start\n@endoptions', "3:15"),
         ('@continue "Onward, {$scroe}"', "2:21"),
         ("Costs {$score + $scroe}.", "2:17"),
         ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
         ('@set $name = "Hi {$scroe}"', "2:19"),
         ('@do play_sound("door_{\\"x{$scroe}\\"}", 1)', "2:27"),
+        ('"{$scroe}": Hi.', "2:3"),
     ],
     ids=["expression", "set", "increase", "decrease", "increase_amount",
-         "character_name", "narration_text", "named_character_text", "character_text",
+         "variable_speaker", "narration_text", "speaker_text", "variable_speaker_text",
          "option_text", "continue_text", "text_expression",
-         "text_after_escapes", "string_expression", "nested_string"],
+         "text_after_escapes", "string_expression", "nested_string", "quoted_speaker"],
 )
 def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
@@ -103,7 +106,7 @@ def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
         ("@decrease $score $has_key", "2:18: error: @decrease amount needs a number, got a bool"),
         (
             "$score: Hi.",
-            "2:1: error: character name needs a string variable, 'score' is a number",
+            "2:1: error: speaker needs a character variable, 'score' is a number",
         ),
         ("Costs {$name * 2}.", "2:8: error: '*' needs a number, got a string"),
         (
@@ -115,7 +118,7 @@ def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
     ],
     ids=["set", "set_function", "add", "mul", "neg", "div_node_function", "and", "or",
          "not", "compare_eq", "compare_lt", "function_argument", "function_arguments",
-         "increase", "decrease", "increase_amount", "decrease_amount", "character_name",
+         "increase", "decrease", "increase_amount", "decrease_amount", "speaker",
          "text", "option_text", "order_bools", "order_strings"],
 )
 def test_type_errors(tmp_path, capsys, body, expected):
@@ -171,7 +174,13 @@ def test_well_typed_script_builds(tmp_path):
     _write(
         src / "a.wvl",
         "@node start\n"
-        "$name: Hello {$name}, you have {$score} points and {$reputation} reputation.\n"
+        "$hero: Hello {$name}, you have {$score} points and {$reputation} reputation.\n"
+        "guide: I am {guide}, this is {$hero}.\n"
+        '"{$name} and {guide}": Hi.\n'
+        "@set $hero = guide\n"
+        "@if $hero == guide\n"
+        "    guide: Me.\n"
+        "@endif\n"
         "@set $score = clamp($score + $reputation * 2, 0, 100)\n"
         "@increase $reputation\n"
         "@set $has_key = true\n"
@@ -461,6 +470,7 @@ def test_name_variables_build(tmp_path):
         ],
         "pools": ["cave"],
         "slots": ["treasure"],
+        "characters": [],
         "meta_keys": [],
         "functions": [{"name": "unlock", "params": [
             {"name": "target", "type": "pool"}, {"name": "partner", "type": "slot"},
@@ -468,7 +478,118 @@ def test_name_variables_build(tmp_path):
     }
 
 
-META_ENV = ENV + "@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool = cave\n@endenv\n"
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ("Day: Hi.", "2:1: error: 'Day' isn't a character; write \\: for narration"),
+        ("Guide: Hi.", "2:1: error: 'Guide' isn't a character, did you mean 'guide'?"),
+        ("start: Hi.", "2:1: error: 'start' is a node, not a character"),
+        ("cave: Hi.", "2:1: error: 'cave' is a pool, not a character"),
+        ("score: Hi.", "2:1: error: 'score' is a variable, write $score"),
+        ("$name: Hi.", "2:1: error: speaker needs a character variable, 'name' is a string"),
+        ("@set $hero = cave", "2:14: error: @set $hero needs a character, got a pool"),
+        ('@set $hero = "guide"', "2:14: error: @set $hero needs a character, got a string"),
+        (
+            '@if $hero == "guide"\n    Hi.\n@endif',
+            "2:5: error: '==' needs both sides of the same type, got a character and a string",
+        ),
+        ("@if guide < $hero\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a character"),
+        ("Hi {gide}.", "2:5: error: 'gide' isn't a node, pool, slot or character"),
+    ],
+    ids=["unknown", "did_you_mean", "node", "pool", "variable_without_marker",
+         "string_variable", "set_pool", "set_string", "compare_string", "order", "unknown_name"],
+)
+def test_character_errors(tmp_path, capsys, body, expected):
+    assert _build_errors(tmp_path, capsys, body) == [expected]
+
+
+@pytest.mark.parametrize(
+    "declaration, expected",
+    [
+        ("var friend: character = cave", "2:25: error: 'cave' is a pool, not a character"),
+        ("var friend: character = gide", "2:25: error: character 'gide' isn't declared"),
+        ("character cave", "2:11: error: duplicate character 'cave', first declared at"),
+    ],
+    ids=["pool_default", "undeclared_default", "duplicate"],
+)
+def test_character_declaration_errors(tmp_path, capsys, declaration, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", ENV)
+    _write(src / "z.wvl", f"@env\n{declaration}\n@endenv\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("z.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert len(errors) == 1
+    assert errors[0].startswith(expected)
+
+
+def test_characters_build(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "character anna\n"
+        "character ben\n"
+        "var companion: character = ben\n"
+        "extern var leader: character\n"
+        "meta host: character = anna\n"
+        'var label: string = ""\n'
+        "func greet(who: character): character\n"
+        "@endenv\n\n"
+        "@node start\n"
+        "anna: Hi {ben}, {$companion} and {greet(anna)}.\n"
+        "$leader: Hello {.host}.\n"
+        '"{anna} and {ben}": Surprise!\n'
+        '@set $label = "{anna}"\n'
+        "@if $companion == ben\n"
+        "    @set $companion = greet($leader)\n"
+        "@endif\n"
+        "{$label} waves.\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
+    assert env["characters"] == ["anna", "ben"]
+    assert env["declarations"][:2] == [
+        {"type": "character", "name": "companion", "value": "ben"},
+        {"type": "character", "name": "leader", "extern": True},
+    ]
+    assert env["functions"] == [
+        {"name": "greet", "params": [{"name": "who", "type": "character"}], "returns": "character"}
+    ]
+    body = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    body = body["nodes"][0]["body"]
+    assert body[0] == {
+        "type": "character",
+        "line": 12,
+        "speaker": {"character": "anna"},
+        "text": [
+            "Hi ",
+            {"character": "ben"},
+            ", ",
+            {"character": {"variable": "companion"}},
+            " and ",
+            {"character": {"call": "greet", "args": ["anna"]}},
+            ".",
+        ],
+    }
+    assert body[1]["speaker"] == {"character": {"variable": "leader"}}
+    assert body[1]["text"] == [
+        "Hello ", {"character": {"call": "meta", "node": "start", "key": "host"}}, "."
+    ]
+    assert body[2]["speaker"] == {
+        "text": [{"character": "anna"}, " and ", {"character": "ben"}]
+    }
+    assert body[3]["expression"] == {"text": [{"character": "anna"}]}
+    assert body[4]["cases"][0]["condition"]["right"] == "ben"
+    assert body[5]["text"] == [{"variable": "label"}, " waves."]
+
+
+META_ENV = ENV +"@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool = cave\n@endenv\n"
 
 
 @pytest.mark.parametrize(
@@ -691,7 +812,7 @@ def test_functions_build(tmp_path):
         '@if pick_region() == cave and not has_item("key")\n'
         '    @do play_sound("fire", trust("anna", "ben") / 10)\n'
         "@endif\n"
-        'Trust: {trust("anna", $name)}.\n'
+        'Trust is {trust("anna", $name)}.\n'
         '@do has_item("lantern")\n'
         "@do fade_out()\n"
         "@endnode\n",

@@ -14,11 +14,12 @@ BUILD_DIR = Path("build")
 
 NODE_INIT_STRING = (
     "@env\n"
+    "character guide\n"
     "var name: string = \"World\"\n"
     "@endenv\n"
     "\n"
     "@node first_node\n"
-    "Hello {$name}!\n"
+    "guide: Hello {$name}!\n"
     "@endnode\n"
 )
 

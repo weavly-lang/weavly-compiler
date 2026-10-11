@@ -1,0 +1,6 @@
+@node start
+    @if true: anna: Hi.
+    @options
+        @option "Ask": "Old Man": Go away.
+    @endoptions
+@endnode

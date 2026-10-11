@@ -369,6 +369,7 @@ def test_pools_and_slots_are_listed_in_env_json(tmp_path):
         ],
         "pools": ["cave", "city"],
         "slots": ["treasure"],
+        "characters": [],
         "meta_keys": [],
         "functions": [],
     }
@@ -386,6 +387,7 @@ def test_env_json_lists_are_empty_without_pools_or_slots(tmp_path):
         "declarations": [],
         "pools": [],
         "slots": [],
+        "characters": [],
         "meta_keys": [],
         "functions": [],
     }

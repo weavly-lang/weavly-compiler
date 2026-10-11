@@ -6,11 +6,14 @@ from lark import Lark, Token, Tree
 from lark.exceptions import UnexpectedInput
 from lark.tree import Meta
 
-_TEXT_UNIT = re.compile(r"\\\{|.", re.DOTALL)
+_TEXT_UNIT = re.compile(r"\\[{:]|.", re.DOTALL)
 _QUOTED_UNIT = re.compile(
     r"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\.|.",
     re.DOTALL,
 )
+_QUOTED = ("STRING", "QUOTED_SPEAKER")
+# A narration line looks like dialogue if a colon ends one of its first words.
+_DIALOGUE_WORDS = 3
 
 
 class _Char(NamedTuple):
@@ -44,14 +47,44 @@ class BraceInDefaultError(UnexpectedInput):
 
 def expand_text(tree: Tree, parser: Lark) -> None:
     """Replace each line's text with a `text` tree and each quoted string with a `string` or
-    `interpolated` tree, made of plain strings and interpolations."""
+    `interpolated` tree, made of plain strings and interpolations.
+
+    A narration line also gets the colon that makes it look like dialogue, or None.
+    """
     for subtree in tree.iter_subtrees():
+        narration = subtree.data == "narration_line"
+        colon = _dialogue_colon(subtree.children[0]) if narration else None
         subtree.children = [
             _text(child, parser, subtree.data == "string_value")
-            if isinstance(child, Token) and child.type in ("TEXT", "STRING")
+            if isinstance(child, Token) and child.type in ("TEXT", *_QUOTED)
             else child
             for child in subtree.children
         ]
+        if narration:
+            subtree.children.append(colon)
+
+
+def _dialogue_colon(token: Token) -> Token | None:
+    """Return the first unescaped colon followed by whitespace or the end that ends one of the
+    first words of `token`, an interpolation counting as part of a word."""
+    chars = _chars(token)
+    words = 0
+    i = 0
+    while i < len(chars) and words < _DIALOGUE_WORDS:
+        if chars[i].char.isspace():
+            i += 1
+            continue
+        words += 1
+        while i < len(chars) and not chars[i].char.isspace():
+            char = chars[i]
+            if char.char == "{" and not char.escaped:
+                i = (_closing_brace(chars, i) or len(chars)) + 1
+                continue
+            ends_word = i + 1 == len(chars) or chars[i + 1].char.isspace()
+            if char.char == ":" and not char.escaped and ends_word:
+                return Token("COLON", ":", line=token.line, column=token.column + char.offset)
+            i += 1
+    return None
 
 
 def _text(token: Token, parser: Lark, constant: bool) -> Tree:
@@ -89,7 +122,7 @@ def _text(token: Token, parser: Lark, constant: bool) -> Tree:
 
 def _chars(token: Token) -> list[_Char]:
     raw = token.value
-    if token.type == "STRING":
+    if token.type in _QUOTED:
         pattern, start, end = _QUOTED_UNIT, 1, len(raw) - 1
     else:
         pattern, start, end = _TEXT_UNIT, len(raw) - len(raw.lstrip()), len(raw.rstrip())
@@ -97,8 +130,8 @@ def _chars(token: Token) -> list[_Char]:
     chars = []
     for match in pattern.finditer(raw, start, end):
         unit = match.group()
-        if unit == "\\{":
-            chars.append(_Char("{", match.start(), True))
+        if unit == "\\{" or (unit == "\\:" and token.type == "TEXT"):
+            chars.append(_Char(unit[1], match.start(), True))
         elif len(unit) == 1:
             chars.append(_Char(unit, match.start(), False))
         else:
