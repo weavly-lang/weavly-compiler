@@ -110,6 +110,63 @@ def test_narration_that_looks_like_dialogue_warns(tmp_path, capsys, line, expect
     assert warnings == ([] if expected is None else [expected])
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "@env\nvar energy: number = 10  # weavly: ignore\n@endenv\n",
+        "@env\npool hub_10 #weavly:ignore\n@endenv\n",
+        "@env\nslot bob # weavly: ignore\n@endenv\n",
+        "@env\nmeta cost: number # weavly: ignore\n@endenv\n",
+        "@node a\n@meta\npriority: 1  # weavly: ignore\n@endmeta\n@endnode\n",
+    ],
+    ids=["variable", "pool", "slot", "meta_key", "meta_entry"],
+)
+def test_ignore_comment_silences_its_line(tmp_path, capsys, source):
+    assert _build_warnings(tmp_path, capsys, source) == []
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        (
+            "@env\nvar gold: number  # weavly: ignore\n@endenv\n@node a\n@increase gold\n@endnode\n",
+            "2:19: warning: weavly: ignore silences no warning",
+        ),
+        (
+            "@env\n# weavly: ignore\nvar gold: number\n@endenv\n",
+            "2:1: warning: weavly: ignore silences no warning",
+        ),
+    ],
+    ids=["used_variable", "own_line"],
+)
+def test_ignore_that_silences_nothing_warns(tmp_path, capsys, source, expected):
+    assert expected in _build_warnings(tmp_path, capsys, source)
+
+
+def test_ignore_is_text_on_narration_lines(tmp_path, capsys):
+    source = "@node a\nOld Man: Hi. # weavly: ignore\n@endnode\n"
+
+    assert _build_warnings(tmp_path, capsys, source) == [f"2:8: {DIALOGUE_WARNING}"]
+
+
+def test_ignore_in_a_string_is_not_a_comment(tmp_path, capsys):
+    source = '@env\nvar s: string = "# weavly: ignore"\n@endenv\n'
+
+    assert _build_warnings(tmp_path, capsys, source) == [
+        "2:5: warning: variable 's' is never used"
+    ]
+
+
+def test_ignore_only_applies_to_its_own_file(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(src / "a.wvl", "@env\nvar gold: number\n@endenv\n")
+    _write(src / "b.wvl", "@env\nvar day: number  # weavly: ignore\n@endenv\n")
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert "a.wvl:2:5: warning: variable 'gold' is never used" in capsys.readouterr().err
+
+
 def test_used_declarations_have_no_warnings(tmp_path, capsys):
     source = (
         "@env\n"

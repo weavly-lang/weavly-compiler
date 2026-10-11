@@ -12,7 +12,7 @@ from .checks import ProjectChecks
 from .parser import create_parser, parse
 from .syntax_errors import describe_syntax_error, terminal_names
 from .text import InvalidStringError
-from .usage import find_warnings
+from .usage import Ignores, find_ignores, find_warnings
 from .wvl_transformer import WvlTransformer
 
 ENCODING = "utf-8"
@@ -40,17 +40,20 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     transformer = WvlTransformer()
     checks = ProjectChecks()
     declarations: list[dict] = []
+    ignores: Ignores = {}
     failed = False
 
     for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
         if not file.is_file():
             continue
-        tree = _parse_file(file, names)
-        if tree is None:
+        parsed = _parse_file(file, names)
+        if parsed is None:
             failed = True
             continue
 
+        text, tree = parsed
         checks.add_file(file, tree)
+        ignores[file] = find_ignores(text, tree)
         for env_block in tree.find_data("env_block"):
             declarations.extend(transformer.transform(env_block))
 
@@ -76,13 +79,14 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     file_count = len(outputs)
     outputs.append((Path(ENV_BUILD_FILE), _env(declarations)))
     _replace_build_dir(build_dir, outputs, pretty)
-    for (file, line, column), message in sorted(find_warnings(checks.trees)):
+    for (file, line, column), message in sorted(find_warnings(checks.trees, ignores)):
         report_warning(message, file, line, column)
     return file_count
 
 
-def _parse_file(file: Path, names: dict[str, str]) -> Tree | None:
-    """Parse `file`, or report why it can't be and return None."""
+def _parse_file(file: Path, names: dict[str, str]) -> tuple[str, Tree] | None:
+    """Return the text of `file` and its tree, or report why it can't be parsed and return
+    None."""
     try:
         text = file.read_text(encoding=SOURCE_ENCODING)
     except UnicodeDecodeError as e:
@@ -91,7 +95,7 @@ def _parse_file(file: Path, names: dict[str, str]) -> Tree | None:
         return None
 
     try:
-        return parse(text)
+        return text, parse(text)
     except UnexpectedInput as e:
         message, column, details = describe_syntax_error(e, text, names)
         report_error(message, file, e.line, column, details)
