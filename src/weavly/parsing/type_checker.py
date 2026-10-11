@@ -155,9 +155,8 @@ class _TypeChecker:
         self._expect_target(tree, 0, NODE, "node()")
 
     def _check_draw(self, tree: Tree) -> None:
-        for index, pool in enumerate(tree.children):
-            if not self._expect_target(tree, index, POOL, "@draw"):
-                self._expect_name(pool, POOL)
+        for index in range(len(tree.children)):
+            self._expect_target(tree, index, POOL, "@draw")
 
     def _check_do(self, tree: Tree) -> None:
         name, arguments = tree.children
@@ -221,8 +220,7 @@ class _TypeChecker:
                 pool = argument.children[0]
                 if parameters:
                     self._error(pool, "pool() takes its pools before any parameter")
-                if not self._expect_target(argument, 0, POOL, "pool()"):
-                    self._expect_name(pool, POOL)
+                self._expect_target(argument, 0, POOL, "pool()")
                 pools += 1
                 continue
 
@@ -248,7 +246,7 @@ class _TypeChecker:
             tree.children[0] = Tree("variable", [speaker])
             self._expect_variable(speaker, CHARACTER, "speaker")
             return
-        kind = self._name_type(name) or self.kinds.get(name)
+        kind = self._kind(name)
         if kind == CHARACTER:
             return
         if kind:
@@ -394,9 +392,8 @@ class _TypeChecker:
         return self._variable(value.children[0])
 
     def _infer_meta_call(self, tree: Tree) -> str | None:
-        node, key = tree.children
-        if not self._expect_target(tree, 0, NODE, "a meta read"):
-            self._expect_name(node, NODE)
+        key = tree.children[1]
+        self._expect_target(tree, 0, NODE, "a meta read")
         if key in _UNREADABLE_META_KEYS:
             self._error(key, f"meta key '{key}' can't be read")
             return None
@@ -411,7 +408,7 @@ class _TypeChecker:
 
     def _variable(self, name: Token) -> str | None:
         declared = self.variables.get(str(name))
-        kind = self._name_type(str(name)) or self.kinds.get(str(name))
+        kind = self._kind(str(name))
         if declared is None and kind:
             self._error(name, f"'{name}' is a {kind}, not a variable")
         elif declared is None:
@@ -437,23 +434,23 @@ class _TypeChecker:
             self._error(tree, _undeclared(name, known))
         return None
 
-    def _expect_target(self, parent: Tree, index: int, expected: str, label: str) -> bool:
-        """Check a target that is a variable and mark it as one; return whether it is one."""
+    def _expect_target(self, parent: Tree, index: int, expected: str, label: str) -> None:
+        """Check a target that is a name of the `expected` type or a variable of it, and mark a
+        variable as one."""
         target = parent.children[index]
         declared = self.variables.get(str(target))
         if declared is None:
-            return False
+            self._expect_name(target, expected)
+            return
         if declared != expected:
             self._error(target, f"{label} needs a {expected}, '{target}' is a {declared} variable")
         parent.children[index] = Tree("variable", [target])
-        return True
 
     def _expect_name(self, item: Tree | Token, expected: str) -> None:
         name = str(item if isinstance(item, Token) else item.children[0])
-        actual = self._name_type(name)
+        actual = self._kind(name)
         if actual == expected:
             return
-        actual = actual or self.kinds.get(name)
         if name in self.variables:
             self._error(item, f"'{name}' is a variable, not a {expected}")
         elif actual:
@@ -469,6 +466,10 @@ class _TypeChecker:
         if kind in (POOL, SLOT, CHARACTER):
             return kind
         return NODE if name in self.nodes else None
+
+    def _kind(self, name: str) -> str | None:
+        """Return what a name other than a variable is: a node or its declaration's kind."""
+        return self._name_type(name) or self.kinds.get(name)
 
     def _expect(self, node: Tree | Token, expected: str, context: str) -> None:
         actual = self._infer(node, expected)

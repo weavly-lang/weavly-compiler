@@ -237,7 +237,7 @@ def test_do_arguments_are_checked(tmp_path, capsys):
         "2:24: error: 'volume' isn't declared",
         "3:11: error: '+' needs a number, got a string",
         "3:21: error: clamp() takes 3 arguments, got 2",
-        "3:42: error: visited target 'gone' matches no node",
+        "3:42: error: 'gone' matches no node",
     ]
 
 
@@ -249,7 +249,7 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
     assert errors == [
         "2:5: error: unknown function 'maxx', did you mean 'max'?",
         "2:18: error: clamp() takes 3 arguments, got 2",
-        "3:21: error: visited target 'gone' matches no node",
+        "3:21: error: 'gone' matches no node",
     ]
 
 
@@ -278,7 +278,7 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
         ("@meta\nwhen: gold > 1\n@endmeta", "3:7: error: 'gold' isn't declared"),
         (
             "@meta\nwhen: visited(gone)\n@endmeta",
-            "3:15: error: visited target 'gone' matches no node",
+            "3:15: error: 'gone' matches no node",
         ),
         ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a bool, got a pool"),
         ("@set cave = 1", "2:6: error: 'cave' is a pool, not a variable"),
@@ -609,9 +609,11 @@ def test_characters_build(tmp_path):
             "2:14: error: a meta read needs a node, 'region' is a pool variable",
         ),
         ("@meta\npool: region\n@endmeta", "3:7: error: 'region' is a variable, not a pool"),
+        ("@jump cave", "2:7: error: 'cave' is a pool, not a node"),
+        ("@if visited(cave)\n    Hi.\n@endif", "2:13: error: 'cave' is a pool, not a node"),
     ],
     ids=["jump", "detour", "draw", "node_option", "pool_option", "node_function",
-         "meta_read", "meta_pool_stays_literal"],
+         "meta_read", "meta_pool_stays_literal", "pool_name_as_jump", "pool_name_as_visited"],
 )
 def test_variable_target_errors(tmp_path, capsys, body, expected):
     src = tmp_path / "src"
@@ -1046,7 +1048,7 @@ OPTION_NODES = (
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@options\n@option node(gone)\n@endoptions", "3:14: error: option target 'gone' matches no node"),
+        ("@options\n@option node(gone)\n@endoptions", "3:14: error: 'gone' matches no node"),
         (
             "@options\n@option node(plain)\n@endoptions",
             "3:14: error: node 'plain' needs a label to be offered as an option",

@@ -5,7 +5,12 @@ from lark import Lark, Token
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 from lark.lexer import PatternStr
 
-from .text import BraceInDefaultError, UnclosedInterpolationError, source_lines
+from .text import (
+    BraceInDefaultError,
+    UnclosedInterpolationError,
+    blank_strings,
+    source_lines,
+)
 
 END = "$END"
 
@@ -43,7 +48,6 @@ _PARENTS = {
 }
 _KEYWORD = re.compile(r"\s*(@\w+)")
 _AT_WORD = re.compile(r"@\w+")
-_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 _KEYWORD_PATTERN = re.compile(r"(@\w+)\\b")
 _MAX_TOKEN_LENGTH = 40
 
@@ -192,5 +196,5 @@ def _open_blocks(lines: list[str]) -> list[tuple[str, int]]:
 
 
 def _has_inline_action(source: str) -> bool:
-    code = _STRING.sub('""', source).split("#", 1)[0]
+    code = blank_strings(source).split("#", 1)[0]
     return ":" in code

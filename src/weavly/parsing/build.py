@@ -69,7 +69,7 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     outputs: list[tuple[Path, dict]] = []
     for file, tree in checks.trees:
         relative_path = file.relative_to(src_dir)
-        nodes = transformer.transform(tree)["nodes"]
+        nodes = [transformer.transform(child) for child in tree.children if child.data == "node"]
         outputs.append(
             (
                 relative_path.with_suffix(WVL_BUILD_EXTENSION),

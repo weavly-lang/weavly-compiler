@@ -132,9 +132,9 @@ def test_unresolved_jump_and_detour_targets_are_errors(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "a.wvl:2:7: error: jump target 'missing' matches no node" in err
-    assert "a.wvl:3:23: error: jump target 'nowhere' matches no node" in err
-    assert "a.wvl:5:9: error: detour target 'lost' matches no node" in err
+    assert "a.wvl:2:7: error: 'missing' matches no node" in err
+    assert "a.wvl:3:23: error: 'nowhere' matches no node" in err
+    assert "a.wvl:5:9: error: 'lost' matches no node" in err
     assert "finale" not in err
 
 
@@ -154,9 +154,9 @@ def test_unresolved_visit_targets_are_errors(tmp_path, capsys):
 
     assert exc.value.exit_code == 1
     err = capsys.readouterr().err
-    assert "a.wvl:2:13: error: visited target 'shpo' matches no node" in err
-    assert "a.wvl:2:34: error: visit_count target 'inn' matches no node" in err
-    assert "a.wvl:5:26: error: visit_count target 'gone' matches no node" in err
+    assert "a.wvl:2:13: error: 'shpo' matches no node" in err
+    assert "a.wvl:2:34: error: 'inn' matches no node" in err
+    assert "a.wvl:5:26: error: 'gone' matches no node" in err
     assert "'shop'" not in err
 
 
@@ -176,7 +176,7 @@ def test_skip_count_is_checked_like_visit_count(tmp_path, capsys):
 
     errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
     assert errors == [
-        "8:24: error: skip_count target 'strat' matches no node",
+        "8:24: error: 'strat' matches no node",
         "9:7: error: when needs a bool, got a number",
         "11:5: error: skip_count() takes a node id, or none for the current node",
     ]
@@ -243,7 +243,7 @@ def test_function_call_errors_inside_arguments_are_reported(tmp_path, capsys):
 
     err = capsys.readouterr().err
     assert "a.wvl:2:14: error: clamp() takes 3 arguments, got 2" in err
-    assert "a.wvl:2:35: error: visited target 'gone' matches no node" in err
+    assert "a.wvl:2:35: error: 'gone' matches no node" in err
 
 
 def test_visit_functions_build(tmp_path):
@@ -310,7 +310,7 @@ def test_all_validation_errors_are_reported_together(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "duplicate variable 'hp'" in err
     assert "duplicate node id 'a'" in err
-    assert "jump target 'gone'" in err
+    assert "'gone' matches no node" in err
 
 
 @pytest.mark.parametrize(
