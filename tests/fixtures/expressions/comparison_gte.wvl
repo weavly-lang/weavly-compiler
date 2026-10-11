@@ -1,5 +1,5 @@
 @node start
-    @if $gold >= 5
+    @if gold >= 5
         Rich.
     @endif
 @endnode

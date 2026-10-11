@@ -11,5 +11,5 @@ once: true
 @endnode
 
 @node cave_exit
-@set $left = visited() and visited(cave_treasure)
+@set left = visited() and visited(cave_treasure)
 @endnode

@@ -1,67 +1,67 @@
-@node start
+@node Start
 Welcome to the smoke test.
-guide: Let the test begin, {$player_name}.
-"{guide} and {$player_name}": Ready: set, go!
-@detour aside
-@do play_sound("chime_{$score}.ogg", clamp($score / 10, 0, 1))
-@set $score = 10
-@increase $score 5
-@decrease $score 2
-@set $score = clamp($score + random(1, 6), 0, 100)
-@set $score = round(max(min($score, 50), abs($score - 20)) / 2)
-@set $has_key = true
-@set $has_key = false
+Guide: Let the test begin, {player_name}.
+"{Guide} and {player_name}": Ready: set, go!
+@detour Aside
+@do play_sound("chime_{score}.ogg", clamp(score / 10, 0, 1))
+@set score = 10
+@increase score 5
+@decrease score 2
+@set score = clamp(score + random(1, 6), 0, 100)
+@set score = round(max(min(score, 50), abs(score - 20)) / 2)
+@set has_key = true
+@set has_key = false
 
-@if $score > 10
-    @jump choices
-@elif $score == 10
-    @jump choices
+@if score > 10
+    @jump Choices
+@elif score == 10
+    @jump Choices
 @else
-    @jump choices
+    @jump Choices
 @endif
 @endnode
 
-@node choices
-$companion: Which path? I have {$score * 2} points and {max($reputation, 0)} fame.
+@node Choices
+companion: Which path? I have {score * 2} points and {max(reputation, 0)} fame.
 
 @options
-@option "Roll the dice": @jump random_node
+@option "Roll the dice": @jump RandomNode
 @option "Explore the cave": @draw cave_outcome
-@option [ $has_key ] "Use key on door \{{visit_count(choices)}}": @jump end
-@option node(aside)
+@option [ has_key ] "Use key on door \{{visit_count(Choices)}}": @jump End
+@option node(Aside)
 @option pool(cave_outcome, limit: 1, locked: extra)
 @endoptions
 @endnode
 
-@node random_node
+@node RandomNode
 @random
-@case 1: @jump match_node
-@case 1: @jump match_node
+@case 1: @jump MatchNode
+@case 1: @jump MatchNode
 @endrandom
 @endnode
 
-@node match_node
+@node MatchNode
 @match
-    @when $has_key
+    @when has_key
         You have the key.
-        @jump end
-    @when not $has_key
+        @jump End
+    @when not has_key
         No key needed.
         @draw cave_outcome
-        @jump end
+        @jump End
 @endmatch
 @endnode
 
-@node end
-@set $score = visit_count(choices)
-@set $last_scene = end
-@if $region == cave_outcome and $last_scene != start
+@node End
+@set score = visit_count(Choices)
+@set last_scene = End
+@if region == cave_outcome and last_scene != Start
     You came back from the cave.
 @endif
-@if visited(start) and not visited(end)
-    Thanks for playing, {$player_name}. Final score: {round($score)}.
+@if visited(Start) and not visited(End)
+    Thanks for playing, {player_name}. Final score: {round(score)}.
 @endif
-@if $reputation > 100
+@if reputation > 100
     Everyone knows you.
 @endif
 @if luck() > 5
@@ -72,32 +72,32 @@ $companion: Which path? I have {$score * 2} points and {max($reputation, 0)} fam
 @finish
 @endnode
 
-@node cave_treasure
+@node CaveTreasure
 @meta
 pool: cave_outcome
 slot: treasure
-when: $score > 5
+when: score > 5
 priority: 1
 weight: 1 + skip_count()
 once: true
 reward: 2 + skip_count()
 label: "Open the chest ({.reward} points)"
 label_unavailable: "The chest is locked"
-available: $has_key
+available: has_key
 @endmeta
 You find a chest.
-@set $score = $score + .reward
-@jump end
+@set score = score + .reward
+@jump End
 @endnode
 
-@node aside
+@node Aside
 @meta
 label: "Take a quick aside"
 @endmeta
 A quick aside before we start.
 @endnode
 
-@node cave_gold
+@node CaveGold
 @meta
 pool: cave_outcome
 slot: treasure

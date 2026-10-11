@@ -144,7 +144,7 @@ def test_unresolved_visit_targets_are_errors(tmp_path, capsys):
         src / "a.wvl",
         "@node start\n"
         "@if visited(shpo) or visit_count(inn) > 1\n    Hi.\n@endif\n"
-        "@set $count = visit_count(gone) + visit_count(shop)\n"
+        "@set count = visit_count(gone) + visit_count(shop)\n"
         "@endnode\n",
     )
     _write(src / "b.wvl", "@node shop\nThe shop.\n@endnode\n")
@@ -156,7 +156,7 @@ def test_unresolved_visit_targets_are_errors(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "a.wvl:2:13: error: visited target 'shpo' matches no node" in err
     assert "a.wvl:2:34: error: visit_count target 'inn' matches no node" in err
-    assert "a.wvl:5:27: error: visit_count target 'gone' matches no node" in err
+    assert "a.wvl:5:26: error: visit_count target 'gone' matches no node" in err
     assert "'shop'" not in err
 
 
@@ -198,22 +198,22 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
 @pytest.mark.parametrize(
     "expression, message",
     [
-        ("clamp($x, 0)", "a.wvl:2:11: error: clamp() takes 3 arguments, got 2"),
-        ("round($x, 1)", "a.wvl:2:11: error: round() takes 1 argument, got 2"),
-        ("random()", "a.wvl:2:11: error: random() takes 2 arguments, got 0"),
-        ("min(1)", "a.wvl:2:11: error: min() takes at least 2 arguments, got 1"),
-        ("max()", "a.wvl:2:11: error: max() takes at least 2 arguments, got 0"),
+        ("clamp(x, 0)", "a.wvl:2:10: error: clamp() takes 3 arguments, got 2"),
+        ("round(x, 1)", "a.wvl:2:10: error: round() takes 1 argument, got 2"),
+        ("random()", "a.wvl:2:10: error: random() takes 2 arguments, got 0"),
+        ("min(1)", "a.wvl:2:10: error: min() takes at least 2 arguments, got 1"),
+        ("max()", "a.wvl:2:10: error: max() takes at least 2 arguments, got 0"),
         (
             "visited(1)",
-            "a.wvl:2:11: error: visited() takes a node id, or none for the current node",
+            "a.wvl:2:10: error: visited() takes a node id, or none for the current node",
         ),
         (
-            "visit_count($x)",
-            "a.wvl:2:11: error: visit_count() takes a node id, or none for the current node",
+            "visit_count(x)",
+            "a.wvl:2:22: error: visit_count target 'x' is a variable, not a node",
         ),
-        ("abs(start)", "a.wvl:2:15: error: abs() needs a number, got a node"),
-        ("sqrt($x)", "a.wvl:2:11: error: unknown function 'sqrt'"),
-        ("foo(start)", "a.wvl:2:11: error: unknown function 'foo'"),
+        ("abs(start)", "a.wvl:2:14: error: abs() needs a number, got a node"),
+        ("sqrt(x)", "a.wvl:2:10: error: unknown function 'sqrt'"),
+        ("foo(start)", "a.wvl:2:10: error: unknown function 'foo'"),
     ],
     ids=["too_few", "too_many", "none", "min_one", "max_none", "visited_number",
          "visit_count_variable", "node_id_for_number", "unknown", "unknown_node_form"],
@@ -222,7 +222,7 @@ def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message
     src = tmp_path / "src"
     _write(
         src / "a.wvl",
-        f"@node start\n@set $x = {expression}\n@endnode\n@env\nvar x: number\n@endenv\n",
+        f"@node start\n@set x = {expression}\n@endnode\n@env\nvar x: number\n@endenv\n",
     )
 
     with pytest.raises(typer.Exit) as exc:
@@ -236,14 +236,14 @@ def test_invalid_function_calls_are_errors(tmp_path, capsys, expression, message
 
 def test_function_call_errors_inside_arguments_are_reported(tmp_path, capsys):
     src = tmp_path / "src"
-    _write(src / "a.wvl", "@node start\n@set $x = max(clamp(1, 2), visited(gone))\n@endnode\n")
+    _write(src / "a.wvl", "@node start\n@set x = max(clamp(1, 2), visited(gone))\n@endnode\n")
 
     with pytest.raises(typer.Exit):
         build_all_files(src, tmp_path / "build", pretty=False)
 
     err = capsys.readouterr().err
-    assert "a.wvl:2:15: error: clamp() takes 3 arguments, got 2" in err
-    assert "a.wvl:2:36: error: visited target 'gone' matches no node" in err
+    assert "a.wvl:2:14: error: clamp() takes 3 arguments, got 2" in err
+    assert "a.wvl:2:35: error: visited target 'gone' matches no node" in err
 
 
 def test_visit_functions_build(tmp_path):
@@ -419,13 +419,15 @@ def test_pools_and_slots_share_the_declaration_namespace(
     )
 
 
-def test_node_ids_may_match_pool_and_slot_names(tmp_path):
+@pytest.mark.parametrize("declaration", ["var cave: number", "pool cave", "character cave"])
+def test_node_ids_share_the_namespace(tmp_path, capsys, declaration):
     src = tmp_path / "src"
-    _write(
-        src / "a.wvl",
-        "@env\npool cave\nslot treasure\n@endenv\n\n"
-        "@node cave\n@meta\npool: cave\nslot: treasure\n@endmeta\n@jump treasure\n@endnode\n\n"
-        "@node treasure\nHi.\n@endnode\n",
-    )
+    _write(src / "a.wvl", f"@env\n{declaration}\n@endenv\n")
+    _write(src / "b.wvl", "@node cave\nHi.\n@endnode\n")
 
-    build_all_files(src, tmp_path / "build", pretty=False)
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    err = capsys.readouterr().err
+    assert "b.wvl:1:7: error: duplicate node id 'cave', first declared at" in err
+    assert err.rstrip().endswith("a.wvl:2")

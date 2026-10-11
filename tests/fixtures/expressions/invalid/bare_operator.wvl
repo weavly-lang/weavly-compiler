@@ -1,5 +1,5 @@
 @node start
-    @if == $y
+    @if == y
         Yes.
     @endif
 @endnode

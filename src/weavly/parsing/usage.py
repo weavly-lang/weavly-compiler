@@ -8,6 +8,9 @@ from .type_checker import Location, source_location
 # rule -> the kind of declaration its leading name uses.
 _USES = {
     "variable": "variable",
+    "set": "variable",
+    "increase": "variable",
+    "decrease": "variable",
     "call": "function",
     "do": "function",
     "name": "character",
@@ -65,8 +68,7 @@ def _looks_like_dialogue(text: Tree, colon: Token) -> str:
         and expression.data in ("name", "variable")
         and first.meta.end_column == colon.column
     ):
-        name = str(expression.children[0])
-        speaker = f"${name}" if expression.data == "variable" else name
+        speaker = expression.children[0]
         return (
             f'this line looks like dialogue: write {speaker}: or "{{{speaker}}}": '
             "for a speaker, or \\: for narration"

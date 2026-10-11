@@ -1,8 +1,8 @@
 @node start
     # decide which branch
-    @if $a               # then branch
+    @if a               # then branch
         @jump end
-    @elif $b: @jump end  # elif branch
+    @elif b: @jump end  # elif branch
     @else                # else branch
         # nested comment
         @jump end

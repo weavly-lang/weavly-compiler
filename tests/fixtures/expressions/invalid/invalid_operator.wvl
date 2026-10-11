@@ -1,5 +1,5 @@
 @node start
-    @if $x % $y
+    @if x % y
         Yes.
     @endif
 @endnode

@@ -3,5 +3,5 @@
     Yes. # this looks like a comment but is narration
     alice: My favorite is #1.
     bob: Wait # is this a comment? No, it is dialogue.
-    $narrator: Meet at gate #3 # trailing text stays too
+    narrator: Meet at gate #3 # trailing text stays too
 @endnode

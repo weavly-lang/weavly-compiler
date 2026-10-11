@@ -1,6 +1,6 @@
 @node start
-@if max($strength, $agility) >= 10
+@if max(strength, agility) >= 10
     Strong enough.
 @endif
-@set $lowest = min($a, $b, $c)
+@set lowest = min(a, b, c)
 @endnode

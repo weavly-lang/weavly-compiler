@@ -1,6 +1,6 @@
 @node start
     @match
-        @when $flag
+        @when flag
             You made it.
             @jump end
     @endmatch

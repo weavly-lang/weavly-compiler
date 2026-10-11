@@ -1,8 +1,8 @@
 @node hack_terminal
 @meta
-when: $energy >= .cost
+when: energy >= .cost
 weight: .priority + rest_at_camp.cost
 @endmeta
-@decrease $energy
+@decrease energy
 It costs {.cost} energy.
 @endnode

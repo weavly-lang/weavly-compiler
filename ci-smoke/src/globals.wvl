@@ -4,11 +4,11 @@ var player_name: string = "Hero"
 var has_key: bool = false
 extern var reputation: number
 var region: pool = cave_outcome
-var last_scene: node = start
+var last_scene: node = Start
 pool cave_outcome
 slot treasure
-character guide
-var companion: character = guide
+character Guide
+var companion: character = Guide
 meta reward: number = 1
 func luck(): number
 func play_sound(file: string, volume: number)

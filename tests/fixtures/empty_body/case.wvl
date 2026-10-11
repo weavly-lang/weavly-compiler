@@ -1,6 +1,6 @@
 @node start
 @random
 @case 1
-@case [$x]
+@case [x]
 @endrandom
 @endnode

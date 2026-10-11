@@ -1,5 +1,5 @@
 @node start
     anna: Hello.
-    $hero: Hi there.
+    hero: Hi there.
     Old_Man  : Spaces before the colon.
 @endnode

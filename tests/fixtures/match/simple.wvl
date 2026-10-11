@@ -1,5 +1,5 @@
 @node start
     @match
-        @when $flag: @jump end
+        @when flag: @jump end
     @endmatch
 @endnode

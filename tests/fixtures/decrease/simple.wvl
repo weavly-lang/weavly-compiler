@@ -1,3 +1,3 @@
 @node start
-    @decrease $x
+    @decrease x
 @endnode

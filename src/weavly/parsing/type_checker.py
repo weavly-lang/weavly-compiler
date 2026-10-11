@@ -14,7 +14,6 @@ NODE = "node"
 POOL = "pool"
 SLOT = "slot"
 CHARACTER = "character"
-NAME_TYPES = (NODE, POOL, SLOT, CHARACTER)
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": BOOL, "visit_count": NUMBER, "skip_count": NUMBER}
@@ -97,8 +96,8 @@ class Declarations:
 def check_types(
     tree: Tree, file: Path, declarations: Declarations, nodes: Collection[str]
 ) -> list[tuple[Location, str]]:
-    """Check `tree` against the project's declarations and node ids, and rename interpolations
-    of characters to `character_interpolation`."""
+    """Check `tree` against the project's declarations and node ids, rename the names of
+    variables to `variable` and interpolations of characters to `character_interpolation`."""
     return _TypeChecker(file, declarations, nodes).check(tree)
 
 
@@ -132,9 +131,7 @@ class _TypeChecker:
         declared = self._variable(variable)
         actual = self._infer(expression, declared)
         if declared and actual and declared != actual:
-            self._error(
-                expression, f"@set ${variable.children[0]} needs a {declared}, got a {actual}"
-            )
+            self._error(expression, f"@set {variable} needs a {declared}, got a {actual}")
 
     def _check_increase(self, tree: Tree) -> None:
         self._expect_change(tree, "@increase")
@@ -235,22 +232,25 @@ class _TypeChecker:
 
     def _check_character_speaker(self, tree: Tree) -> None:
         speaker = tree.children[0]
-        if isinstance(speaker, Tree):
+        name = str(speaker)
+        if name in self.variables:
+            tree.children[0] = Tree("variable", [speaker])
             self._expect_variable(speaker, CHARACTER, "speaker")
             return
-        name = str(speaker)
-        if self.kinds.get(name) == CHARACTER:
+        kind = self._name_type(name) or self.kinds.get(name)
+        if kind == CHARACTER:
             return
-        if name in self.variables:
-            self._error(speaker, f"'{name}' is a variable, write ${name}")
-        elif name in self.kinds or name in self.nodes:
-            kind = self.kinds.get(name, NODE)
+        if kind:
             self._error(speaker, f"'{name}' is a {kind}, not a character")
-        else:
-            characters = [known for known, kind in self.kinds.items() if kind == CHARACTER]
-            matches = get_close_matches(name, characters, n=1)
-            hint = f", did you mean '{matches[0]}'?" if matches else "; write \\: for narration"
-            self._error(speaker, f"'{name}' isn't a character{hint}")
+            return
+        characters = [
+            known
+            for known, kind in (*self.kinds.items(), *self.variables.items())
+            if kind == CHARACTER
+        ]
+        matches = get_close_matches(name, characters, n=1)
+        hint = f", did you mean '{matches[0]}'?" if matches else "; write \\: for narration"
+        self._error(speaker, f"'{name}' isn't a character{hint}")
 
     def _check_interpolation(self, tree: Tree) -> None:
         if self._infer(tree.children[0]) == CHARACTER:
@@ -263,7 +263,7 @@ class _TypeChecker:
     def _infer(self, node: Tree | Token, expected: str | None = None) -> str | None:
         """Return the type of an expression, or None if it has no known type.
 
-        `expected` picks the type of a name that is both a node and a pool, slot or character.
+        `expected` words the error for an unknown name.
         """
         if isinstance(node, Token):
             return _LITERAL_TYPES[node.type]
@@ -291,10 +291,8 @@ class _TypeChecker:
             return BOOL
         if rule == "compare":
             left, operator, right = node.children
-            left_type = None if _is_name(left) else self._infer(left)
+            left_type = self._infer(left)
             right_type = self._infer(right, left_type)
-            if _is_name(left):
-                left_type = self._infer(left, right_type)
             if left_type and right_type and left_type != right_type:
                 self._error(
                     node,
@@ -346,10 +344,7 @@ class _TypeChecker:
         if message:
             self._error(where, message)
         for param, argument in zip(params, arguments):
-            if param["type"] in NAME_TYPES and _is_name(argument):
-                self._expect_name(argument, param["type"])
-            else:
-                self._expect(argument, param["type"], f"{label} argument '{param['name']}'")
+            self._expect(argument, param["type"], f"{label} argument '{param['name']}'")
         for argument in arguments[len(params) :]:
             self._infer(argument)
 
@@ -368,40 +363,40 @@ class _TypeChecker:
     # Helpers
     # =====================
 
-    def _variable(self, tree: Tree) -> str | None:
-        name = str(tree.children[0])
-        declared = self.variables.get(name)
-        if declared is None and name in self.kinds:
-            self._error(tree, f"'{name}' is a {self.kinds[name]}, not a variable")
+    def _variable(self, name: Token) -> str | None:
+        declared = self.variables.get(str(name))
+        kind = self._name_type(str(name)) or self.kinds.get(str(name))
+        if declared is None and kind:
+            self._error(name, f"'{name}' is a {kind}, not a variable")
         elif declared is None:
-            self._error(tree, f"variable '{name}' isn't declared")
+            self._error(name, _undeclared(str(name), self.variables))
         return declared
 
     def _infer_name(self, tree: Tree, expected: str | None) -> str | None:
         name = str(tree.children[0])
-        types = self._name_types(name)
-        if expected in types:
-            return expected
-        if types:
-            return types[0]
         if name in self.variables:
-            self._error(tree, f"'{name}' is a variable, write ${name}")
-        elif name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
+            tree.data = "variable"
+            return self.variables[name]
+        name_type = self._name_type(name)
+        if name_type:
+            return name_type
+        if name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
             self._error(tree, f"'{name}' is a meta key, write .{name}")
         elif name in self.kinds:
-            self._error(
-                tree, f"'{name}' is a {self.kinds[name]}, not a node, pool, slot or character"
-            )
+            self._error(tree, f"'{name}' is a {self.kinds[name]}, not a value")
+        elif expected == NODE:
+            self._error(tree, f"'{name}' matches no node")
         else:
-            self._error(tree, f"'{name}' isn't a node, pool, slot or character")
+            known = [*self.variables, *self.nodes, *self.kinds]
+            self._error(tree, _undeclared(name, known))
         return None
 
     def _expect_name(self, item: Tree | Token, expected: str) -> None:
         name = str(item if isinstance(item, Token) else item.children[0])
-        types = self._name_types(name)
-        if expected in types:
+        actual = self._name_type(name)
+        if actual == expected:
             return
-        actual = types[0] if types else self.kinds.get(name)
+        actual = actual or self.kinds.get(name)
         if name in self.variables:
             self._error(item, f"'{name}' is a variable, not a {expected}")
         elif actual:
@@ -411,26 +406,22 @@ class _TypeChecker:
         else:
             self._error(item, f"{expected} '{name}' isn't declared")
 
-    def _name_types(self, name: str) -> list[str]:
+    def _name_type(self, name: str) -> str | None:
+        """Return the type of a name whose value is itself: a node, pool, slot or character."""
         kind = self.kinds.get(name)
-        types = [kind] if kind in (POOL, SLOT, CHARACTER) else []
-        if name in self.nodes:
-            types.append(NODE)
-        return types
+        if kind in (POOL, SLOT, CHARACTER):
+            return kind
+        return NODE if name in self.nodes else None
 
     def _expect(self, node: Tree | Token, expected: str, context: str) -> None:
         actual = self._infer(node, expected)
         if actual and actual != expected:
             self._error(node, f"{context} needs a {expected}, got a {actual}")
 
-    def _expect_variable(self, tree: Tree, expected: str, context: str) -> None:
-        declared = self._variable(tree)
+    def _expect_variable(self, name: Token, expected: str, context: str) -> None:
+        declared = self._variable(name)
         if declared and declared != expected:
-            self._error(
-                tree,
-                f"{context} needs a {expected} variable, "
-                f"'{tree.children[0]}' is a {declared}",
-            )
+            self._error(name, f"{context} needs a {expected} variable, '{name}' is a {declared}")
 
     def _error(self, node: Tree | Token, message: str) -> None:
         self.errors.append((source_location(self.file, node), message))
@@ -453,7 +444,14 @@ def _count_error(label: str, count: int, minimum: int, maximum: int | None) -> s
 
 
 def _unknown(kind: str, name: str, known: Iterable[str]) -> str:
-    message = f"unknown {kind} '{name}'"
+    return _did_you_mean(f"unknown {kind} '{name}'", name, known)
+
+
+def _undeclared(name: str, known: Iterable[str]) -> str:
+    return _did_you_mean(f"'{name}' isn't declared", name, known)
+
+
+def _did_you_mean(message: str, name: str, known: Iterable[str]) -> str:
     matches = get_close_matches(name, list(known), n=1)
     if matches:
         message += f", did you mean '{matches[0]}'?"

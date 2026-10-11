@@ -44,77 +44,76 @@ def _build_errors(tmp_path, capsys, body):
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@if $scroe > 1\n    Hi.\n@endif", "2:5"),
-        ("@set $scroe = 1", "2:6"),
-        ("@increase $scroe", "2:11"),
-        ("@decrease $scroe 2", "2:11"),
-        ("@increase $score $scroe", "2:18"),
-        ("$scroe: Hi.", "2:1"),
-        ("Hello {$scroe}.", "2:8"),
-        ("guide: Hi {$scroe}.", "2:12"),
-        ("$hero: Hi {$scroe}.", "2:12"),
-        ('@options\n@option "Pay {$scroe}": @jump start\n@endoptions', "3:15"),
-        ('@continue "Onward, {$scroe}"', "2:21"),
-        ("Costs {$score + $scroe}.", "2:17"),
-        ('@continue "\\"Hi\\" {$scroe}"', "2:20"),
-        ('@set $name = "Hi {$scroe}"', "2:19"),
-        ('@do play_sound("door_{\\"x{$scroe}\\"}", 1)', "2:27"),
-        ('"{$scroe}": Hi.', "2:3"),
+        ("@if scroe > 1\n    Hi.\n@endif", "2:5"),
+        ("@set scroe = 1", "2:6"),
+        ("@increase scroe", "2:11"),
+        ("@decrease scroe 2", "2:11"),
+        ("@increase score scroe", "2:17"),
+        ("Hello {scroe}.", "2:8"),
+        ("guide: Hi {scroe}.", "2:12"),
+        ("hero: Hi {scroe}.", "2:11"),
+        ('@options\n@option "Pay {scroe}": @jump start\n@endoptions', "3:15"),
+        ('@continue "Onward, {scroe}"', "2:21"),
+        ("Costs {score + scroe}.", "2:16"),
+        ('@continue "\\"Hi\\" {scroe}"', "2:20"),
+        ('@set name = "Hi {scroe}"', "2:18"),
+        ('@do play_sound("door_{\\"x{scroe}\\"}", 1)', "2:27"),
+        ('"{scroe}": Hi.', "2:3"),
     ],
     ids=["expression", "set", "increase", "decrease", "increase_amount",
-         "variable_speaker", "narration_text", "speaker_text", "variable_speaker_text",
+         "narration_text", "speaker_text", "variable_speaker_text",
          "option_text", "continue_text", "text_expression",
          "text_after_escapes", "string_expression", "nested_string", "quoted_speaker"],
 )
 def test_undeclared_variables_are_errors(tmp_path, capsys, body, expected):
     errors = _build_errors(tmp_path, capsys, body)
 
-    assert errors == [f"{expected}: error: variable 'scroe' isn't declared"]
+    assert errors == [f"{expected}: error: 'scroe' isn't declared, did you mean 'score'?"]
 
 
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ('@set $score = "high"', "2:15: error: @set $score needs a number, got a string"),
+        ('@set score = "high"', "2:14: error: @set score needs a number, got a string"),
         (
-            "@set $has_key = visit_count(start)",
-            "2:17: error: @set $has_key needs a bool, got a number",
+            "@set has_key = visit_count(start)",
+            "2:16: error: @set has_key needs a bool, got a number",
         ),
-        ("@set $score = $name + 1", "2:15: error: '+' needs a number, got a string"),
-        ("@set $score = 2 * $has_key", "2:19: error: '*' needs a number, got a bool"),
-        ("@set $score = -$has_key", "2:16: error: '-' needs a number, got a bool"),
-        ("@set $score = visited(start) / 2", "2:15: error: '/' needs a number, got a bool"),
-        ("@set $has_key = $score and true", "2:17: error: 'and' needs a bool, got a number"),
-        ("@set $has_key = true or $name", "2:25: error: 'or' needs a bool, got a string"),
-        ("@set $has_key = not $name", "2:21: error: 'not' needs a bool, got a string"),
+        ("@set score = name + 1", "2:14: error: '+' needs a number, got a string"),
+        ("@set score = 2 * has_key", "2:18: error: '*' needs a number, got a bool"),
+        ("@set score = -has_key", "2:15: error: '-' needs a number, got a bool"),
+        ("@set score = visited(start) / 2", "2:14: error: '/' needs a number, got a bool"),
+        ("@set has_key = score and true", "2:16: error: 'and' needs a bool, got a number"),
+        ("@set has_key = true or name", "2:24: error: 'or' needs a bool, got a string"),
+        ("@set has_key = not name", "2:20: error: 'not' needs a bool, got a string"),
         (
-            '@set $has_key = $score == "x"',
-            "2:17: error: '==' needs both sides of the same type, got a number and a string",
+            '@set has_key = score == "x"',
+            "2:16: error: '==' needs both sides of the same type, got a number and a string",
         ),
         (
-            "@set $has_key = $has_key < 1",
-            "2:17: error: '<' needs both sides of the same type, got a bool and a number",
+            "@set has_key = has_key < 1",
+            "2:16: error: '<' needs both sides of the same type, got a bool and a number",
         ),
-        ("@set $score = round($name)", "2:21: error: round() needs a number, got a string"),
-        ("@set $score = min(1, $has_key)", "2:22: error: min() needs a number, got a bool"),
-        ("@increase $name", "2:11: error: @increase needs a number variable, 'name' is a string"),
+        ("@set score = round(name)", "2:20: error: round() needs a number, got a string"),
+        ("@set score = min(1, has_key)", "2:21: error: min() needs a number, got a bool"),
+        ("@increase name", "2:11: error: @increase needs a number variable, 'name' is a string"),
         (
-            "@decrease $has_key",
+            "@decrease has_key",
             "2:11: error: @decrease needs a number variable, 'has_key' is a bool",
         ),
-        ('@increase $score "a lot"', "2:18: error: @increase amount needs a number, got a string"),
-        ("@decrease $score $has_key", "2:18: error: @decrease amount needs a number, got a bool"),
+        ('@increase score "a lot"', "2:17: error: @increase amount needs a number, got a string"),
+        ("@decrease score has_key", "2:17: error: @decrease amount needs a number, got a bool"),
         (
-            "$score: Hi.",
+            "score: Hi.",
             "2:1: error: speaker needs a character variable, 'score' is a number",
         ),
-        ("Costs {$name * 2}.", "2:8: error: '*' needs a number, got a string"),
+        ("Costs {name * 2}.", "2:8: error: '*' needs a number, got a string"),
         (
-            '@options\n@option "Is {$score == \\"x\\"}": @jump start\n@endoptions',
+            '@options\n@option "Is {score == \\"x\\"}": @jump start\n@endoptions',
             "3:14: error: '==' needs both sides of the same type, got a number and a string",
         ),
-        ("@set $has_key = $has_key < true", "2:17: error: '<' needs a number, got a bool"),
-        ('@set $has_key = $name >= "b"', "2:17: error: '>=' needs a number, got a string"),
+        ("@set has_key = has_key < true", "2:16: error: '<' needs a number, got a bool"),
+        ('@set has_key = name >= "b"', "2:16: error: '>=' needs a number, got a string"),
     ],
     ids=["set", "set_function", "add", "mul", "neg", "div_node_function", "and", "or",
          "not", "compare_eq", "compare_lt", "function_argument", "function_arguments",
@@ -128,11 +127,11 @@ def test_type_errors(tmp_path, capsys, body, expected):
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@if $score\n    Hi.\n@endif", "2:5"),
-        ("@if true\n    Hi.\n@elif $reputation\n    Ho.\n@endif", "4:7"),
-        ("@match\n@when $score: Hi.\n@endmatch", "3:7"),
-        ('@options\n@option [$score] "A": @jump start\n@endoptions', "3:10"),
-        ("@random\n@case [$score] 1: Hi.\n@endrandom", "3:8"),
+        ("@if score\n    Hi.\n@endif", "2:5"),
+        ("@if true\n    Hi.\n@elif reputation\n    Ho.\n@endif", "4:7"),
+        ("@match\n@when score: Hi.\n@endmatch", "3:7"),
+        ('@options\n@option [score] "A": @jump start\n@endoptions', "3:10"),
+        ("@random\n@case [score] 1: Hi.\n@endrandom", "3:8"),
         ("@if visit_count(start)\n    Hi.\n@endif", "2:5"),
     ],
     ids=["if", "elif", "when", "option", "case", "function"],
@@ -145,26 +144,26 @@ def test_conditions_must_be_bools(tmp_path, capsys, body, expected):
 
 
 def test_random_weight_must_be_a_number(tmp_path, capsys):
-    errors = _build_errors(tmp_path, capsys, "@random\n@case $has_key: Hi.\n@endrandom")
+    errors = _build_errors(tmp_path, capsys, "@random\n@case has_key: Hi.\n@endrandom")
 
     assert errors == ["3:7: error: random weight needs a number, got a bool"]
 
 
 def test_undeclared_variable_does_not_cascade(tmp_path, capsys):
-    errors = _build_errors(tmp_path, capsys, "@set $has_key = not ($missing + 1 > 2)")
+    errors = _build_errors(tmp_path, capsys, "@set has_key = not (missing + 1 > 2)")
 
-    assert errors == ["2:22: error: variable 'missing' isn't declared"]
+    assert errors == ["2:21: error: 'missing' isn't declared"]
 
 
 def test_every_type_error_is_reported(tmp_path, capsys):
     errors = _build_errors(
-        tmp_path, capsys, '@set $score = "a"\n@if $name\n    Hi {$gold}.\n@endif'
+        tmp_path, capsys, '@set score = "a"\n@if name\n    Hi {gold}.\n@endif'
     )
 
     assert errors == [
-        "2:15: error: @set $score needs a number, got a string",
+        "2:14: error: @set score needs a number, got a string",
         "3:5: error: condition needs a bool, got a string",
-        "4:9: error: variable 'gold' isn't declared",
+        "4:9: error: 'gold' isn't declared",
     ]
 
 
@@ -174,21 +173,21 @@ def test_well_typed_script_builds(tmp_path):
     _write(
         src / "a.wvl",
         "@node start\n"
-        "$hero: Hello {$name}, you have {$score} points and {$reputation} reputation.\n"
-        "guide: I am {guide}, this is {$hero}.\n"
-        '"{$name} and {guide}": Hi.\n'
-        "@set $hero = guide\n"
-        "@if $hero == guide\n"
+        "hero: Hello {name}, you have {score} points and {reputation} reputation.\n"
+        "guide: I am {guide}, this is {hero}.\n"
+        '"{name} and {guide}": Hi.\n'
+        "@set hero = guide\n"
+        "@if hero == guide\n"
         "    guide: Me.\n"
         "@endif\n"
-        "@set $score = clamp($score + $reputation * 2, 0, 100)\n"
-        "@increase $reputation\n"
-        "@set $has_key = true\n"
-        '@if visited(start) and $name == "Hero" and $has_key != false\n'
-        "    @set $has_key = $score >= visit_count(start) or not $has_key\n"
+        "@set score = clamp(score + reputation * 2, 0, 100)\n"
+        "@increase reputation\n"
+        "@set has_key = true\n"
+        '@if visited(start) and name == "Hero" and has_key != false\n'
+        "    @set has_key = score >= visit_count(start) or not has_key\n"
         "@endif\n"
         "@random\n"
-        "@case [$score > 1] $score: Hi.\n"
+        "@case [score > 1] score: Hi.\n"
         "@endrandom\n"
         "@endnode\n",
     )
@@ -198,7 +197,7 @@ def test_well_typed_script_builds(tmp_path):
 
 def test_variables_declared_in_other_files_are_known(tmp_path):
     src = tmp_path / "src"
-    _write(src / "a.wvl", "@node start\n@increase $gold\n@endnode\n")
+    _write(src / "a.wvl", "@node start\n@increase gold\n@endnode\n")
     _write(src / "z" / "b.wvl", "@env\nextern var gold: number\n@endenv\n")
 
     build_all_files(src, tmp_path / "build", pretty=False)
@@ -231,14 +230,14 @@ def test_do_arguments_are_checked(tmp_path, capsys):
     errors = _build_errors(
         tmp_path,
         capsys,
-        '@do play_sound("door", $volume)\n@do shake($name + 1, clamp(1, 2), visited(gone))',
+        '@do play_sound("door", volume)\n@do shake(name + 1, clamp(1, 2), visited(gone))',
     )
 
     assert errors == [
-        "2:24: error: variable 'volume' isn't declared",
+        "2:24: error: 'volume' isn't declared",
         "3:11: error: '+' needs a number, got a string",
-        "3:22: error: clamp() takes 3 arguments, got 2",
-        "3:43: error: visited target 'gone' matches no node",
+        "3:21: error: clamp() takes 3 arguments, got 2",
+        "3:42: error: visited target 'gone' matches no node",
     ]
 
 
@@ -262,33 +261,32 @@ def test_functions_in_text_are_checked(tmp_path, capsys):
             "3:1: error: unknown meta key 'pools', did you mean 'pool'?",
         ),
         ("@meta\npool: cave\npool: hall\n@endmeta", "4:1: error: duplicate meta key 'pool'"),
-        ("@meta\nwhen: $score\n@endmeta", "3:7: error: when needs a bool, got a number"),
-        ("@meta\nweight: $has_key\n@endmeta", "3:9: error: weight needs a number, got a bool"),
-        ("@meta\npriority: $name\n@endmeta", "3:11: error: priority needs a number, got a string"),
+        ("@meta\nwhen: score\n@endmeta", "3:7: error: when needs a bool, got a number"),
+        ("@meta\nweight: has_key\n@endmeta", "3:9: error: weight needs a number, got a bool"),
+        ("@meta\npriority: name\n@endmeta", "3:11: error: priority needs a number, got a string"),
         (
             "@meta\npriority: cave\n@endmeta",
             "3:11: error: priority needs a number, got a pool",
         ),
-        ("@meta\nonce: $has_key\n@endmeta", "3:7: error: once needs true or false"),
+        ("@meta\nonce: has_key\n@endmeta", "3:7: error: once needs true or false"),
         ("@meta\nwhen: true, false\n@endmeta", "3:13: error: when takes a single value, got 2"),
         ("@meta\npool: cavee\n@endmeta", "3:7: error: pool 'cavee' isn't declared"),
         ("@meta\nslot: tresure\n@endmeta", "3:7: error: slot 'tresure' isn't declared"),
         ("@meta\npool: cave, treasure\n@endmeta", "3:13: error: 'treasure' is a slot, not a pool"),
         ("@meta\npool: score\n@endmeta", "3:7: error: 'score' is a variable, not a pool"),
-        ("@meta\npool: $score\n@endmeta", "3:7: error: pool takes pool names, not expressions"),
-        ("@meta\nwhen: $gold > 1\n@endmeta", "3:7: error: variable 'gold' isn't declared"),
+        ("@meta\npool: score + 1\n@endmeta", "3:7: error: pool takes pool names, not expressions"),
+        ("@meta\nwhen: gold > 1\n@endmeta", "3:7: error: 'gold' isn't declared"),
         (
             "@meta\nwhen: visited(gone)\n@endmeta",
             "3:15: error: visited target 'gone' matches no node",
         ),
-        ("@if $cave\n    Hi.\n@endif", "2:5: error: 'cave' is a pool, not a variable"),
-        ("@set $cave = 1", "2:6: error: 'cave' is a pool, not a variable"),
-        ("Hi {$treasure}.", "2:5: error: 'treasure' is a slot, not a variable"),
+        ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a bool, got a pool"),
+        ("@set cave = 1", "2:6: error: 'cave' is a pool, not a variable"),
     ],
     ids=["unknown_key", "duplicate_key", "when", "weight", "priority", "priority_name",
          "once", "several_values", "undeclared_pool", "undeclared_slot", "slot_as_pool",
          "variable_as_pool", "expression_as_pool", "undeclared_variable", "visited_target",
-         "pool_in_condition", "pool_in_set", "slot_in_text"],
+         "pool_in_condition", "pool_in_set"],
 )
 def test_meta_errors(tmp_path, capsys, body, expected):
     assert _build_errors(tmp_path, capsys, body) == [expected]
@@ -303,8 +301,8 @@ def test_meta_block_builds(tmp_path):
         "@meta\n"
         "pool: cave, hall\n"
         "slot: treasure\n"
-        "when: $score > 5 and not $has_key\n"
-        "priority: clamp($reputation, 0, 10)\n"
+        "when: score > 5 and not has_key\n"
+        "priority: clamp(reputation, 0, 10)\n"
         "weight: 1 + visit_count(start)\n"
         "once: true\n"
         "@endmeta\n"
@@ -355,7 +353,7 @@ def test_do_arguments_build(tmp_path):
     _write(src / "globals.wvl", ENV)
     _write(
         src / "a.wvl",
-        '@node start\n@do log("{$name}", $name, $score * 2, $has_key, visited(start))\n@endnode\n',
+        '@node start\n@do log("{name}", name, score * 2, has_key, visited(start))\n@endnode\n',
     )
 
     build_all_files(src, tmp_path / "build", pretty=False)
@@ -376,20 +374,19 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@set $region = treasure", "2:16: error: @set $region needs a pool, got a slot"),
-        ("@set $region = 1", "2:16: error: @set $region needs a pool, got a number"),
-        ("@set $quest = cave", "2:15: error: @set $quest needs a node, got a pool"),
+        ("@set region = treasure", "2:15: error: @set region needs a pool, got a slot"),
+        ("@set region = 1", "2:15: error: @set region needs a pool, got a number"),
+        ("@set quest = cave", "2:14: error: @set quest needs a node, got a pool"),
         (
-            "@if $region == treasure\n    Hi.\n@endif",
+            "@if region == treasure\n    Hi.\n@endif",
             "2:5: error: '==' needs both sides of the same type, got a pool and a slot",
         ),
-        ("@if $region < hall\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a pool"),
-        ("@set $score = cave + 1", "2:15: error: '+' needs a number, got a pool"),
+        ("@if region < hall\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a pool"),
+        ("@set score = cave + 1", "2:14: error: '+' needs a number, got a pool"),
         ("@if cave\n    Hi.\n@endif", "2:5: error: condition needs a bool, got a pool"),
         ("@do spawn(wolf)", "2:11: error: 'wolf' matches no node"),
-        ("You have {score} gold.", "2:11: error: 'score' is a variable, write $score"),
         (
-            "@increase $region",
+            "@increase region",
             "2:11: error: @increase needs a number variable, 'region' is a pool",
         ),
         (
@@ -398,7 +395,7 @@ NAME_ENV = ENV + "@env\nvar region: pool = cave\nvar quest: node = start\n@enden
         ),
     ],
     ids=["set_slot", "set_number", "set_pool_as_node", "compare_types", "order",
-         "arithmetic", "condition", "undeclared", "variable_without_marker", "increase",
+         "arithmetic", "condition", "undeclared", "increase",
          "node_function_two_names"],
 )
 def test_name_errors(tmp_path, capsys, body, expected):
@@ -443,17 +440,17 @@ def test_name_variables_build(tmp_path):
         "pool cave\n"
         "slot treasure\n"
         "var region: pool = cave\n"
-        "var quest: node = cave\n"
+        "var quest: node = cellar\n"
         "var partner: slot = treasure\n"
         "extern var home: pool\n"
         "func unlock(target: pool, partner: slot)\n"
         "@endenv\n\n"
-        "@node cave\n"
-        "@if $region == cave and cave == $quest and $home != $region and visited(cave)\n"
-        "    @set $region = cave\n"
-        "    @set $quest = cave\n"
+        "@node cellar\n"
+        "@if region == cave and cellar == quest and home != region and visited(cellar)\n"
+        "    @set region = cave\n"
+        "    @set quest = cellar\n"
         "@endif\n"
-        "@do unlock(cave, $partner)\n"
+        "@do unlock(cave, partner)\n"
         "You reach {cave}.\n"
         "@endnode\n",
     )
@@ -464,7 +461,7 @@ def test_name_variables_build(tmp_path):
     assert env == {
         "declarations": [
             {"type": "pool", "name": "region", "value": "cave"},
-            {"type": "node", "name": "quest", "value": "cave"},
+            {"type": "node", "name": "quest", "value": "cellar"},
             {"type": "slot", "name": "partner", "value": "treasure"},
             {"type": "pool", "name": "home", "extern": True},
         ],
@@ -485,16 +482,16 @@ def test_name_variables_build(tmp_path):
         ("Guide: Hi.", "2:1: error: 'Guide' isn't a character, did you mean 'guide'?"),
         ("start: Hi.", "2:1: error: 'start' is a node, not a character"),
         ("cave: Hi.", "2:1: error: 'cave' is a pool, not a character"),
-        ("score: Hi.", "2:1: error: 'score' is a variable, write $score"),
-        ("$name: Hi.", "2:1: error: speaker needs a character variable, 'name' is a string"),
-        ("@set $hero = cave", "2:14: error: @set $hero needs a character, got a pool"),
-        ('@set $hero = "guide"', "2:14: error: @set $hero needs a character, got a string"),
+        ("score: Hi.", "2:1: error: speaker needs a character variable, 'score' is a number"),
+        ("name: Hi.", "2:1: error: speaker needs a character variable, 'name' is a string"),
+        ("@set hero = cave", "2:13: error: @set hero needs a character, got a pool"),
+        ('@set hero = "guide"', "2:13: error: @set hero needs a character, got a string"),
         (
-            '@if $hero == "guide"\n    Hi.\n@endif',
+            '@if hero == "guide"\n    Hi.\n@endif',
             "2:5: error: '==' needs both sides of the same type, got a character and a string",
         ),
-        ("@if guide < $hero\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a character"),
-        ("Hi {gide}.", "2:5: error: 'gide' isn't a node, pool, slot or character"),
+        ("@if guide < hero\n    Hi.\n@endif", "2:5: error: '<' needs a number, got a character"),
+        ("Hi {gide}.", "2:5: error: 'gide' isn't declared, did you mean 'guide'?"),
     ],
     ids=["unknown", "did_you_mean", "node", "pool", "variable_without_marker",
          "string_variable", "set_pool", "set_string", "compare_string", "order", "unknown_name"],
@@ -539,14 +536,14 @@ def test_characters_build(tmp_path):
         "func greet(who: character): character\n"
         "@endenv\n\n"
         "@node start\n"
-        "anna: Hi {ben}, {$companion} and {greet(anna)}.\n"
-        "$leader: Hello {.host}.\n"
+        "anna: Hi {ben}, {companion} and {greet(anna)}.\n"
+        "leader: Hello {.host}.\n"
         '"{anna} and {ben}": Surprise!\n'
-        '@set $label = "{anna}"\n'
-        "@if $companion == ben\n"
-        "    @set $companion = greet($leader)\n"
+        '@set label = "{anna}"\n'
+        "@if companion == ben\n"
+        "    @set companion = greet(leader)\n"
         "@endif\n"
-        "{$label} waves.\n"
+        "{label} waves.\n"
         "@endnode\n",
     )
 
@@ -589,6 +586,95 @@ def test_characters_build(tmp_path):
     assert body[5]["text"] == [{"variable": "label"}, " waves."]
 
 
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        ("@jump quest", "2:7: error: jump target 'quest' is a variable, not a node"),
+        ("@detour region", "2:9: error: detour target 'region' is a variable, not a node"),
+        ("@draw region", "2:7: error: 'region' is a variable, not a pool"),
+        (
+            "@options\n@option node(quest)\n@endoptions",
+            "3:14: error: option target 'quest' is a variable, not a node",
+        ),
+        (
+            "@options\n@option pool(region)\n@endoptions",
+            "3:14: error: 'region' is a variable, not a pool",
+        ),
+        (
+            "@if visited(quest)\n    Hi.\n@endif",
+            "2:13: error: visited target 'quest' is a variable, not a node",
+        ),
+        ("@set score = quest.weight", "2:14: error: 'quest' is a variable, not a node"),
+        ("@meta\npool: region\n@endmeta", "3:7: error: 'region' is a variable, not a pool"),
+    ],
+    ids=["jump", "detour", "draw", "node_option", "pool_option", "node_function",
+         "meta_read", "meta_pool"],
+)
+def test_variables_are_not_targets(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", NAME_ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+def test_names_resolve_to_variables_or_their_own_value(tmp_path):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "var gold: number = 1\n"
+        "var quest: node = start\n"
+        "var show: bool = true\n"
+        "var friend: character = anna\n"
+        "character anna\n"
+        "pool cave\n"
+        "func spawn(target: node)\n"
+        "@endenv\n"
+        "@node start\n"
+        "@if gold > 0 and quest == start and show\n"
+        "    friend: {gold} gold, {anna} and {quest}.\n"
+        "@endif\n"
+        "@do spawn(quest)\n"
+        "@do spawn(start)\n"
+        "@increase gold\n"
+        "@options\n@option pool(cave, locked: show)\n@endoptions\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    body = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    body = body["nodes"][0]["body"]
+    case = body[0]["cases"][0]
+    assert case["condition"] == {
+        "op": "and",
+        "left": {
+            "op": "and",
+            "left": {"op": ">", "left": {"variable": "gold"}, "right": 0.0},
+            "right": {"op": "==", "left": {"variable": "quest"}, "right": "start"},
+        },
+        "right": {"variable": "show"},
+    }
+    assert case["body"][0]["speaker"] == {"character": {"variable": "friend"}}
+    assert case["body"][0]["text"] == [
+        {"variable": "gold"}, " gold, ", {"character": "anna"}, " and ", {"variable": "quest"}, "."
+    ]
+    assert body[1]["args"] == [{"variable": "quest"}]
+    assert body[2]["args"] == ["start"]
+    assert body[3] == {
+        "type": "set",
+        "line": 16,
+        "id": "gold",
+        "expression": {"op": "+", "left": {"variable": "gold"}, "right": 1.0},
+    }
+    assert body[4]["items"][0]["locked"] == "show"
+
+
 META_ENV = ENV +"@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool = cave\n@endenv\n"
 
 
@@ -600,16 +686,16 @@ META_ENV = ENV +"@env\nmeta cost: number = 1\nmeta art: string\nmeta home: pool 
         ("@meta\nhome: treasure\n@endmeta", "3:7: error: home needs a pool, got a slot"),
         ("@meta\nhome: cave, hall\n@endmeta", "3:13: error: home takes a single value, got 2"),
         (
-            "@set $score = .cots",
-            "2:16: error: unknown meta key 'cots', did you mean 'cost'?",
+            "@set score = .cots",
+            "2:15: error: unknown meta key 'cots', did you mean 'cost'?",
         ),
-        ("@set $score = .art", "2:15: error: @set $score needs a number, got a string"),
+        ("@set score = .art", "2:14: error: @set score needs a number, got a string"),
         ("@if .pool\n    Hi.\n@endif", "2:6: error: meta key 'pool' can't be read"),
-        ("@set $score = gone.cost", "2:15: error: 'gone' matches no node"),
-        ("@set $score = cave.cost", "2:15: error: 'cave' is a pool, not a node"),
-        ("@set $score = $cost", "2:15: error: 'cost' is a meta key, not a variable"),
+        ("@set score = gone.cost", "2:14: error: 'gone' matches no node"),
+        ("@set score = cave.cost", "2:14: error: 'cave' is a pool, not a node"),
+        ("@set cost = 1", "2:6: error: 'cost' is a meta key, not a variable"),
         ("@draw cost", "2:7: error: 'cost' is a meta key, not a pool"),
-        ("@set $score = cost", "2:15: error: 'cost' is a meta key, write .cost"),
+        ("@set score = cost", "2:14: error: 'cost' is a meta key, write .cost"),
     ],
     ids=["wrong_type", "unknown_key", "name_type", "several_values", "unknown_read",
          "read_type", "unreadable", "missing_node", "pool_target", "as_variable",
@@ -688,8 +774,8 @@ def test_meta_keys_build(tmp_path):
         "@node start\n"
         "@meta\n"
         "pool: cave\n"
-        "cost: 1 + $score\n"
-        'art: "fire_{$name}"\n'
+        "cost: 1 + score\n"
+        'art: "fire_{name}"\n'
         "home: hall\n"
         "weight: .cost + other.cost\n"
         "when: start.home == hall and .priority > 0\n"
@@ -726,23 +812,23 @@ FUNCTION_ENV = ENV + (
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ('@set $score = trust("anna")', "2:15: error: trust() takes 2 arguments, got 1"),
+        ('@set score = trust("anna")', "2:14: error: trust() takes 2 arguments, got 1"),
         (
-            '@set $score = trust("anna", 1)',
-            "2:29: error: trust() argument 'to' needs a string, got a number",
+            '@set score = trust("anna", 1)',
+            "2:28: error: trust() argument 'to' needs a string, got a number",
         ),
-        ('@set $score = has_item("key")', "2:15: error: @set $score needs a number, got a bool"),
+        ('@set score = has_item("key")', "2:14: error: @set score needs a number, got a bool"),
         (
-            '@set $score = trsut("a", "b")',
-            "2:15: error: unknown function 'trsut', did you mean 'trust'?",
+            '@set score = trsut("a", "b")',
+            "2:14: error: unknown function 'trsut', did you mean 'trust'?",
         ),
         (
             "@if pick_region() == treasure\n    Hi.\n@endif",
             "2:5: error: '==' needs both sides of the same type, got a pool and a slot",
         ),
-        ("@set $score = times_seen(gone)", "2:26: error: 'gone' matches no node"),
-        ("@set $score = times_seen(cave)", "2:26: error: 'cave' is a pool, not a node"),
-        ('@set $score = play_sound("a", 1)', "2:15: error: 'play_sound' returns no value"),
+        ("@set score = times_seen(gone)", "2:25: error: 'gone' matches no node"),
+        ("@set score = times_seen(cave)", "2:25: error: times_seen() argument 'target' needs a node, got a pool"),
+        ('@set score = play_sound("a", 1)', "2:14: error: 'play_sound' returns no value"),
         ("@do visited()", "2:5: error: 'visited' only returns a value"),
         (
             '@do play_sond("door", 1)',
@@ -753,7 +839,7 @@ FUNCTION_ENV = ENV + (
             '@do play_sound("door", "loud")',
             "2:24: error: play_sound() argument 'volume' needs a number, got a string",
         ),
-        ("@set $score = $trust", "2:15: error: 'trust' is a function, not a variable"),
+        ("@set score = trust", "2:14: error: 'trust' is a function, not a value"),
     ],
     ids=["too_few", "argument_type", "result_type", "unknown_function", "name_result",
          "missing_node", "pool_as_node", "no_result_as_value", "do_built_in",
@@ -812,7 +898,7 @@ def test_functions_build(tmp_path):
         '@if pick_region() == cave and not has_item("key")\n'
         '    @do play_sound("fire", trust("anna", "ben") / 10)\n'
         "@endif\n"
-        'Trust is {trust("anna", $name)}.\n'
+        'Trust is {trust("anna", name)}.\n'
         '@do has_item("lantern")\n'
         "@do fade_out()\n"
         "@endnode\n",
@@ -869,10 +955,10 @@ OPTION_NODES = (
             "@options\n@option pool(cave, limit: 1, limit: 2)\n@endoptions",
             "3:30: error: duplicate pool() parameter 'limit'",
         ),
-        ("@meta\nlabel: $score\n@endmeta", "3:8: error: label needs a string, got a number"),
+        ("@meta\nlabel: score\n@endmeta", "3:8: error: label needs a string, got a number"),
         ("@meta\navailable: 1\n@endmeta", "3:12: error: available needs a bool, got a number"),
-        ('@meta\nlabel_teaser: "{$scroe}"\n@endmeta', "3:17: error: variable 'scroe' isn't declared"),
-        ("@set $score = .label", "2:15: error: @set $score needs a number, got a string"),
+        ('@meta\nlabel_teaser: "{scroe}"\n@endmeta', "3:17: error: 'scroe' isn't declared, did you mean 'score'?"),
+        ("@set score = .label", "2:14: error: @set score needs a number, got a string"),
         ("@if .available\n    Hi.\n@endif", None),
         ('@meta\nlabel: "a", "b"\n@endmeta', "3:13: error: label takes a single value, got 2"),
     ],
@@ -926,17 +1012,17 @@ def test_options_as_nodes_build(tmp_path):
         'label: "Do some hacking (-{.energy_cost} energy)"\n'
         'label_unavailable: "Do some hacking (needs {.energy_cost} energy)"\n'
         'label_teaser: "A terminal blinks"\n'
-        "when: $has_key\n"
-        "available: $score >= .energy_cost\n"
+        "when: has_key\n"
+        "available: score >= .energy_cost\n"
         "energy_cost: 2\n"
         "@endmeta\n"
-        "@set $score = $score - .energy_cost\n"
+        "@set score = score - .energy_cost\n"
         "@endnode\n\n"
         "@node start\n"
         "@options\n"
         '@option [visited()] "Leave": @jump start\n'
         "@option node(hack_terminal)\n"
-        "@option pool(cave, limit: $score, shuffle: not $has_key, locked: hide)\n"
+        "@option pool(cave, limit: score, shuffle: not has_key, locked: hide)\n"
         "@endoptions\n"
         "@endnode\n",
     )
