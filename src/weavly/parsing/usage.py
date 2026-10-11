@@ -4,6 +4,7 @@ from pathlib import Path
 from lark import Token, Tree
 
 from .checks import DECLARATION_KINDS, entry_names, node_meta
+from .text import source_lines
 from .type_checker import Location, source_location
 
 # rule -> the kind of declaration its leading name uses.
@@ -29,7 +30,7 @@ def find_ignores(text: str, tree: Tree) -> dict[int, int]:
     `tree`; on narration and dialogue lines `#` is text."""
     text_lines = {text_tree.meta.line for text_tree in tree.find_data("text")}
     ignores = {}
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(source_lines(text), start=1):
         if number in text_lines:
             continue
         code = _STRING.sub(lambda string: " " * len(string.group()), line)
@@ -107,7 +108,8 @@ def _apply_ignores(
 
 def _looks_like_dialogue(text: Tree, colon: Token) -> str:
     first = text.children[0]
-    expression = first.children[0] if isinstance(first, Tree) else None
+    is_character = isinstance(first, Tree) and first.data == "character_interpolation"
+    expression = first.children[0] if is_character else None
     if (
         isinstance(expression, Tree)
         and expression.data in ("name", "variable")

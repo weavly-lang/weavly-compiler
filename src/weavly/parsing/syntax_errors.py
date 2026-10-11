@@ -5,7 +5,7 @@ from lark import Lark, Token
 from lark.exceptions import UnexpectedCharacters, UnexpectedInput, UnexpectedToken
 from lark.lexer import PatternStr
 
-from .text import BraceInDefaultError, UnclosedInterpolationError
+from .text import BraceInDefaultError, UnclosedInterpolationError, source_lines
 
 END = "$END"
 
@@ -65,7 +65,7 @@ def describe_syntax_error(
     error: UnexpectedInput, text: str, names: dict[str, str]
 ) -> tuple[str, int, list[str]]:
     """Return the message, the column to report it at, and the lines that follow it."""
-    lines = text.splitlines()
+    lines = source_lines(text)
     unknown = _unknown_keyword(lines, error.line, error.column, names)
     if unknown:
         message, column = unknown
