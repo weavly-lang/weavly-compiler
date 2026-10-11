@@ -60,6 +60,56 @@ def test_warnings(tmp_path, capsys, source, expected):
     assert expected in _build_warnings(tmp_path, capsys, source)
 
 
+def test_unused_character_warns(tmp_path, capsys):
+    source = "@env\ncharacter anna\ncharacter ben\n@endenv\n@node a\nben: Hi.\n@endnode\n"
+
+    assert _build_warnings(tmp_path, capsys, source) == [
+        "2:11: warning: character 'anna' is never used"
+    ]
+
+
+DIALOGUE_WARNING = "warning: this line looks like dialogue: quote the speaker or write \\: for narration"
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("Old Man: Hi.", f"2:8: {DIALOGUE_WARNING}"),
+        ("???: Who goes there?", f"2:4: {DIALOGUE_WARNING}"),
+        ("Later that night: the village burns.", f"2:17: {DIALOGUE_WARNING}"),
+        ("The sign reads: CLOSED.", f"2:15: {DIALOGUE_WARNING}"),
+        ("Old {1 + 1} Man: Hi.", f"2:16: {DIALOGUE_WARNING}"),
+        ("Signed:", f"2:7: {DIALOGUE_WARNING}"),
+        (
+            "{$friend}: Wait.",
+            '2:10: warning: this line looks like dialogue: write $friend: or "{$friend}": '
+            "for a speaker, or \\: for narration",
+        ),
+        (
+            "{anna}: Wait.",
+            '2:7: warning: this line looks like dialogue: write anna: or "{anna}": '
+            "for a speaker, or \\: for narration",
+        ),
+        ("{anna}\\: Wait. Old Man: Hi.", None),
+        ("The old sign reads: CLOSED.", None),
+        ("It was 10:30 when she left.", None),
+        ("Old Man\\: Hi.", None),
+        ("Day 3\\: The village is quiet.", None),
+    ],
+    ids=["two_words", "punctuation", "three_words", "third_word", "interpolation",
+         "line_end", "variable_hint", "name_hint", "escaped_after_interpolation",
+         "fourth_word", "no_space", "escaped", "escaped_second_word"],
+)
+def test_narration_that_looks_like_dialogue_warns(tmp_path, capsys, line, expected):
+    source = (
+        f"@node a\n{line}\n@endnode\n"
+        "@env\ncharacter anna\nvar friend: character = anna\n@endenv\n"
+    )
+    warnings = [w for w in _build_warnings(tmp_path, capsys, source) if "dialogue" in w]
+
+    assert warnings == ([] if expected is None else [expected])
+
+
 def test_used_declarations_have_no_warnings(tmp_path, capsys):
     source = (
         "@env\n"
@@ -70,6 +120,7 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "meta art: string\n"
         "pool city\n"
         "slot bob\n"
+        "character guide\n"
         "var gold: number\n"
         "var name: string\n"
         "@endenv\n"
@@ -77,7 +128,7 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "@meta\npool: city\nslot: bob\npriority: 1\nweight: 2\ncost: 3\n@endmeta\n"
         "@do shake()\n"
         "@increase $gold\n"
-        "$name: Day {$day}, trust {trust()}, art {.art}.\n"
+        "guide: Day {$day}, trust {trust()}, art {.art}, name {$name}.\n"
         "@endnode\n"
         "@node b\n"
         "@meta\npool: city\nslot: bob\n@endmeta\n"

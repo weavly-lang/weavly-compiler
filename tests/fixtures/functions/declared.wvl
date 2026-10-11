@@ -2,6 +2,6 @@
 @if trust("anna", "ben") > 3 and times_seen(start) < day()
     @do unlock(pick_region())
 @endif
-Trust: {trust("anna", "ben")}.
+Trust is {trust("anna", "ben")}.
 @do fade_out()
 @endnode

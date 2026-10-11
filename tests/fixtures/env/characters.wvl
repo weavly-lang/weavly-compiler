@@ -1,0 +1,7 @@
+@env
+character anna
+var friend: character = anna
+extern var leader: character
+meta host: character = anna
+func greet(who: character): character
+@endenv

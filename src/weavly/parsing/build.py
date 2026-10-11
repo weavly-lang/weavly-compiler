@@ -23,7 +23,7 @@ WVL_BUILD_EXTENSION = ".wvl.json"
 ENV_BUILD_FILE = "env.json"
 
 # declaration kind -> env.json list of names.
-_NAME_LISTS = {"pool": "pools", "slot": "slots"}
+_NAME_LISTS = {"pool": "pools", "slot": "slots", "character": "characters"}
 # declaration kind -> env.json list of declarations.
 _DECLARATION_LISTS = {"meta": "meta_keys", "function": "functions"}
 
@@ -40,27 +40,19 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     transformer = WvlTransformer()
     checks = ProjectChecks()
     declarations: list[dict] = []
-    outputs: list[tuple[Path, dict]] = []
     failed = False
 
     for file in sorted(src_dir.rglob(f"*{WVL_SOURCE_EXTENSION}")):
         if not file.is_file():
             continue
-        compiled = _compile_file(file, transformer, names)
-        if compiled is None:
+        tree = _parse_file(file, names)
+        if tree is None:
             failed = True
             continue
 
-        tree, data = compiled
         checks.add_file(file, tree)
-        declarations.extend(data.get("declarations", []))
-        relative_path = file.relative_to(src_dir)
-        outputs.append(
-            (
-                relative_path.with_suffix(WVL_BUILD_EXTENSION),
-                {"source": relative_path.as_posix(), "nodes": data["nodes"]},
-            )
-        )
+        for env_block in tree.find_data("env_block"):
+            declarations.extend(transformer.transform(env_block))
 
     if failed:
         raise typer.Exit(code=1)
@@ -71,6 +63,16 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
             report_error(message, file, line, column)
         raise typer.Exit(code=1)
 
+    outputs: list[tuple[Path, dict]] = []
+    for file, tree in checks.trees:
+        relative_path = file.relative_to(src_dir)
+        nodes = transformer.transform(tree)["nodes"]
+        outputs.append(
+            (
+                relative_path.with_suffix(WVL_BUILD_EXTENSION),
+                {"source": relative_path.as_posix(), "nodes": nodes},
+            )
+        )
     file_count = len(outputs)
     outputs.append((Path(ENV_BUILD_FILE), _env(declarations)))
     _replace_build_dir(build_dir, outputs, pretty)
@@ -79,10 +81,8 @@ def build_all_files(src_dir: Path, build_dir: Path, pretty: bool) -> int:
     return file_count
 
 
-def _compile_file(
-    file: Path, transformer: WvlTransformer, names: dict[str, str]
-) -> tuple[Tree, dict] | None:
-    """Parse and transform `file`, or report why it can't be and return None."""
+def _parse_file(file: Path, names: dict[str, str]) -> Tree | None:
+    """Parse `file`, or report why it can't be and return None."""
     try:
         text = file.read_text(encoding=SOURCE_ENCODING)
     except UnicodeDecodeError as e:
@@ -91,8 +91,7 @@ def _compile_file(
         return None
 
     try:
-        tree = parse(text)
-        return tree, transformer.transform(tree)
+        return parse(text)
     except UnexpectedInput as e:
         message, column, details = describe_syntax_error(e, text, names)
         report_error(message, file, e.line, column, details)
@@ -113,6 +112,7 @@ def _env(declarations: list[dict]) -> dict[str, list]:
         "declarations": [],
         "pools": [],
         "slots": [],
+        "characters": [],
         "meta_keys": [],
         "functions": [],
     }

@@ -13,7 +13,8 @@ BOOL = "bool"
 NODE = "node"
 POOL = "pool"
 SLOT = "slot"
-NAME_TYPES = (NODE, POOL, SLOT)
+CHARACTER = "character"
+NAME_TYPES = (NODE, POOL, SLOT, CHARACTER)
 
 # name -> result type.
 NODE_FUNCTIONS = {"visited": BOOL, "visit_count": NUMBER, "skip_count": NUMBER}
@@ -96,7 +97,8 @@ class Declarations:
 def check_types(
     tree: Tree, file: Path, declarations: Declarations, nodes: Collection[str]
 ) -> list[tuple[Location, str]]:
-    """Check `tree` against the project's declarations and node ids."""
+    """Check `tree` against the project's declarations and node ids, and rename interpolations
+    of characters to `character_interpolation`."""
     return _TypeChecker(file, declarations, nodes).check(tree)
 
 
@@ -231,11 +233,28 @@ class _TypeChecker:
         if pools == 0:
             self._error(tree, "pool() needs at least one pool")
 
-    def _check_character_line(self, tree: Tree) -> None:
-        self._expect_variable(tree.children[0], STRING, "character name")
+    def _check_character_speaker(self, tree: Tree) -> None:
+        speaker = tree.children[0]
+        if isinstance(speaker, Tree):
+            self._expect_variable(speaker, CHARACTER, "speaker")
+            return
+        name = str(speaker)
+        if self.kinds.get(name) == CHARACTER:
+            return
+        if name in self.variables:
+            self._error(speaker, f"'{name}' is a variable, write ${name}")
+        elif name in self.kinds or name in self.nodes:
+            kind = self.kinds.get(name, NODE)
+            self._error(speaker, f"'{name}' is a {kind}, not a character")
+        else:
+            characters = [known for known, kind in self.kinds.items() if kind == CHARACTER]
+            matches = get_close_matches(name, characters, n=1)
+            hint = f", did you mean '{matches[0]}'?" if matches else "; write \\: for narration"
+            self._error(speaker, f"'{name}' isn't a character{hint}")
 
     def _check_interpolation(self, tree: Tree) -> None:
-        self._infer(tree.children[0])
+        if self._infer(tree.children[0]) == CHARACTER:
+            tree.data = "character_interpolation"
 
     # =====================
     # Expressions
@@ -244,7 +263,7 @@ class _TypeChecker:
     def _infer(self, node: Tree | Token, expected: str | None = None) -> str | None:
         """Return the type of an expression, or None if it has no known type.
 
-        `expected` picks the type of a name that is both a node and a pool or slot.
+        `expected` picks the type of a name that is both a node and a pool, slot or character.
         """
         if isinstance(node, Token):
             return _LITERAL_TYPES[node.type]
@@ -370,9 +389,11 @@ class _TypeChecker:
         elif name in self.meta_keys and name not in _UNREADABLE_META_KEYS:
             self._error(tree, f"'{name}' is a meta key, write .{name}")
         elif name in self.kinds:
-            self._error(tree, f"'{name}' is a {self.kinds[name]}, not a node, pool or slot")
+            self._error(
+                tree, f"'{name}' is a {self.kinds[name]}, not a node, pool, slot or character"
+            )
         else:
-            self._error(tree, f"'{name}' isn't a node, pool or slot")
+            self._error(tree, f"'{name}' isn't a node, pool, slot or character")
         return None
 
     def _expect_name(self, item: Tree | Token, expected: str) -> None:
@@ -392,7 +413,7 @@ class _TypeChecker:
 
     def _name_types(self, name: str) -> list[str]:
         kind = self.kinds.get(name)
-        types = [kind] if kind in (POOL, SLOT) else []
+        types = [kind] if kind in (POOL, SLOT, CHARACTER) else []
         if name in self.nodes:
             types.append(NODE)
         return types

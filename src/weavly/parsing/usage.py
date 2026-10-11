@@ -6,7 +6,13 @@ from .checks import DECLARATION_KINDS, entry_names, node_meta
 from .type_checker import Location, source_location
 
 # rule -> the kind of declaration its leading name uses.
-_USES = {"variable": "variable", "call": "function", "do": "function"}
+_USES = {
+    "variable": "variable",
+    "call": "function",
+    "do": "function",
+    "name": "character",
+    "character_speaker": "character",
+}
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
 
 
@@ -26,6 +32,11 @@ def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
                 used[_USES[subtree.data]].add(str(subtree.children[0]))
             elif subtree.data == "meta_call":
                 used["meta key"].add(str(subtree.children[1]))
+            elif subtree.data == "name_value":
+                used["character"].add(str(subtree.children[1]))
+            elif subtree.data == "narration_line" and subtree.children[1] is not None:
+                text, colon = subtree.children
+                warnings.append((source_location(file, colon), _looks_like_dialogue(text, colon)))
 
         for node_id, entries in node_meta(tree):
             used["meta key"].update(entries)
@@ -44,6 +55,23 @@ def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
         if message:
             warnings.append((source_location(file, name), message))
     return warnings
+
+
+def _looks_like_dialogue(text: Tree, colon: Token) -> str:
+    first = text.children[0]
+    expression = first.children[0] if isinstance(first, Tree) else None
+    if (
+        isinstance(expression, Tree)
+        and expression.data in ("name", "variable")
+        and first.meta.end_column == colon.column
+    ):
+        name = str(expression.children[0])
+        speaker = f"${name}" if expression.data == "variable" else name
+        return (
+            f'this line looks like dialogue: write {speaker}: or "{{{speaker}}}": '
+            "for a speaker, or \\: for narration"
+        )
+    return "this line looks like dialogue: quote the speaker or write \\: for narration"
 
 
 def _unused(

@@ -3,7 +3,7 @@
     # comment after node header, before body
 
     @set $found = true   # inline after set
-    > Alice: Prices start at #5.
+    alice: Prices start at #5.
     @continue "Next"     # inline after continue
 
     # comment-only line, blank line above

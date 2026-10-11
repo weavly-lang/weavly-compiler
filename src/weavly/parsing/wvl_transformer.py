@@ -81,6 +81,9 @@ class WvlTransformer(Transformer):
     def slot_declaration(self, name: str) -> dict[str, str]:
         return {"kind": "slot", "name": name}
 
+    def character_declaration(self, name: str) -> dict[str, str]:
+        return {"kind": "character", "name": name}
+
     def meta_declaration(self, name: str, typed: dict[str, Any]) -> dict[str, Any]:
         return {"kind": "meta", "type": typed["type"], "name": name, "value": typed["value"]}
 
@@ -145,28 +148,15 @@ class WvlTransformer(Transformer):
     # =====================
 
     @located
-    def narration_line(self, meta: Any, text: list) -> dict[str, Any]:
+    def narration_line(self, meta: Any, text: list, _colon: Any) -> dict[str, Any]:
         return {"type": "narration", "line": meta.line, "text": text}
 
     @located
-    def character_line(self, meta: Any, var: dict, text: list) -> dict[str, Any]:
-        return {
-            "type": "character",
-            "line": meta.line,
-            "name": var["variable"],
-            "name_is_id": True,
-            "text": text,
-        }
+    def character_line(self, meta: Any, speaker: Any, text: list) -> dict[str, Any]:
+        return {"type": "character", "line": meta.line, "speaker": speaker, "text": text}
 
-    @located
-    def named_character_line(self, meta: Any, name: str, text: list) -> dict[str, Any]:
-        return {
-            "type": "character",
-            "line": meta.line,
-            "name": name,
-            "name_is_id": False,
-            "text": text,
-        }
+    def character_speaker(self, name: Any) -> dict[str, Any]:
+        return {"character": name}
 
     def blank_line(self) -> Any:
         return Discard
@@ -402,12 +392,15 @@ class WvlTransformer(Transformer):
     def interpolation(self, expression: Any) -> Any:
         return expression
 
+    def character_interpolation(self, expression: Any) -> dict[str, Any]:
+        return {"character": expression}
+
     # =====================
     # Tokens
     # =====================
 
-    def CHARACTER_NAME(self, token: Any) -> str:
-        return str(token).strip()
+    def SPEAKER(self, token: Any) -> str:
+        return str(token)
 
     def COMP_OP(self, token: Any) -> str:
         return str(token)

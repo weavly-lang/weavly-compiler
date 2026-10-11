@@ -1,5 +1,5 @@
 @node start
-    > Guide: Hello {$name}.
+    guide: Hello {$name}.
     $speaker: {$gold + 1} coins.
     @options
         @option "Pay {round($price)} gold": @jump start

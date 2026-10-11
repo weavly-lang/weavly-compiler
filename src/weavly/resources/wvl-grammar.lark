@@ -14,6 +14,7 @@ env_block: _ENV _NEWLINE declaration+ _ENDENV _NEWLINE*
     | extern_declaration
     | pool_declaration
     | slot_declaration
+    | character_declaration
     | meta_declaration
     | function_declaration
 
@@ -21,6 +22,7 @@ var_declaration: _VAR ID _COLON (typed_value | number_range) _NEWLINE
 extern_declaration: _EXTERN _VAR ID _COLON (value_type | name_type) _NEWLINE
 pool_declaration: _POOL_TYPE ID _NEWLINE
 slot_declaration: _SLOT_TYPE ID _NEWLINE
+character_declaration: _CHARACTER_TYPE ID _NEWLINE
 meta_declaration: _META_KEY ID _COLON typed_value _NEWLINE
 ?typed_value: _NUMBER_TYPE ["=" signed_number] -> number_value
     | _STRING_TYPE ["=" STRING] -> string_value
@@ -31,7 +33,7 @@ function_declaration: _FUNC ID "(" [parameters] ")" [_COLON (value_type | name_t
 parameters: parameter ("," parameter)*
 parameter: ID _COLON (value_type | name_type)
 !value_type: _NUMBER_TYPE | _STRING_TYPE | _BOOL_TYPE
-!name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE
+!name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE | _CHARACTER_TYPE
 ?bool_literal: TRUE
     | FALSE
 
@@ -79,8 +81,10 @@ action: inline_action | _NEWLINE body
 // =====================
 
 narration_line: TEXT _NEWLINE
-character_line: variable _COLON TEXT _NEWLINE
-    | _CHARACTER_MARKER CHARACTER_NAME _COLON TEXT _NEWLINE -> named_character_line
+character_line: speaker _COLON TEXT _NEWLINE
+?speaker: SPEAKER -> character_speaker
+    | variable -> character_speaker
+    | QUOTED_SPEAKER
 blank_line: _NEWLINE
 
 set: _SET variable "=" expression _NEWLINE
@@ -194,8 +198,9 @@ interpolation: _LBRACE expression _RBRACE
 // Tokens
 // =====================
 
-TEXT: /(?![ \t]*[@#$>])[ \t]*\S[^\n]*/
-CHARACTER_NAME: /[A-Za-z0-9][A-Za-z0-9 ]*/
+TEXT: /(?![@#$])\S[^\n]*/
+SPEAKER.2: /[A-Za-z_][A-Za-z0-9_]*(?=[ \t]*:[ \t])/
+QUOTED_SPEAKER.2: /"(?:\\.|[^"\\\n])*"(?=[ \t]*:[ \t])/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
 META_READ.2: /([A-Za-z_][A-Za-z0-9_]*)?\.[A-Za-z_][A-Za-z0-9_]*/
 TRUE: "true"
@@ -214,6 +219,7 @@ _EXTERN: "extern"
 _NODE_TYPE: "node"
 _POOL_TYPE: "pool"
 _SLOT_TYPE: "slot"
+_CHARACTER_TYPE: "character"
 _META_KEY: "meta"
 _FUNC: "func"
 
@@ -252,7 +258,6 @@ _NOT: "not"
 _AND: "and"
 _OR: "or"
 _VARIABLEMARKER: "$"
-_CHARACTER_MARKER: ">"
 
 _COLON: ":"
 _LBRACKET: "["

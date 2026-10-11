@@ -22,6 +22,7 @@ DECLARATION_KINDS = {
     "extern_declaration": "variable",
     "pool_declaration": "pool",
     "slot_declaration": "slot",
+    "character_declaration": "character",
     "meta_declaration": "meta key",
     "function_declaration": "function",
 }

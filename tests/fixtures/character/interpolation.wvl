@@ -1,3 +1,4 @@
 @node start
-    > Alice: Hello {$name}.
+    anna: Hello {$name}.
+    "{anna} and {$friend}": Surprise!
 @endnode
