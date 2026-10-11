@@ -45,6 +45,11 @@ class BraceInDefaultError(UnexpectedInput):
         self.column = column
 
 
+def source_lines(text: str) -> list[str]:
+    """Split `text` into lines at newlines only, as the parser counts them."""
+    return [line.removesuffix("\r") for line in text.split("\n")]
+
+
 def expand_text(tree: Tree, parser: Lark) -> None:
     """Replace each line's text with a `text` tree and each quoted string with a `string` or
     `interpolated` tree, made of plain strings and interpolations.
