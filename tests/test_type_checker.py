@@ -604,11 +604,14 @@ def test_characters_build(tmp_path):
             "@if visited(region)\n    Hi.\n@endif",
             "2:13: error: visited() needs a node, 'region' is a pool variable",
         ),
-        ("@set score = quest.weight", "2:14: error: 'quest' is a variable, not a node"),
+        (
+            "@set score = region.weight",
+            "2:14: error: a meta read needs a node, 'region' is a pool variable",
+        ),
         ("@meta\npool: region\n@endmeta", "3:7: error: 'region' is a variable, not a pool"),
     ],
     ids=["jump", "detour", "draw", "node_option", "pool_option", "node_function",
-         "meta_read_stays_literal", "meta_pool_stays_literal"],
+         "meta_read", "meta_pool_stays_literal"],
 )
 def test_variable_target_errors(tmp_path, capsys, body, expected):
     src = tmp_path / "src"
@@ -635,6 +638,7 @@ def test_variable_targets_build(tmp_path, capsys):
         "@if visited(next_room) and visit_count(start) > 0: @jump next_room\n"
         "@detour next_room\n"
         "@draw cave, region\n"
+        "You head to {next_room.label}.\n"
         "@options\n@option node(next_room)\n@option pool(region, cave)\n@endoptions\n"
         "@endnode\n"
         "@node cellar\n"
@@ -653,8 +657,11 @@ def test_variable_targets_build(tmp_path, capsys):
     assert case["body"] == [{"type": "jump", "line": 7, "id": {"variable": "next_room"}}]
     assert body[1] == {"type": "detour", "line": 8, "id": {"variable": "next_room"}}
     assert body[2]["pools"] == ["cave", {"variable": "region"}]
-    items = body[3]["items"]
-    assert items[0] == {"type": "node", "line": 11, "id": {"variable": "next_room"}}
+    assert body[3]["text"][1] == {
+        "call": "meta", "node": {"variable": "next_room"}, "key": "label"
+    }
+    items = body[4]["items"]
+    assert items[0] == {"type": "node", "line": 12, "id": {"variable": "next_room"}}
     assert items[1]["pools"] == [{"variable": "region"}, "cave"]
 
 

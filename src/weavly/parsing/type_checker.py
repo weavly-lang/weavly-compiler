@@ -395,7 +395,8 @@ class _TypeChecker:
 
     def _infer_meta_call(self, tree: Tree) -> str | None:
         node, key = tree.children
-        self._expect_name(node, NODE)
+        if not self._expect_target(tree, 0, NODE, "a meta read"):
+            self._expect_name(node, NODE)
         if key in _UNREADABLE_META_KEYS:
             self._error(key, f"meta key '{key}' can't be read")
             return None
