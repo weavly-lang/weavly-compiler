@@ -321,7 +321,7 @@ def test_meta_block_builds(tmp_path):
     [
         ("@draw cavee", "2:7: error: pool 'cavee' isn't declared"),
         ("@draw cave, treasure", "2:13: error: 'treasure' is a slot, not a pool"),
-        ("@draw score", "2:7: error: 'score' is a variable, not a pool"),
+        ("@draw score", "2:7: error: @draw needs a pool, 'score' is a number variable"),
         (
             '@options\n@option "Go": @draw nowhere\n@endoptions',
             "3:21: error: pool 'nowhere' isn't declared",
@@ -589,28 +589,28 @@ def test_characters_build(tmp_path):
 @pytest.mark.parametrize(
     "body, expected",
     [
-        ("@jump quest", "2:7: error: jump target 'quest' is a variable, not a node"),
-        ("@detour region", "2:9: error: detour target 'region' is a variable, not a node"),
-        ("@draw region", "2:7: error: 'region' is a variable, not a pool"),
+        ("@jump region", "2:7: error: @jump needs a node, 'region' is a pool variable"),
+        ("@detour region", "2:9: error: @detour needs a node, 'region' is a pool variable"),
+        ("@draw cave, quest", "2:13: error: @draw needs a pool, 'quest' is a node variable"),
         (
-            "@options\n@option node(quest)\n@endoptions",
-            "3:14: error: option target 'quest' is a variable, not a node",
+            "@options\n@option node(region)\n@endoptions",
+            "3:14: error: node() needs a node, 'region' is a pool variable",
         ),
         (
-            "@options\n@option pool(region)\n@endoptions",
-            "3:14: error: 'region' is a variable, not a pool",
+            "@options\n@option pool(quest)\n@endoptions",
+            "3:14: error: pool() needs a pool, 'quest' is a node variable",
         ),
         (
-            "@if visited(quest)\n    Hi.\n@endif",
-            "2:13: error: visited target 'quest' is a variable, not a node",
+            "@if visited(region)\n    Hi.\n@endif",
+            "2:13: error: visited() needs a node, 'region' is a pool variable",
         ),
         ("@set score = quest.weight", "2:14: error: 'quest' is a variable, not a node"),
         ("@meta\npool: region\n@endmeta", "3:7: error: 'region' is a variable, not a pool"),
     ],
     ids=["jump", "detour", "draw", "node_option", "pool_option", "node_function",
-         "meta_read", "meta_pool"],
+         "meta_read_stays_literal", "meta_pool_stays_literal"],
 )
-def test_variables_are_not_targets(tmp_path, capsys, body, expected):
+def test_variable_target_errors(tmp_path, capsys, body, expected):
     src = tmp_path / "src"
     _write(src / "globals.wvl", NAME_ENV)
     _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
@@ -620,6 +620,42 @@ def test_variables_are_not_targets(tmp_path, capsys, body, expected):
 
     errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
     assert errors == [expected]
+
+
+def test_variable_targets_build(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "pool cave\n"
+        "var region: pool = cave\n"
+        "var next_room: node = cellar\n"
+        "@endenv\n"
+        "@node start\n"
+        "@if visited(next_room) and visit_count(start) > 0: @jump next_room\n"
+        "@detour next_room\n"
+        "@draw cave, region\n"
+        "@options\n@option node(next_room)\n@option pool(region, cave)\n@endoptions\n"
+        "@endnode\n"
+        "@node cellar\n"
+        "@meta\npool: cave\nlabel: \"Cellar\"\n@endmeta\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert capsys.readouterr().err == ""
+    body = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    body = body["nodes"][0]["body"]
+    case = body[0]["cases"][0]
+    assert case["condition"]["left"] == {"call": "visited", "node": {"variable": "next_room"}}
+    assert case["condition"]["right"]["left"] == {"call": "visit_count", "node": "start"}
+    assert case["body"] == [{"type": "jump", "line": 7, "id": {"variable": "next_room"}}]
+    assert body[1] == {"type": "detour", "line": 8, "id": {"variable": "next_room"}}
+    assert body[2]["pools"] == ["cave", {"variable": "region"}]
+    items = body[3]["items"]
+    assert items[0] == {"type": "node", "line": 11, "id": {"variable": "next_room"}}
+    assert items[1]["pools"] == [{"variable": "region"}, "cave"]
 
 
 def test_names_resolve_to_variables_or_their_own_value(tmp_path):

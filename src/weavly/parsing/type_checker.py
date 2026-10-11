@@ -145,9 +145,19 @@ class _TypeChecker:
         if amount is not None:
             self._expect(amount, NUMBER, f"{statement} amount")
 
+    def _check_jump(self, tree: Tree) -> None:
+        self._expect_target(tree, 0, NODE, "@jump")
+
+    def _check_detour(self, tree: Tree) -> None:
+        self._expect_target(tree, 0, NODE, "@detour")
+
+    def _check_node_option(self, tree: Tree) -> None:
+        self._expect_target(tree, 0, NODE, "node()")
+
     def _check_draw(self, tree: Tree) -> None:
-        for pool in tree.children:
-            self._expect_name(pool, POOL)
+        for index, pool in enumerate(tree.children):
+            if not self._expect_target(tree, index, POOL, "@draw"):
+                self._expect_name(pool, POOL)
 
     def _check_do(self, tree: Tree) -> None:
         name, arguments = tree.children
@@ -211,7 +221,8 @@ class _TypeChecker:
                 pool = argument.children[0]
                 if parameters:
                     self._error(pool, "pool() takes its pools before any parameter")
-                self._expect_name(pool, POOL)
+                if not self._expect_target(argument, 0, POOL, "pool()"):
+                    self._expect_name(pool, POOL)
                 pools += 1
                 continue
 
@@ -306,7 +317,9 @@ class _TypeChecker:
                 self._error(node, f"'{operator}' needs a number, got a {left_type}")
             return BOOL
         if rule == "node_call":
-            return NODE_FUNCTIONS.get(str(node.children[0]))
+            function = str(node.children[0])
+            self._expect_target(node, 1, NODE, f"{function}()")
+            return NODE_FUNCTIONS.get(function)
         if rule == "meta_call":
             return self._infer_meta_call(node)
         if rule == "call":
@@ -422,6 +435,17 @@ class _TypeChecker:
             known = [*self.variables, *self.nodes, *self.kinds]
             self._error(tree, _undeclared(name, known))
         return None
+
+    def _expect_target(self, parent: Tree, index: int, expected: str, label: str) -> bool:
+        """Check a target that is a variable and mark it as one; return whether it is one."""
+        target = parent.children[index]
+        declared = self.variables.get(str(target))
+        if declared is None:
+            return False
+        if declared != expected:
+            self._error(target, f"{label} needs a {expected}, '{target}' is a {declared} variable")
+        parent.children[index] = Tree("variable", [target])
+        return True
 
     def _expect_name(self, item: Tree | Token, expected: str) -> None:
         name = str(item if isinstance(item, Token) else item.children[0])

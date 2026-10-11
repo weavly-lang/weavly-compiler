@@ -265,12 +265,12 @@ class WvlTransformer(Transformer):
         return {"type": "node", "line": meta.line, "id": id}
 
     @located
-    def pool_option(self, meta: Any, *arguments: str | tuple) -> dict[str, Any]:
+    def pool_option(self, meta: Any, *arguments: str | dict | tuple) -> dict[str, Any]:
         parameters = dict(argument for argument in arguments if isinstance(argument, tuple))
         return {
             "type": "pool",
             "line": meta.line,
-            "pools": [argument for argument in arguments if isinstance(argument, str)],
+            "pools": [argument for argument in arguments if not isinstance(argument, tuple)],
             "limit": parameters.get("limit"),
             "shuffle": parameters.get("shuffle", True),
             "locked": parameters.get("locked", "show"),

@@ -209,7 +209,7 @@ def test_unknown_function_is_an_error(tmp_path, capsys):
         ),
         (
             "visit_count(x)",
-            "a.wvl:2:22: error: visit_count target 'x' is a variable, not a node",
+            "a.wvl:2:22: error: visit_count() needs a node, 'x' is a number variable",
         ),
         ("abs(start)", "a.wvl:2:14: error: abs() needs a number, got a node"),
         ("sqrt(x)", "a.wvl:2:10: error: unknown function 'sqrt'"),

@@ -70,6 +70,7 @@ companion: Which path? I have {score * 2} points and {max(reputation, 0)} fame.
 @endif
 @do luck()
 @do fade_out()
+@if visited(last_scene): @jump last_scene
 @finish
 @endnode
 

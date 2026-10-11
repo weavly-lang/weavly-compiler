@@ -75,9 +75,9 @@ class ProjectChecks:
         """Check node references and types across all added files and return every error."""
         collected = Declarations.collect(declarations)
         for kind, target, location in self._node_references:
-            if target in self._node_ids:
+            if target in self._node_ids or target in collected.variables:
                 continue
-            declared = "variable" if target in collected.variables else collected.kinds.get(target)
+            declared = collected.kinds.get(target)
             problem = f"is a {declared}, not a node" if declared else "matches no node"
             self.errors.append((location, f"{kind} target '{target}' {problem}"))
         self.errors.extend(_meta_cycle_errors(self._meta_values))
