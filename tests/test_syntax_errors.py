@@ -160,6 +160,10 @@ def _build_errors(tmp_path, capsys, source):
             '@node a\n@set x = "Hi {name"\n@endnode\n',
             ["a.wvl:2:14: error: unclosed '{' in text"],
         ),
+        (
+            "@node a\nHi there.\n@jump\n@endnode\n",
+            ["a.wvl:3:6: error: unexpected end of line", "  3 | @jump"],
+        ),
     ],
     ids=[
         "option_without_quotes",
@@ -185,6 +189,7 @@ def _build_errors(tmp_path, capsys, source):
         "colon_in_string_and_comment",
         "brace_in_default",
         "unclosed_interpolation_in_string",
+        "line_separator_in_text",
     ],
 )
 def test_syntax_error_output(tmp_path, capsys, source, expected):

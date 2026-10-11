@@ -90,6 +90,7 @@ DIALOGUE_WARNING = "warning: this line looks like dialogue: quote the speaker or
             '2:7: warning: this line looks like dialogue: write anna: or "{anna}": '
             "for a speaker, or \\: for narration",
         ),
+        ("{gold}: Coins.", f"2:7: {DIALOGUE_WARNING}"),
         ("{anna}\\: Wait. Old Man: Hi.", None),
         ("The old sign reads: CLOSED.", None),
         ("It was 10:30 when she left.", None),
@@ -97,13 +98,14 @@ DIALOGUE_WARNING = "warning: this line looks like dialogue: quote the speaker or
         ("Day 3\\: The village is quiet.", None),
     ],
     ids=["two_words", "punctuation", "three_words", "third_word", "interpolation",
-         "line_end", "variable_hint", "name_hint", "escaped_after_interpolation",
+         "line_end", "variable_hint", "name_hint", "number_variable",
+         "escaped_after_interpolation",
          "fourth_word", "no_space", "escaped", "escaped_second_word"],
 )
 def test_narration_that_looks_like_dialogue_warns(tmp_path, capsys, line, expected):
     source = (
         f"@node a\n{line}\n@endnode\n"
-        "@env\ncharacter anna\nvar friend: character = anna\n@endenv\n"
+        "@env\ncharacter anna\nvar friend: character = anna\nvar gold: number\n@endenv\n"
     )
     warnings = [w for w in _build_warnings(tmp_path, capsys, source) if "dialogue" in w]
 
@@ -141,6 +143,15 @@ def test_ignore_comment_silences_its_line(tmp_path, capsys, source):
 )
 def test_ignore_that_silences_nothing_warns(tmp_path, capsys, source, expected):
     assert expected in _build_warnings(tmp_path, capsys, source)
+
+
+def test_ignore_counts_lines_like_the_parser(tmp_path, capsys):
+    source = (
+        "@node a\nHi there.\n@endnode\n"
+        "@env\nvar gold: number  # weavly: ignore\n@endenv\n"
+    )
+
+    assert _build_warnings(tmp_path, capsys, source) == []
 
 
 def test_ignore_is_text_on_narration_lines(tmp_path, capsys):

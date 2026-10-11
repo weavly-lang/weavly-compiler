@@ -46,6 +46,11 @@ class BraceInDefaultError(UnexpectedInput):
         self.column = column
 
 
+def source_lines(text: str) -> list[str]:
+    """Split `text` into lines at newlines only, as the parser counts them."""
+    return [line.removesuffix("\r") for line in text.split("\n")]
+
+
 def blank_strings(line: str) -> str:
     """Replace every quoted string in `line` with spaces, keeping the columns of the rest."""
     return _STRING.sub(lambda string: " " * len(string.group()), line)
