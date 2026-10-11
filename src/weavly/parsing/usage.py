@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from lark import Token, Tree
@@ -17,10 +18,32 @@ _USES = {
     "character_speaker": "character",
 }
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
+_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
+_IGNORE = re.compile(r"#[ \t]*weavly:[ \t]*ignore[ \t]*$")
+# file -> line -> column of its `# weavly: ignore` comment.
+Ignores = dict[Path, dict[int, int]]
 
 
-def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
-    """Return warnings for declarations and meta keys that can't have an effect."""
+def find_ignores(text: str, tree: Tree) -> dict[int, int]:
+    """Return line -> column of every `# weavly: ignore` comment in `text`, which parses to
+    `tree`; on narration and dialogue lines `#` is text."""
+    text_lines = {text_tree.meta.line for text_tree in tree.find_data("text")}
+    ignores = {}
+    for number, line in enumerate(text.splitlines(), start=1):
+        if number in text_lines:
+            continue
+        code = _STRING.sub(lambda string: " " * len(string.group()), line)
+        start = code.find("#")
+        if start != -1 and _IGNORE.match(code, start):
+            ignores[number] = start + 1
+    return ignores
+
+
+def find_warnings(
+    trees: list[tuple[Path, Tree]], ignores: Ignores
+) -> list[tuple[Location, str]]:
+    """Return warnings for declarations and meta keys that can't have an effect, without the
+    ones `ignores` silences, and for every ignore that silences nothing."""
     declared: list[tuple[str, Token, Path]] = []
     used: dict[str, set[str]] = {kind: set() for kind in DECLARATION_KINDS.values()}
     # "pool" or "slot" -> name -> the node ids that join it.
@@ -59,7 +82,27 @@ def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
         message = _unused(kind, str(name), used, members)
         if message:
             warnings.append((source_location(file, name), message))
-    return warnings
+    return _apply_ignores(warnings, ignores)
+
+
+def _apply_ignores(
+    warnings: list[tuple[Location, str]], ignores: Ignores
+) -> list[tuple[Location, str]]:
+    kept = []
+    silenced: set[tuple[Path, int]] = set()
+    for location, message in warnings:
+        file, line, _ = location
+        if line in ignores.get(file, {}):
+            silenced.add((file, line))
+        else:
+            kept.append((location, message))
+    for file, lines in ignores.items():
+        kept.extend(
+            ((file, line, column), "weavly: ignore silences no warning")
+            for line, column in lines.items()
+            if (file, line) not in silenced
+        )
+    return kept
 
 
 def _looks_like_dialogue(text: Tree, colon: Token) -> str:

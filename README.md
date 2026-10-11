@@ -24,7 +24,7 @@ weavly build --pretty    # same, with indented JSON
 weavly --version
 ```
 
-The build writes one `build/<path>.wvl.json` per source file and a merged `build/env.json` with every declaration of the project. Errors are printed as `file:line:column: error: ...` and fail the build with exit code 1, leaving the previous `build/` untouched. Warnings use the same format and don't fail the build.
+The build writes one `build/<path>.wvl.json` per source file and a merged `build/env.json` with every declaration of the project. Errors are printed as `file:line:column: error: ...` and fail the build with exit code 1, leaving the previous `build/` untouched. Warnings use the same format and don't fail the build. A trailing `# weavly: ignore` silences the warnings on its line.
 
 ## Development
 
