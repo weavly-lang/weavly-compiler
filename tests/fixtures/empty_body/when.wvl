@@ -1,5 +1,5 @@
 @node start
 @match
-@when $x
+@when x
 @endmatch
 @endnode

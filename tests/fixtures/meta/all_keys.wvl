@@ -2,7 +2,7 @@
 @meta
 pool: cave_outcome, cave_revisit
 slot: treasure
-when: $luck > 5
+when: luck > 5
 priority: 1
 weight: 2
 once: true

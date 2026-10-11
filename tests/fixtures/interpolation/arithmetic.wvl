@@ -1,3 +1,3 @@
 @node start
-    The room costs {$base_price * $markup} gold.
+    The room costs {base_price * markup} gold.
 @endnode

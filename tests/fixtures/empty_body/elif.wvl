@@ -1,6 +1,6 @@
 @node start
-@if $x
+@if x
     Hi.
-@elif $y
+@elif y
 @endif
 @endnode

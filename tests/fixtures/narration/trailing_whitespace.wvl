@@ -1,6 +1,6 @@
 @node a
     guide : Hello.   
-    $name: Hi.	 
+    name: Hi.	 
     Trailing spaces.   
-    Ends with {$gold}  
+    Ends with {gold}  
 @endnode

@@ -42,7 +42,7 @@ class ProjectChecks:
         self.errors: list[Error] = []
         self.trees: list[tuple[Path, Tree]] = []
         # name -> location of the first declaration or node with that name.
-        self._declared: dict[str, Location] = {}
+        self._names: dict[str, Location] = {}
         self._node_ids: dict[str, Location] = {}
         # (kind, node id, location) of every reference to a node.
         self._node_references: list[tuple[str, str, Location]] = []
@@ -56,8 +56,9 @@ class ProjectChecks:
         self._offered_pools: list[tuple[str, Location]] = []
 
     def add_file(self, file: Path, tree: Tree) -> None:
-        self._record_unique(tree, file, DECLARATION_KINDS, self._declared)
-        self._record_unique(tree, file, _NODE_KINDS, self._node_ids)
+        self._record_unique(tree, file, DECLARATION_KINDS | _NODE_KINDS, self._names)
+        for _, node_id, location in _id_locations(tree, _NODE_KINDS, file):
+            self._node_ids.setdefault(node_id, location)
         self._node_references.extend(
             (_TARGET_KINDS[rule], target, location)
             for rule, target, location in _id_locations(tree, _TARGET_KINDS, file)
@@ -72,14 +73,15 @@ class ProjectChecks:
 
     def finish(self, declarations: list[dict]) -> list[Error]:
         """Check node references and types across all added files and return every error."""
-        self.errors.extend(
-            (location, f"{kind} target '{target}' matches no node")
-            for kind, target, location in self._node_references
-            if target not in self._node_ids
-        )
+        collected = Declarations.collect(declarations)
+        for kind, target, location in self._node_references:
+            if target in self._node_ids:
+                continue
+            declared = "variable" if target in collected.variables else collected.kinds.get(target)
+            problem = f"is a {declared}, not a node" if declared else "matches no node"
+            self.errors.append((location, f"{kind} target '{target}' {problem}"))
         self.errors.extend(_meta_cycle_errors(self._meta_values))
         self._check_option_labels()
-        collected = Declarations.collect(declarations)
         for file, tree in self.trees:
             self.errors.extend(check_types(tree, file, collected, self._node_ids))
         return self.errors

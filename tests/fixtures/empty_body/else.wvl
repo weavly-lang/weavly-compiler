@@ -1,5 +1,5 @@
 @node start
-@if $x
+@if x
     Hi.
 @else
 @endif

@@ -1,5 +1,5 @@
 @node start
-@set $hp = 10   # reset health
+@set hp = 10   # reset health
 @jump next      # jump ahead
 @endnode
 

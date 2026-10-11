@@ -83,13 +83,12 @@ action: inline_action | _NEWLINE body
 narration_line: TEXT _NEWLINE
 character_line: speaker _COLON TEXT _NEWLINE
 ?speaker: SPEAKER -> character_speaker
-    | variable -> character_speaker
     | QUOTED_SPEAKER
 blank_line: _NEWLINE
 
-set: _SET variable "=" expression _NEWLINE
-increase: _INC variable [expression] _NEWLINE
-decrease: _DEC variable [expression] _NEWLINE
+set: _SET ID "=" expression _NEWLINE
+increase: _INC ID [expression] _NEWLINE
+decrease: _DEC ID [expression] _NEWLINE
 
 jump: _JUMP ID _NEWLINE
 detour: _DETOUR ID _NEWLINE
@@ -173,13 +172,11 @@ condition: expression
     | "-" unary -> neg
 
 ?atom: literal
-    | variable
     | call
     | meta_read
     | ID -> name
     | "(" expression ")"
 
-variable: _VARIABLEMARKER ID
 call: ID "(" [arguments] ")"
 meta_read: META_READ
 arguments: expression ("," expression)*
@@ -198,7 +195,7 @@ interpolation: _LBRACE expression _RBRACE
 // Tokens
 // =====================
 
-TEXT: /(?![@#$])\S[^\n]*/
+TEXT: /(?![@#])\S[^\n]*/
 SPEAKER.2: /[A-Za-z_][A-Za-z0-9_]*(?=[ \t]*:[ \t])/
 QUOTED_SPEAKER.2: /"(?:\\.|[^"\\\n])*"(?=[ \t]*:[ \t])/
 COMP_OP: "==" | "!=" | ">" | "<" | ">=" | "<="
@@ -257,7 +254,6 @@ _END_MATCH: /@endmatch\b/
 _NOT: "not"
 _AND: "and"
 _OR: "or"
-_VARIABLEMARKER: "$"
 
 _COLON: ":"
 _LBRACKET: "["

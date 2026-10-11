@@ -1,5 +1,5 @@
 @node start
-    @if $hp <= 0
+    @if hp <= 0
         Dead.
     @endif
 @endnode

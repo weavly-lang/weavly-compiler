@@ -162,27 +162,22 @@ class WvlTransformer(Transformer):
         return Discard
 
     @located
-    def set(self, meta: Any, variable: dict, expression: Any) -> dict[str, Any]:
-        return {
-            "type": "set",
-            "line": meta.line,
-            "id": variable["variable"],
-            "expression": expression,
-        }
+    def set(self, meta: Any, id: str, expression: Any) -> dict[str, Any]:
+        return {"type": "set", "line": meta.line, "id": id, "expression": expression}
 
     @located
-    def increase(self, meta: Any, var: dict, amount: Any) -> dict[str, Any]:
-        return self._change(meta, var, "+", amount)
+    def increase(self, meta: Any, id: str, amount: Any) -> dict[str, Any]:
+        return self._change(meta, id, "+", amount)
 
     @located
-    def decrease(self, meta: Any, var: dict, amount: Any) -> dict[str, Any]:
-        return self._change(meta, var, "-", amount)
+    def decrease(self, meta: Any, id: str, amount: Any) -> dict[str, Any]:
+        return self._change(meta, id, "-", amount)
 
-    def _change(self, meta: Any, var: dict, op: str, amount: Any) -> dict[str, Any]:
+    def _change(self, meta: Any, id: str, op: str, amount: Any) -> dict[str, Any]:
         if amount is None:
             amount = 1.0
-        expression = {"op": op, "left": {"variable": var["variable"]}, "right": amount}
-        return self.set(meta, var, expression)
+        expression = {"op": op, "left": {"variable": id}, "right": amount}
+        return self.set(meta, id, expression)
 
     @located
     def jump(self, meta: Any, id: str) -> dict[str, Any]:

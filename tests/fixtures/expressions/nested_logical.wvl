@@ -1,5 +1,5 @@
 @node start
-    @if not ($a and $b) or $c
+    @if not (a and b) or c
         Yes.
     @endif
 @endnode

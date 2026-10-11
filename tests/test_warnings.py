@@ -81,8 +81,8 @@ DIALOGUE_WARNING = "warning: this line looks like dialogue: quote the speaker or
         ("Old {1 + 1} Man: Hi.", f"2:16: {DIALOGUE_WARNING}"),
         ("Signed:", f"2:7: {DIALOGUE_WARNING}"),
         (
-            "{$friend}: Wait.",
-            '2:10: warning: this line looks like dialogue: write $friend: or "{$friend}": '
+            "{friend}: Wait.",
+            '2:9: warning: this line looks like dialogue: write friend: or "{friend}": '
             "for a speaker, or \\: for narration",
         ),
         (
@@ -127,8 +127,8 @@ def test_used_declarations_have_no_warnings(tmp_path, capsys):
         "@node a\n"
         "@meta\npool: city\nslot: bob\npriority: 1\nweight: 2\ncost: 3\n@endmeta\n"
         "@do shake()\n"
-        "@increase $gold\n"
-        "guide: Day {$day}, trust {trust()}, art {.art}, name {$name}.\n"
+        "@increase gold\n"
+        "guide: Day {day}, trust {trust()}, art {.art}, name {name}.\n"
         "@endnode\n"
         "@node b\n"
         "@meta\npool: city\nslot: bob\n@endmeta\n"

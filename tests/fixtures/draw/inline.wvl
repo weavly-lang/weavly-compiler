@@ -2,6 +2,6 @@
     @options
         @option "Search": @draw cave_outcome
     @endoptions
-    @if $lucky: @draw treasure, cave_outcome
+    @if lucky: @draw treasure, cave_outcome
     @continue "Onward": @draw anywhere
 @endnode

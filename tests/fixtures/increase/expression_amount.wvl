@@ -2,7 +2,7 @@
 @meta
 cost: 3
 @endmeta
-    @increase $gold $bonus * 2
-    @decrease $gold .cost
-    @decrease $gold (1 + $tax)
+    @increase gold bonus * 2
+    @decrease gold .cost
+    @decrease gold (1 + tax)
 @endnode

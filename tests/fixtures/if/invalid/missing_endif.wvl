@@ -1,4 +1,4 @@
 @node start
-    @if $flag
+    @if flag
         Hello.
 @endnode

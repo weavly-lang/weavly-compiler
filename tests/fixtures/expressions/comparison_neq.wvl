@@ -1,5 +1,5 @@
 @node start
-    @if $x != "hello"
+    @if x != "hello"
         Yes.
     @endif
 @endnode

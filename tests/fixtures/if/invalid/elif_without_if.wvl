@@ -1,5 +1,5 @@
 @node start
-    @elif $flag
+    @elif flag
         Hello.
     @endif
 @endnode

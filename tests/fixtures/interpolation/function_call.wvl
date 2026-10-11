@@ -1,4 +1,4 @@
 @node start
-    {max($hp, 0)} HP left.
+    {max(hp, 0)} HP left.
     Visit number {visit_count(start)}.
 @endnode

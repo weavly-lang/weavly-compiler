@@ -1,7 +1,7 @@
 @node start
-    @if $score == 10
+    @if score == 10
         Perfect.
-    @elif $score >= 5
+    @elif score >= 5
         Good.
     @else
         Try again.

@@ -1,6 +1,6 @@
 @node start
     @options
-        @option [$has_key] "Use key": @jump door
+        @option [has_key] "Use key": @jump door
         @option "Leave": @jump exit
     @endoptions
 @endnode

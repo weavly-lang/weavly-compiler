@@ -1,5 +1,5 @@
 @node start
-    @if $flag
+    @if flag
         @jump end
     @endif
     @finish

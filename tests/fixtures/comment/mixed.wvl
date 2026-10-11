@@ -2,7 +2,7 @@
 @node start
     # comment after node header, before body
 
-    @set $found = true   # inline after set
+    @set found = true   # inline after set
     alice: Prices start at #5.
     @continue "Next"     # inline after continue
 

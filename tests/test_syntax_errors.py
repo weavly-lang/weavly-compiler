@@ -41,7 +41,7 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            "@node a\n@if $x\nHi.\n@endnode\n",
+            "@node a\n@if x\nHi.\n@endnode\n",
             [
                 "a.wvl:4:1: error: unexpected '@endnode'",
                 "  hint: the @if block opened at line 2 must be closed with @endif first",
@@ -59,19 +59,19 @@ def _build_errors(tmp_path, capsys, source):
             ["  hint: @option can only be used inside an @options block"],
         ),
         (
-            "@node a\n@set $x =\n@endnode\n",
+            "@node a\n@set x =\n@endnode\n",
             [
-                "a.wvl:2:10: error: unexpected end of line",
-                "  expected one of: '$', '(', '-', 'false', 'not', 'true', "
+                "a.wvl:2:9: error: unexpected end of line",
+                "  expected one of: '(', '-', 'false', 'not', 'true', "
                 "a meta value, a name, a number, a quoted string",
             ],
         ),
         (
-            "@node a\n\t@set $x = = 2\n@endnode\n",
+            "@node a\n\t@set x = = 2\n@endnode\n",
             [
-                "a.wvl:2:12: error: unexpected '='",
-                "  2 | \t@set $x = = 2",
-                "    | \t          ^",
+                "a.wvl:2:11: error: unexpected '='",
+                "  2 | \t@set x = = 2",
+                "    | \t         ^",
             ],
         ),
         (
@@ -83,7 +83,7 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            "@node a\n@if $x\nHi.\n  @endiff\n@endnode\n",
+            "@node a\n@if x\nHi.\n  @endiff\n@endnode\n",
             [
                 "a.wvl:4:3: error: unknown keyword '@endiff', did you mean '@endif'?",
                 "  4 |   @endiff",
@@ -91,8 +91,8 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            "@node a\n@if $x: @sett $y = 1\n@endif\n@endnode\n",
-            ["a.wvl:2:9: error: unknown keyword '@sett', did you mean '@set'?"],
+            "@node a\n@if x: @sett y = 1\n@endif\n@endnode\n",
+            ["a.wvl:2:8: error: unknown keyword '@sett', did you mean '@set'?"],
         ),
         (
             "@node a\n@double(2)\n@endnode\n",
@@ -103,10 +103,10 @@ def _build_errors(tmp_path, capsys, source):
             ["a.wvl:2:1: error: unknown keyword '@jumpstart', did you mean '@jump'?"],
         ),
         (
-            "@node a\nYou have {$gold gold.\n@endnode\n",
+            "@node a\nYou have {gold gold.\n@endnode\n",
             [
                 "a.wvl:2:10: error: unclosed '{' in text",
-                "  2 | You have {$gold gold.",
+                "  2 | You have {gold gold.",
                 "    |          ^",
                 "  hint: close it with '}' or write '\\{' for a literal brace",
             ],
@@ -116,8 +116,8 @@ def _build_errors(tmp_path, capsys, source):
             ["a.wvl:2:11: error: unexpected '}'"],
         ),
         (
-            '@node a\n@continue "\\"Hi\\" {$x +}"\n@endnode\n',
-            ["a.wvl:2:24: error: unexpected '}'"],
+            '@node a\n@continue "\\"Hi\\" {x +}"\n@endnode\n',
+            ["a.wvl:2:23: error: unexpected '}'"],
         ),
         (
             "@node a\nHi.\n@meta\npool: cave\n@endmeta\n@endnode\n",
@@ -135,18 +135,18 @@ def _build_errors(tmp_path, capsys, source):
             ["a.wvl:2:17: error: unexpected end of line", "  expected '='"],
         ),
         (
-            "@node a\n@if $x: @jump a\n@else\nHi.\n@endif\n@endnode\n",
+            "@node a\n@if x: @jump a\n@else\nHi.\n@endif\n@endnode\n",
             [
                 "a.wvl:3:1: error: unexpected '@else'",
                 "  hint: @else can only be used inside an @if block",
             ],
         ),
         (
-            "@node a\n@if $x: @jump a\n@endif\n@endnode\n",
+            "@node a\n@if x: @jump a\n@endif\n@endnode\n",
             ["  hint: there is no open @if block for @endif to close"],
         ),
         (
-            '@node a\n@if $x\n@if $n == "a:b" # c: d\nHi.\n@endif\n@endnode\n',
+            '@node a\n@if x\n@if n == "a:b" # c: d\nHi.\n@endif\n@endnode\n',
             ["  hint: the @if block opened at line 2 must be closed with @endif first"],
         ),
         (
@@ -157,8 +157,8 @@ def _build_errors(tmp_path, capsys, source):
             ],
         ),
         (
-            '@node a\n@set $x = "Hi {$name"\n@endnode\n',
-            ["a.wvl:2:15: error: unclosed '{' in text"],
+            '@node a\n@set x = "Hi {name"\n@endnode\n',
+            ["a.wvl:2:14: error: unclosed '{' in text"],
         ),
     ],
     ids=[
