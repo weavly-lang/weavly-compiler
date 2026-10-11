@@ -1,6 +1,7 @@
 @node start
 Welcome to the smoke test.
->Guide: Let the test begin.
+guide: Let the test begin, {$player_name}.
+"{guide} and {$player_name}": Ready: set, go!
 @detour aside
 @do play_sound("chime_{$score}.ogg", clamp($score / 10, 0, 1))
 @set $score = 10
@@ -21,7 +22,7 @@ Welcome to the smoke test.
 @endnode
 
 @node choices
-$player_name: Which path? I have {$score * 2} points and {max($reputation, 0)} fame.
+$companion: Which path? I have {$score * 2} points and {max($reputation, 0)} fame.
 
 @options
 @option "Roll the dice": @jump random_node
