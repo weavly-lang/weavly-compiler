@@ -13,4 +13,5 @@ meta reward: number = 1
 func luck(): number
 func play_sound(file: string, volume: number)
 func fade_out()
+func add_bonus(target: var number, amount: number)
 @endenv

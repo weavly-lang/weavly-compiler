@@ -1,0 +1,8 @@
+@env
+func add_to(target: var number, amount: number)
+func swap(a: var node, b: var node): bool
+@endenv
+@node start
+@do add_to(var gold, 5)
+@if swap(var here, var there): Swapped {add_to(var gold, 1)}.
+@endnode

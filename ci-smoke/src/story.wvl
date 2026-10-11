@@ -9,6 +9,7 @@ Guide: Let the test begin, {player_name}.
 @decrease score 2
 @set score = clamp(score + random(1, 6), 0, 100)
 @set score = round(max(min(score, 50), abs(score - 20)) / 2)
+@do add_bonus(var score, 1)
 @set has_key = true
 @set has_key = false
 

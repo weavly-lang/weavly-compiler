@@ -1,0 +1,3 @@
+@env
+func pick(): var number
+@endenv

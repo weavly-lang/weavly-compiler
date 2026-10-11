@@ -32,6 +32,7 @@ number_range: _NUMBER_TYPE "(" [signed_number] "," [signed_number] ")" ["=" sign
 function_declaration: _FUNC ID "(" [parameters] ")" [_COLON (value_type | name_type)] _NEWLINE
 parameters: parameter ("," parameter)*
 parameter: ID _COLON (value_type | name_type)
+    | ID _COLON _VAR (value_type | name_type) -> var_parameter
 !value_type: _NUMBER_TYPE | _STRING_TYPE | _BOOL_TYPE
 !name_type: _NODE_TYPE | _POOL_TYPE | _SLOT_TYPE | _CHARACTER_TYPE
 ?bool_literal: TRUE
@@ -179,7 +180,9 @@ condition: expression
 
 call: ID "(" [arguments] ")"
 meta_read: META_READ
-arguments: expression ("," expression)*
+arguments: argument ("," argument)*
+?argument: expression
+    | _VAR expression -> var_argument
 
 interpolation: _LBRACE expression _RBRACE
 

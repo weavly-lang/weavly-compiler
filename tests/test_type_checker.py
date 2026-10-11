@@ -915,6 +915,85 @@ def test_functions_build(tmp_path):
     assert env["functions"][-1] == {"name": "fade_out", "params": []}
 
 
+VAR_ENV = ENV + (
+    "@env\n"
+    "func add_to(target: var number, amount: number)\n"
+    "func move(target: var node)\n"
+    "func add(x: number): number\n"
+    "@endenv\n"
+)
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (
+            "@do add_to(score, 5)",
+            "2:12: error: add_to() argument 'target' takes a variable, write var score",
+        ),
+        ("@do add_to(score + 1, 5)", "2:12: error: add_to() argument 'target' takes a variable"),
+        ("@do add_to(var 5, 5)", "2:16: error: var needs a variable name"),
+        (
+            "@do add_to(var name, 5)",
+            "2:16: error: 'name' is a string variable, not a number variable",
+        ),
+        ("@do move(var hero)", "2:14: error: 'hero' is a character variable, not a node variable"),
+        ("@do add_to(var cave, 5)", "2:16: error: 'cave' is a pool, not a variable"),
+        (
+            "@do add_to(var scroe, 5)",
+            "2:16: error: 'scroe' isn't declared, did you mean 'score'?",
+        ),
+        ("@set score = add(var score)", "2:18: error: add() argument 'x' takes a value, remove var"),
+        ("@set score = min(var score, 1)", "2:18: error: min() takes values, remove var"),
+    ],
+    ids=["value", "expression", "literal", "type", "name_type", "pool", "undeclared",
+         "normal_parameter", "built_in"],
+)
+def test_var_argument_errors(tmp_path, capsys, body, expected):
+    src = tmp_path / "src"
+    _write(src / "globals.wvl", VAR_ENV)
+    _write(src / "a.wvl", f"@node start\n{body}\n@endnode\n")
+
+    with pytest.raises(typer.Exit):
+        build_all_files(src, tmp_path / "build", pretty=False)
+
+    errors = [line.split("a.wvl:", 1)[1] for line in capsys.readouterr().err.splitlines()]
+    assert errors == [expected]
+
+
+def test_var_arguments_build(tmp_path, capsys):
+    src = tmp_path / "src"
+    _write(
+        src / "a.wvl",
+        "@env\n"
+        "var gold: number(0, 10) = 1\n"
+        "extern var day: number\n"
+        "var next_room: node = start\n"
+        "func add_to(target: var number, amount: number)\n"
+        "func pick(target: var node): bool\n"
+        "@endenv\n"
+        "@node start\n"
+        "@do add_to(var gold, 5)\n"
+        "@do add_to(var day, gold)\n"
+        "@if pick(var next_room): Hi.\n"
+        "@endnode\n",
+    )
+
+    build_all_files(src, tmp_path / "build", pretty=False)
+
+    assert capsys.readouterr().err == ""
+    env = json.loads((tmp_path / "build" / "env.json").read_text(encoding="utf-8"))
+    assert env["functions"][0]["params"] == [
+        {"name": "target", "type": "number", "variable": True},
+        {"name": "amount", "type": "number"},
+    ]
+    body = json.loads((tmp_path / "build" / "a.wvl.json").read_text(encoding="utf-8"))
+    body = body["nodes"][0]["body"]
+    assert body[0]["args"] == ["gold", 5.0]
+    assert body[1]["args"] == ["day", {"variable": "gold"}]
+    assert body[2]["cases"][0]["condition"] == {"call": "pick", "args": ["next_room"]}
+
+
 OPTION_NODES = (
     "@node offered\n@meta\npool: cave\nlabel: \"Offered\"\n@endmeta\n@endnode\n"
     "@node plain\nHi.\n@endnode\n"

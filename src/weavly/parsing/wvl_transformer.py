@@ -118,6 +118,9 @@ class WvlTransformer(Transformer):
     def parameter(self, name: str, value_type: str) -> dict[str, str]:
         return {"name": name, "type": value_type}
 
+    def var_parameter(self, name: str, value_type: str) -> dict[str, Any]:
+        return {**self.parameter(name, value_type), "variable": True}
+
     def node_start(self, id: str) -> str:
         return id
 
@@ -370,6 +373,9 @@ class WvlTransformer(Transformer):
 
     def arguments(self, *expressions) -> list:
         return list(expressions)
+
+    def var_argument(self, name: str) -> str:
+        return name
 
     # =====================
     # Text

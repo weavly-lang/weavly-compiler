@@ -272,7 +272,10 @@ class _TypeChecker:
         if rule in ("string", "interpolated"):
             return STRING
         if rule == "variable":
-            return self._variable(node)
+            return self._variable(node.children[0])
+        if rule == "var_argument":
+            self._var_argument(node)
+            return None
         if rule == "name":
             return self._infer_name(node, expected)
         if rule in _ARITHMETIC:
@@ -318,7 +321,10 @@ class _TypeChecker:
             if message:
                 self._error(function, message)
             for argument in _items(arguments):
-                self._expect(argument, NUMBER, f"{name}()")
+                if _is_var_argument(argument):
+                    self._error(argument, f"{name}() takes values, remove var")
+                else:
+                    self._expect(argument, NUMBER, f"{name}()")
             return NUMBER
 
         declaration = self.functions.get(name)
@@ -344,9 +350,35 @@ class _TypeChecker:
         if message:
             self._error(where, message)
         for param, argument in zip(params, arguments):
-            self._expect(argument, param["type"], f"{label} argument '{param['name']}'")
+            context = f"{label} argument '{param['name']}'"
+            if not param.get("variable"):
+                if _is_var_argument(argument):
+                    self._error(argument, f"{context} takes a value, remove var")
+                else:
+                    self._expect(argument, param["type"], context)
+            elif not _is_var_argument(argument):
+                hint = f", write var {argument.children[0]}" if _is_name(argument) else ""
+                self._error(argument, f"{context} takes a variable{hint}")
+                if not _is_name(argument):
+                    self._infer(argument)
+            else:
+                declared = self._var_argument(argument)
+                if declared and declared != param["type"]:
+                    name = argument.children[0].children[0]
+                    self._error(
+                        argument.children[0],
+                        f"'{name}' is a {declared} variable, not a {param['type']} variable",
+                    )
         for argument in arguments[len(params) :]:
             self._infer(argument)
+
+    def _var_argument(self, tree: Tree) -> str | None:
+        """Return the type of the variable a `var` argument passes."""
+        value = tree.children[0]
+        if not _is_name(value):
+            self._error(value, "var needs a variable name")
+            return None
+        return self._variable(value.children[0])
 
     def _infer_meta_call(self, tree: Tree) -> str | None:
         node, key = tree.children
@@ -429,6 +461,10 @@ class _TypeChecker:
 
 def _is_name(value: Tree | Token) -> bool:
     return isinstance(value, Tree) and value.data == "name"
+
+
+def _is_var_argument(value: Tree | Token) -> bool:
+    return isinstance(value, Tree) and value.data == "var_argument"
 
 
 def _items(arguments: Tree | None) -> list:
