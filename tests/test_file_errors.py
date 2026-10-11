@@ -61,4 +61,4 @@ def test_file_errors_skip_cross_file_checks(tmp_path, capsys):
 
     err = capsys.readouterr().err
     assert "b.wvl" in err
-    assert "jump target" not in err
+    assert "matches no node" not in err

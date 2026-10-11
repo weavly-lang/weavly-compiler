@@ -27,12 +27,6 @@ DECLARATION_KINDS = {
     "function_declaration": "function",
 }
 _NODE_KINDS = {"node_start": "node id"}
-# rule -> what its target is called in errors.
-_TARGET_KINDS = {
-    "jump": "jump",
-    "detour": "detour",
-    "node_option": "option",
-}
 
 
 class ProjectChecks:
@@ -44,8 +38,6 @@ class ProjectChecks:
         # name -> location of the first declaration or node with that name.
         self._names: dict[str, Location] = {}
         self._node_ids: dict[str, Location] = {}
-        # (kind, node id, location) of every reference to a node.
-        self._node_references: list[tuple[str, str, Location]] = []
         # meta value -> location of its key and the meta values it reads.
         self._meta_values: dict[MetaRef, tuple[Location, list[MetaRef]]] = {}
         # node ids with a label, and pool -> the node ids that join it.
@@ -59,11 +51,6 @@ class ProjectChecks:
         self._record_unique(tree, file, DECLARATION_KINDS | _NODE_KINDS, self._names)
         for _, node_id, location in _id_locations(tree, _NODE_KINDS, file):
             self._node_ids.setdefault(node_id, location)
-        self._node_references.extend(
-            (_TARGET_KINDS[rule], target, location)
-            for rule, target, location in _id_locations(tree, _TARGET_KINDS, file)
-        )
-        self._record_call_targets(tree, file)
         self._record_node_meta(tree, file)
         self._record_options(tree, file)
         self._check_number_ranges(tree, file)
@@ -72,14 +59,9 @@ class ProjectChecks:
         self.trees.append((file, tree))
 
     def finish(self, declarations: list[dict]) -> list[Error]:
-        """Check node references and types across all added files and return every error."""
+        """Check meta values, option labels and types across all added files and return every
+        error."""
         collected = Declarations.collect(declarations)
-        for kind, target, location in self._node_references:
-            if target in self._node_ids or target in collected.variables:
-                continue
-            declared = collected.kinds.get(target)
-            problem = f"is a {declared}, not a node" if declared else "matches no node"
-            self.errors.append((location, f"{kind} target '{target}' {problem}"))
         self.errors.extend(_meta_cycle_errors(self._meta_values))
         self._check_option_labels()
         for file, tree in self.trees:
@@ -101,13 +83,6 @@ class ProjectChecks:
                     f"duplicate {kinds[rule]} '{name}', first declared at "
                     f"{first_file.as_posix()}:{first_line}",
                 )
-            )
-
-    def _record_call_targets(self, tree: Tree, file: Path) -> None:
-        for call in tree.find_data("node_call"):
-            function, target = call.children
-            self._node_references.append(
-                (str(function), str(target), source_location(file, target))
             )
 
     def _record_node_meta(self, tree: Tree, file: Path) -> None:

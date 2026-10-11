@@ -213,5 +213,5 @@ def test_warnings_are_not_printed_when_the_build_fails(tmp_path, capsys):
         build_all_files(src, tmp_path / "build", pretty=False)
 
     err = capsys.readouterr().err
-    assert "error: jump target 'gone' matches no node" in err
+    assert "error: 'gone' matches no node" in err
     assert "warning:" not in err

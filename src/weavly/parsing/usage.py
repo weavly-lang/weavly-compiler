@@ -4,6 +4,7 @@ from pathlib import Path
 from lark import Token, Tree
 
 from .checks import DECLARATION_KINDS, entry_names, node_meta
+from .text import blank_strings
 from .type_checker import Location, source_location
 
 # rule -> the kind of declaration its leading name uses.
@@ -18,7 +19,6 @@ _USES = {
     "character_speaker": "character",
 }
 _POOL_ONLY_KEYS = ("priority", "weight", "slot")
-_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 _IGNORE = re.compile(r"#[ \t]*weavly:[ \t]*ignore[ \t]*$")
 # file -> line -> column of its `# weavly: ignore` comment.
 Ignores = dict[Path, dict[int, int]]
@@ -32,7 +32,7 @@ def find_ignores(text: str, tree: Tree) -> dict[int, int]:
     for number, line in enumerate(text.splitlines(), start=1):
         if number in text_lines:
             continue
-        code = _STRING.sub(lambda string: " " * len(string.group()), line)
+        code = blank_strings(line)
         start = code.find("#")
         if start != -1 and _IGNORE.match(code, start):
             ignores[number] = start + 1
@@ -54,7 +54,7 @@ def find_warnings(
         for subtree in tree.iter_subtrees_topdown():
             if subtree.data in DECLARATION_KINDS:
                 declared.append((DECLARATION_KINDS[subtree.data], subtree.children[0], file))
-            elif subtree.data in _USES:
+            elif subtree.data in _USES and isinstance(subtree.children[0], Token):
                 used[_USES[subtree.data]].add(str(subtree.children[0]))
             elif subtree.data == "meta_call":
                 used["meta key"].add(str(subtree.children[1]))

@@ -12,6 +12,7 @@ _QUOTED_UNIT = re.compile(
     re.DOTALL,
 )
 _QUOTED = ("STRING", "QUOTED_SPEAKER")
+_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 # A narration line looks like dialogue if a colon ends one of its first words.
 _DIALOGUE_WORDS = 3
 
@@ -43,6 +44,11 @@ class BraceInDefaultError(UnexpectedInput):
         super().__init__("unexpected '{' in a default")
         self.line = line
         self.column = column
+
+
+def blank_strings(line: str) -> str:
+    """Replace every quoted string in `line` with spaces, keeping the columns of the rest."""
+    return _STRING.sub(lambda string: " " * len(string.group()), line)
 
 
 def expand_text(tree: Tree, parser: Lark) -> None:
