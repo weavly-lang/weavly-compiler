@@ -37,6 +37,8 @@ def find_warnings(trees: list[tuple[Path, Tree]]) -> list[tuple[Location, str]]:
                 used["meta key"].add(str(subtree.children[1]))
             elif subtree.data == "name_value":
                 used["character"].add(str(subtree.children[1]))
+            elif subtree.data == "var_argument" and isinstance(subtree.children[0], Tree):
+                used["variable"].add(str(subtree.children[0].children[0]))
             elif subtree.data == "narration_line" and subtree.children[1] is not None:
                 text, colon = subtree.children
                 warnings.append((source_location(file, colon), _looks_like_dialogue(text, colon)))
