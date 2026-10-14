@@ -42,6 +42,11 @@ After all files parse, [type_checker.py](src/weavly/parsing/type_checker.py) che
 
 Note: the `tests/fixtures/env/` snapshots capture the raw transformer output, which *includes* a `declarations` key — that key is split out into `env.json` (and stripped from per-file output) by the build pipeline. The cross-file merge and duplicate detection are covered by `tests/test_env_merge.py`, not the single-file fixture harness.
 
+## Documentation
+
+- User docs live in the separate [weavly-docs](https://github.com/weavly-lang/weavly-docs) repo, published at <https://weavly-lang.github.io/weavly-docs/>. This repo has no docs folder.
+- A change to the language, the CLI, or the errors and warnings users see needs a docs update. File an issue in weavly-docs (`gh issue create -R weavly-lang/weavly-docs`) that says what changed, and link it from the PR.
+
 ## Workflow
 
 Issue-driven, squash-merged PRs. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full version. When asked to work on issue N:
